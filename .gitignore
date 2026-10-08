@@ -1,0 +1,47 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# local data (N-CMAPSS is 14.6 GB and redistributed from NASA, never committed)
+data/
+datasets/
+*.h5
+*.hdf5
+*.npz
+*.parquet
+!docs/**/*.parquet
+
+# model artefacts and MLflow runs
+mlruns/
+mlartifacts/
+artifacts/
+models/
+*.pt
+*.ckpt
+*.onnx
+*.joblib
+*.pkl
+
+# python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# node
+node_modules/
+.next/
+dist/
+build/
+
+# local overrides and scratch
+configs/local/
+*.log
+.DS_Store
