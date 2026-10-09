@@ -28,6 +28,25 @@ from .schema import MEASURED_SENSORS, SCENARIO_DESCRIPTORS, TARGET_COLUMN
 SPLITS: tuple[str, ...] = ("dev", "test")
 ROW_BLOCK = 1_000_000
 
+# Stored as int8 rather than a string: one byte per row across 20.9 million rows,
+# and it is context rather than something anything partitions on.
+SOURCE_SPLIT_CODES: dict[str, int] = {"dev": 0, "test": 1}
+
+
+def _source_split_code(split: str) -> int:
+    """Map a split name to its stored code, refusing unknown values."""
+    if split not in SOURCE_SPLIT_CODES:
+        raise ValueError(f"unknown split {split!r}; expected one of {sorted(SOURCE_SPLIT_CODES)}")
+    return SOURCE_SPLIT_CODES[split]
+
+
+def source_split_name(code: int) -> str:
+    """Inverse of `_source_split_code`, for reading a converted file back."""
+    inverse = {v: k for k, v in SOURCE_SPLIT_CODES.items()}
+    if code not in inverse:
+        raise ValueError(f"unknown source_split code {code}")
+    return inverse[code]
+
 
 @dataclass(frozen=True, slots=True)
 class UnitStats:
@@ -88,6 +107,7 @@ def _build_unit_table(
     scenario: npt.NDArray[np.float64],
     sensors: npt.NDArray[np.float64],
     t_in_flight: npt.NDArray[np.int32],
+    split: str,
 ) -> pa.Table:
     """Assemble the Arrow table for one unit from row-aligned column blocks."""
     columns: dict[str, Any] = {
@@ -97,6 +117,9 @@ def _build_unit_table(
         "t_in_flight": pa.array(t_in_flight),
         TARGET_COLUMN: pa.array(rul.astype(np.int32)),
     }
+    # N-CMAPSS's own dev/test label, kept for context. Nothing in this project
+    # partitions on it: engine unit is the split that matters (docs/adr/0003).
+    columns["source_split"] = pa.array(np.full(len(meta), _source_split_code(split), dtype=np.int8))
     for index, name in enumerate(SCENARIO_DESCRIPTORS):
         columns[f"W_{name}"] = pa.array(scenario[:, index].astype(np.float32))
     for index, name in enumerate(MEASURED_SENSORS):
@@ -148,6 +171,7 @@ def convert_subdataset(
                     scen_ds[start:stop],
                     sens_ds[start:stop],
                     _t_in_flight(cycles),
+                    split,
                 )
                 target = out_dir / f"unit_{unit_id:03d}.parquet"
                 pq.write_table(table, target, compression="zstd")

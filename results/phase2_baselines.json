@@ -1,0 +1,466 @@
+{
+  "config": {
+    "bootstrap_resamples": 500,
+    "split": {
+      "n_splits": 5,
+      "seed": 20241009,
+      "test_fraction": 0.34
+    },
+    "subdatasets": [
+      "DS01-005",
+      "DS02-006",
+      "DS06"
+    ],
+    "window": {
+      "downsample": 10,
+      "length": 50,
+      "rul_cap": 125,
+      "stride": 10
+    }
+  },
+  "data": {
+    "engines": [
+      "DS01-005/unit001",
+      "DS01-005/unit002",
+      "DS01-005/unit003",
+      "DS01-005/unit004",
+      "DS01-005/unit005",
+      "DS01-005/unit006",
+      "DS01-005/unit007",
+      "DS01-005/unit008",
+      "DS01-005/unit009",
+      "DS01-005/unit010",
+      "DS02-006/unit002",
+      "DS02-006/unit005",
+      "DS02-006/unit010",
+      "DS02-006/unit011",
+      "DS02-006/unit014",
+      "DS02-006/unit015",
+      "DS02-006/unit016",
+      "DS02-006/unit018",
+      "DS02-006/unit020",
+      "DS06/unit001",
+      "DS06/unit002",
+      "DS06/unit003",
+      "DS06/unit004",
+      "DS06/unit005",
+      "DS06/unit006",
+      "DS06/unit007",
+      "DS06/unit008",
+      "DS06/unit009",
+      "DS06/unit010"
+    ],
+    "max_cycle": 100,
+    "n_engines": 29,
+    "n_windows": 199095,
+    "rul_cap": 99,
+    "source_splits": [
+      "dev",
+      "test"
+    ],
+    "subdatasets": [
+      "DS01-005",
+      "DS02-006",
+      "DS06"
+    ]
+  },
+  "final_test_group": {
+    "engine_ids": [
+      3,
+      7,
+      11,
+      13,
+      18,
+      21,
+      22,
+      23,
+      24,
+      26
+    ],
+    "engines": [
+      "DS01-005/unit004",
+      "DS01-005/unit008",
+      "DS02-006/unit005",
+      "DS02-006/unit011",
+      "DS02-006/unit020",
+      "DS06/unit003",
+      "DS06/unit004",
+      "DS06/unit005",
+      "DS06/unit006",
+      "DS06/unit008"
+    ],
+    "note": "Not scored during cross-validation. Opened once, after the model and its configuration were frozen.",
+    "status": "closed"
+  },
+  "folds": [
+    {
+      "name": "fold0",
+      "train_engines": [
+        "DS01-005/unit001",
+        "DS01-005/unit002",
+        "DS01-005/unit003",
+        "DS01-005/unit005",
+        "DS01-005/unit007",
+        "DS01-005/unit009",
+        "DS01-005/unit010",
+        "DS02-006/unit002",
+        "DS02-006/unit010",
+        "DS02-006/unit014",
+        "DS02-006/unit015",
+        "DS02-006/unit016",
+        "DS02-006/unit018",
+        "DS06/unit002",
+        "DS06/unit007"
+      ],
+      "val_engines": [
+        "DS01-005/unit006",
+        "DS06/unit001",
+        "DS06/unit009",
+        "DS06/unit010"
+      ]
+    },
+    {
+      "name": "fold1",
+      "train_engines": [
+        "DS01-005/unit001",
+        "DS01-005/unit002",
+        "DS01-005/unit003",
+        "DS01-005/unit005",
+        "DS01-005/unit006",
+        "DS01-005/unit009",
+        "DS01-005/unit010",
+        "DS02-006/unit010",
+        "DS02-006/unit015",
+        "DS02-006/unit016",
+        "DS02-006/unit018",
+        "DS06/unit001",
+        "DS06/unit007",
+        "DS06/unit009",
+        "DS06/unit010"
+      ],
+      "val_engines": [
+        "DS01-005/unit007",
+        "DS02-006/unit002",
+        "DS02-006/unit014",
+        "DS06/unit002"
+      ]
+    },
+    {
+      "name": "fold2",
+      "train_engines": [
+        "DS01-005/unit001",
+        "DS01-005/unit003",
+        "DS01-005/unit005",
+        "DS01-005/unit006",
+        "DS01-005/unit007",
+        "DS01-005/unit010",
+        "DS02-006/unit002",
+        "DS02-006/unit010",
+        "DS02-006/unit014",
+        "DS02-006/unit016",
+        "DS02-006/unit018",
+        "DS06/unit001",
+        "DS06/unit002",
+        "DS06/unit009",
+        "DS06/unit010"
+      ],
+      "val_engines": [
+        "DS01-005/unit002",
+        "DS01-005/unit009",
+        "DS02-006/unit015",
+        "DS06/unit007"
+      ]
+    },
+    {
+      "name": "fold3",
+      "train_engines": [
+        "DS01-005/unit002",
+        "DS01-005/unit005",
+        "DS01-005/unit006",
+        "DS01-005/unit007",
+        "DS01-005/unit009",
+        "DS02-006/unit002",
+        "DS02-006/unit010",
+        "DS02-006/unit014",
+        "DS02-006/unit015",
+        "DS02-006/unit018",
+        "DS06/unit001",
+        "DS06/unit002",
+        "DS06/unit007",
+        "DS06/unit009",
+        "DS06/unit010"
+      ],
+      "val_engines": [
+        "DS01-005/unit001",
+        "DS01-005/unit003",
+        "DS01-005/unit010",
+        "DS02-006/unit016"
+      ]
+    },
+    {
+      "name": "fold4",
+      "train_engines": [
+        "DS01-005/unit001",
+        "DS01-005/unit002",
+        "DS01-005/unit003",
+        "DS01-005/unit006",
+        "DS01-005/unit007",
+        "DS01-005/unit009",
+        "DS01-005/unit010",
+        "DS02-006/unit002",
+        "DS02-006/unit014",
+        "DS02-006/unit015",
+        "DS02-006/unit016",
+        "DS06/unit001",
+        "DS06/unit002",
+        "DS06/unit007",
+        "DS06/unit009",
+        "DS06/unit010"
+      ],
+      "val_engines": [
+        "DS01-005/unit005",
+        "DS02-006/unit010",
+        "DS02-006/unit018"
+      ]
+    }
+  ],
+  "hardware": "Darwin arm64 / arm / Python 3.12.13",
+  "models": {
+    "lightgbm": {
+      "by_stage": {
+        "early": {
+          "ci_high": 13.629827490302173,
+          "ci_low": 4.444986792075248,
+          "n": 46142,
+          "rmse": 9.03740714118871
+        },
+        "late": {
+          "ci_high": 8.882814126106393,
+          "ci_low": 3.860860852700237,
+          "n": 46261,
+          "rmse": 6.3718374894033145
+        },
+        "mid": {
+          "ci_high": 13.337130711997599,
+          "ci_low": 4.083525994970995,
+          "n": 45673,
+          "rmse": 8.710328353484297
+        }
+      },
+      "eval_engines": [
+        "DS01-005/unit001",
+        "DS01-005/unit002",
+        "DS01-005/unit003",
+        "DS01-005/unit005",
+        "DS01-005/unit006",
+        "DS01-005/unit007",
+        "DS01-005/unit009",
+        "DS01-005/unit010",
+        "DS02-006/unit002",
+        "DS02-006/unit010",
+        "DS02-006/unit014",
+        "DS02-006/unit015",
+        "DS02-006/unit016",
+        "DS02-006/unit018",
+        "DS06/unit001",
+        "DS06/unit002",
+        "DS06/unit007",
+        "DS06/unit009",
+        "DS06/unit010"
+      ],
+      "late_prediction_rate": 0.5776559108648336,
+      "mean_signed_error": 0.2849370166673162,
+      "model": "lightgbm",
+      "n_eval_rows": 138076,
+      "n_folds": 5,
+      "nasa_score": {
+        "ci_high": 52530.2893448433,
+        "ci_low": 7522.7925929685225,
+        "mean": 30026.540968905912
+      },
+      "rmse": {
+        "ci_high": 12.06586055720322,
+        "ci_low": 4.232908284792,
+        "mean": 8.14938442099761
+      },
+      "target_coverage": 0.9
+    },
+    "linear_cycle": {
+      "by_stage": {
+        "early": {
+          "ci_high": 14.335902447855249,
+          "ci_low": 3.514879911075125,
+          "n": 46142,
+          "rmse": 8.925391179465187
+        },
+        "late": {
+          "ci_high": 11.85417216072136,
+          "ci_low": 5.83515588710401,
+          "n": 46261,
+          "rmse": 8.844664023912685
+        },
+        "mid": {
+          "ci_high": 13.492418014790456,
+          "ci_low": 4.044478051636006,
+          "n": 45673,
+          "rmse": 8.76844803321323
+        }
+      },
+      "eval_engines": [
+        "DS01-005/unit001",
+        "DS01-005/unit002",
+        "DS01-005/unit003",
+        "DS01-005/unit005",
+        "DS01-005/unit006",
+        "DS01-005/unit007",
+        "DS01-005/unit009",
+        "DS01-005/unit010",
+        "DS02-006/unit002",
+        "DS02-006/unit010",
+        "DS02-006/unit014",
+        "DS02-006/unit015",
+        "DS02-006/unit016",
+        "DS02-006/unit018",
+        "DS06/unit001",
+        "DS06/unit002",
+        "DS06/unit007",
+        "DS06/unit009",
+        "DS06/unit010"
+      ],
+      "late_prediction_rate": 0.5710176905399008,
+      "mean_signed_error": 0.4358096454818113,
+      "model": "linear_cycle",
+      "n_eval_rows": 138076,
+      "n_folds": 5,
+      "nasa_score": {
+        "ci_high": 63639.491058382075,
+        "ci_low": 6260.40869637825,
+        "mean": 34949.94987738016
+      },
+      "rmse": {
+        "ci_high": 13.181811656685776,
+        "ci_low": 4.618621825010022,
+        "mean": 8.900216740847899
+      },
+      "target_coverage": 0.9
+    },
+    "mean": {
+      "by_stage": {
+        "early": {
+          "ci_high": 33.17674344969825,
+          "ci_low": 23.815616811534568,
+          "n": 46142,
+          "rmse": 28.49618013061641
+        },
+        "late": {
+          "ci_high": 29.05150520500614,
+          "ci_low": 26.87951419335751,
+          "n": 46261,
+          "rmse": 27.965509699181826
+        },
+        "mid": {
+          "ci_high": 10.794352293959088,
+          "ci_low": 7.72242753317561,
+          "n": 45673,
+          "rmse": 9.258389913567349
+        }
+      },
+      "eval_engines": [
+        "DS01-005/unit001",
+        "DS01-005/unit002",
+        "DS01-005/unit003",
+        "DS01-005/unit005",
+        "DS01-005/unit006",
+        "DS01-005/unit007",
+        "DS01-005/unit009",
+        "DS01-005/unit010",
+        "DS02-006/unit002",
+        "DS02-006/unit010",
+        "DS02-006/unit014",
+        "DS02-006/unit015",
+        "DS02-006/unit016",
+        "DS02-006/unit018",
+        "DS06/unit001",
+        "DS06/unit002",
+        "DS06/unit007",
+        "DS06/unit009",
+        "DS06/unit010"
+      ],
+      "late_prediction_rate": 0.5064935380505821,
+      "mean_signed_error": 0.1427903516475413,
+      "model": "mean",
+      "n_eval_rows": 138076,
+      "n_folds": 5,
+      "nasa_score": {
+        "ci_high": 364491.5331193952,
+        "ci_low": 201627.34177031083,
+        "mean": 283059.437444853
+      },
+      "rmse": {
+        "ci_high": 25.437460701918734,
+        "ci_low": 22.082350831368455,
+        "mean": 23.759905766643595
+      },
+      "target_coverage": 0.9
+    },
+    "trend": {
+      "by_stage": {
+        "early": {
+          "ci_high": 23.901036805282246,
+          "ci_low": 15.051965790548927,
+          "n": 46142,
+          "rmse": 19.476501297915586
+        },
+        "late": {
+          "ci_high": 38.396473433706966,
+          "ci_low": 37.069870773464,
+          "n": 46261,
+          "rmse": 37.73317210358548
+        },
+        "mid": {
+          "ci_high": 14.678092849963118,
+          "ci_low": 12.788619674572015,
+          "n": 45673,
+          "rmse": 13.733356262267566
+        }
+      },
+      "eval_engines": [
+        "DS01-005/unit001",
+        "DS01-005/unit002",
+        "DS01-005/unit003",
+        "DS01-005/unit005",
+        "DS01-005/unit006",
+        "DS01-005/unit007",
+        "DS01-005/unit009",
+        "DS01-005/unit010",
+        "DS02-006/unit002",
+        "DS02-006/unit010",
+        "DS02-006/unit014",
+        "DS02-006/unit015",
+        "DS02-006/unit016",
+        "DS02-006/unit018",
+        "DS06/unit001",
+        "DS06/unit002",
+        "DS06/unit007",
+        "DS06/unit009",
+        "DS06/unit010"
+      ],
+      "late_prediction_rate": 0.6270605327903961,
+      "mean_signed_error": 10.22277594252574,
+      "model": "trend",
+      "n_eval_rows": 138076,
+      "n_folds": 5,
+      "nasa_score": {
+        "ci_high": 641933.4835844433,
+        "ci_low": 472816.29596961406,
+        "mean": 557374.8897770287
+      },
+      "rmse": {
+        "ci_high": 26.64606441270361,
+        "ci_low": 25.094887402605316,
+        "mean": 25.870475907654463
+      },
+      "target_coverage": 0.9
+    }
+  }
+}
