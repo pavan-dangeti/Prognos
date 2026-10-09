@@ -122,9 +122,14 @@ def test_converter_output_contains_no_leakage(tmp_path: pytest.TempPathFactory) 
     stats = convert_subdataset(h5_path, tmp_path / "parquet", "SYNTH")
 
     assert stats
-    expected = {TARGET_COLUMN, "unit", "cycle", "flight_class", "t_in_flight"} | set(
-        FEATURE_COLUMNS
-    )
+    expected = {
+        TARGET_COLUMN,
+        "unit",
+        "cycle",
+        "flight_class",
+        "t_in_flight",
+        "source_split",
+    } | set(FEATURE_COLUMNS)
     for unit_stats in stats:
         parquet_path = tmp_path / "parquet" / f"unit_{unit_stats.unit:03d}.parquet"
         table = pa.parquet.read_table(parquet_path)

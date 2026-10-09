@@ -63,8 +63,8 @@ def test_assert_disjoint_raises_on_overlap() -> None:
 
 
 def test_insufficient_units_raises_rather_than_silently_degrading() -> None:
-    """Two units cannot produce a train/test split, and we say so."""
-    with pytest.raises(ValueError, match="at least 3 units"):
+    """Two engines cannot produce a train/test split, and we say so."""
+    with pytest.raises(ValueError, match="at least 3 engines"):
         assign_test_units([1, 2], test_fraction=0.5, seed=1)
 
 

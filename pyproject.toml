@@ -6,12 +6,14 @@ readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "h5py==3.16.0",
+    "lightgbm==4.6.0",
     "numpy==2.4.1",
     "pandas==3.0.1",
     "pyarrow==26.0.0",
     "pydantic==2.13.1",
     "pyyaml==6.0.3",
     "scikit-learn==1.8.0",
+    "scipy==1.18.1",
     "typing-extensions==4.16.0",
 ]
 
@@ -44,12 +46,31 @@ warn_unreachable = true
 disallow_any_explicit = false
 mypy_path = "src"
 packages = ["prognos"]
+# h5py, pyarrow, scipy.stats and lightgbm are installed but ship no type
+# information. mypy reports that as `import-untyped`, which
+# `ignore_missing_imports` does not silence, and it is reported against the
+# importing module rather than the imported one, so it cannot be scoped per
+# module. Silenced globally: it only concerns third-party imports, and every
+# other error code stays on.
+disable_error_code = ["import-untyped"]
 
-# h5py and pyarrow ship no stubs and are not typed; sklearn is typed but its
-# model_selection surface is not. Overridden rather than globally relaxed so the
-# rest of the codebase stays strictly checked.
+# Untyped third-party packages. Overridden individually rather than relaxing
+# mypy globally, so the rest of the codebase stays strictly checked.
 [[tool.mypy.overrides]]
-module = ["h5py.*", "pyarrow.*", "sklearn.model_selection.*"]
+# Both the bare name and its submodules: a `pkg.*` pattern does not cover `pkg`
+# itself, so listing only one of the two leaves errors behind.
+module = [
+    "h5py",
+    "h5py.*",
+    "pyarrow",
+    "pyarrow.*",
+    "sklearn",
+    "sklearn.*",
+    "scipy",
+    "scipy.*",
+    "lightgbm",
+    "lightgbm.*",
+]
 ignore_missing_imports = true
 
 [tool.ruff]
@@ -79,7 +100,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["D100", "D101", "D102", "D103", "ANN401"]
+# Test doubles implement a protocol for test purposes; annotating them fully adds
+# noise without adding safety, since mypy does not check this directory.
+"tests/**" = ["D100", "D101", "D102", "D103", "D107", "ANN", "B007", "RUF043"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
