@@ -67,6 +67,12 @@ jobs:
   security:
     name: dependency and secret scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # gitleaks uploads its findings as SARIF to code scanning, which needs write
+      # access to security events. Scoped to this job rather than the whole
+      # workflow so no other job can write to it.
+      security-events: write
     steps:
       - uses: actions/checkout@v5
         with:

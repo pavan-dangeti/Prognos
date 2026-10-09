@@ -23,6 +23,15 @@ RUN uv sync --frozen --no-install-project --all-groups
 COPY src ./src
 RUN uv sync --frozen --all-groups
 
+# The base image ships pip, and pip drags in setuptools and urllib3 versions that
+# trip the image scanner. Nothing at runtime needs pip: uv resolves and installs,
+# so removing it removes the finding rather than the risk.
+RUN rm -rf /usr/local/lib/python3.12/site-packages/pip* \
+    /usr/local/lib/python3.12/site-packages/setuptools* \
+    /usr/local/lib/python3.12/site-packages/urllib3* \
+    /usr/local/bin/pip* \
+    /usr/local/bin/pytest
+
 # Run as a non-root user: a data pipeline that reads a 15 GB archive has no
 # business running as root.
 RUN useradd --create-home --uid 10001 prognos && chown -R prognos:prognos /app /opt/venv
