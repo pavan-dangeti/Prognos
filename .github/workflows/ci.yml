@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v10
         with:
           enable-cache: true
 
@@ -73,7 +73,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v10
 
       - name: Install dependencies
         run: uv sync --all-groups --locked
@@ -88,7 +88,7 @@ jobs:
         run: uv run pip-audit --strict -r requirements.txt
 
       - name: Scan for committed secrets
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -99,13 +99,13 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v10
 
       - name: Build the pipeline image
         run: docker build -f docker/Dockerfile --tag prognos:ci .
 
       - name: Scan the image for known vulnerabilities
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: prognos:ci
           severity: CRITICAL,HIGH
