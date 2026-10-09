@@ -1,0 +1,121 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs: on a docs-and-code repo most pushes make the previous
+# CI run irrelevant, and waiting for both wastes minutes for nothing.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: lint, types, tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --all-groups --locked
+
+      - name: Check dependency lock is current
+        run: uv lock --check
+
+      - name: Ruff lint
+        run: uv run ruff check --output-format=github .
+
+      - name: Ruff format
+        run: uv run ruff format --check .
+
+      - name: mypy strict
+        run: uv run mypy
+
+      - name: Tests
+        run: uv run pytest --cov --cov-report=term-missing --cov-report=xml
+
+      - name: Coverage gate
+        # Core pipeline logic only. The CLI is excluded because it is a thin
+        # argparse wrapper; it is still tested, just not gated at the same level.
+        run: >-
+          uv run coverage report
+          --include='src/prognos/convert.py,src/prognos/window.py,src/prognos/split.py,src/prognos/schema.py,src/prognos/config.py'
+          --fail-under=95
+
+      - name: Smoke test on a synthetic subset
+        # Proves the pipeline runs end to end in CI with no NASA data present.
+        run: uv run pytest -m smoke -v
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage.xml
+          retention-days: 7
+
+  security:
+    name: dependency and secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install dependencies
+        run: uv sync --all-groups --locked
+
+      - name: Export the resolved dependency set
+        # pip-audit cannot read uv.lock, so the lockfile is exported to
+        # requirements first. Auditing the export means auditing exactly what the
+        # lockfile pins, not whatever a fresh resolve would pick.
+        run: uv export --frozen --no-emit-project --all-groups --no-hashes -o requirements.txt
+
+      - name: Audit Python dependencies
+        run: uv run pip-audit --strict -r requirements.txt
+
+      - name: Scan for committed secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  smoke-docker:
+    name: image build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Build the pipeline image
+        run: docker build -f docker/Dockerfile --tag prognos:ci .
+
+      - name: Scan the image for known vulnerabilities
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          image-ref: prognos:ci
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+
+      - name: Conversion smoke test inside the image
+        run: |
+          docker run --rm \
+            -v "$PWD/configs:/app/configs:ro" \
+            -v "$PWD/tests:/app/tests:ro" \
+            -w /app \
+            prognos:ci pytest -m smoke -q

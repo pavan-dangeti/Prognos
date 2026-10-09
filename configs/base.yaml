@@ -1,0 +1,19 @@
+# Base configuration. Every layer overlays this file.
+data:
+  root: ~/data/ncmapss
+  subdatasets: [DS01-005, DS02-006, DS06]
+  parquet_dir: data/parquet
+  manifest_path: data/manifest.json
+
+window:
+  length: 50
+  stride: 10
+  downsample: 10
+  # Cap RUL so early-life windows are not all labelled with total life length.
+  # 125 is the conventional C-MAPSS cap; Phase 3 sweeps it.
+  rul_cap: 125
+
+split:
+  n_splits: 5
+  seed: 20241009
+  test_fraction: 0.34
