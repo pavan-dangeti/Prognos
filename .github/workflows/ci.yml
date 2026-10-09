@@ -108,7 +108,7 @@ jobs:
         uses: astral-sh/setup-uv@v10.2.0
 
       - name: Build the pipeline image
-        run: docker build -f docker/Dockerfile --tag prognos:ci .
+        run: docker build -f docker/Dockerfile --target runtime --tag prognos:ci .
 
       - name: Scan the image for known vulnerabilities
         uses: aquasecurity/trivy-action@v0.36.0
