@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import argparse
+import json
+import platform
+import sys
 from pathlib import Path
 
 from .config import load_config
 from .convert import convert_subdataset, sha256_file, write_manifest
+from .dataset import load_windows
 
 H5_SUFFIX = ".h5"
 
@@ -18,6 +22,18 @@ def _subdataset_path(root: Path, subdataset: str) -> Path:
         if candidate.exists():
             return candidate
     raise FileNotFoundError(f"no HDF5 file for sub-dataset {subdataset} under {root}")
+
+
+def hardware_description() -> str:
+    """A short hardware string, so a committed result says where it came from.
+
+    Deliberately plain: platform, processor and Python version. Enough to tell two
+    runs apart, not enough to identify a machine.
+    """
+    processor = platform.processor() or platform.machine()
+    return (
+        f"{platform.system()} {platform.machine()} / {processor} / Python {sys.version.split()[0]}"
+    )
 
 
 def cmd_convert(args: argparse.Namespace) -> int:
@@ -52,6 +68,98 @@ def cmd_manifest(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_evaluate(args: argparse.Namespace) -> int:
+    """Cross-validate every baseline on grouped folds and write a result file."""
+    from .evaluate import aggregate_folds, build_folds, evaluate_model, report_run
+    from .gbm import LightGbmModel
+    from .models import build_models
+
+    config = load_config(Path(args.config))
+    cache_dir = None if args.no_cache else config.data.parquet_dir.parent / "cache"
+
+    print("loading windows", flush=True)
+    data = load_windows(
+        config.data.parquet_dir,
+        config.window,
+        config.data.subdatasets,
+        cache_dir=cache_dir,
+        rebuild=args.rebuild_cache,
+    )
+    print(f"  {len(data):,} windows across {data.summary()['n_engines']} engines", flush=True)
+
+    folds = build_folds(
+        data,
+        n_splits=config.split.n_splits,
+        test_fraction=config.split.test_fraction,
+        seed=config.split.seed,
+    )
+    test_units = folds[0].split.test_units
+    print(f"  final test group held closed: {test_units}", flush=True)
+
+    models = dict(build_models())
+    if not args.baselines_only:
+        models["lightgbm"] = LightGbmModel(seed=config.split.seed)
+
+    summaries: dict[str, object] = {}
+    for name, model in models.items():
+        print(f"evaluating {name}", flush=True)
+        results = []
+        for fold in folds:
+            result = evaluate_model(
+                data,
+                fold.train_mask,
+                fold.val_mask,
+                model_name=name,
+                fit=model.fit,
+                predict=model.predict,
+                test_units=test_units,
+                fold_name=fold.split.name,
+                seed=config.split.seed,
+                n_bootstrap=args.bootstrap,
+            )
+            results.append(result)
+            print(
+                f"  {fold.split.name}: rmse={result.rmse:.2f} score={result.nasa_score:.1f}",
+                flush=True,
+            )
+        summaries[name] = aggregate_folds(
+            name,
+            results,
+            target_coverage=args.coverage,
+            engine_labels=data.group_labels,
+        )
+        print(
+            f"  mean rmse={summaries[name]['rmse']['mean']:.2f} "  # type: ignore[index]
+            f"mean score={summaries[name]['nasa_score']['mean']:.1f}",  # type: ignore[index]
+            flush=True,
+        )
+
+    report = report_run(
+        config={
+            "window": config.window.model_dump(),
+            "split": config.split.model_dump(),
+            "subdatasets": list(config.data.subdatasets),
+            "bootstrap_resamples": args.bootstrap,
+        },
+        data=data,
+        folds=folds,
+        models=summaries,
+        hardware=hardware_description(),
+    )
+
+    out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True, default=float) + "\n")
+    print(f"wrote {out_path}", flush=True)
+
+    ranking = sorted(summaries, key=lambda k: summaries[k]["rmse"]["mean"])  # type: ignore[index]
+    print("\nranking by cross-validated RMSE:")
+    for name in ranking:
+        entry = summaries[name]
+        print(f"  {name:15s} rmse={entry['rmse']['mean']:.2f}")  # type: ignore[index]
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Parse arguments and dispatch."""
     parser = argparse.ArgumentParser(prog="prognos", description="Prognos pipeline")
@@ -64,6 +172,16 @@ def main(argv: list[str] | None = None) -> int:
     manifest = sub.add_parser("manifest", help="show the data manifest")
     manifest.add_argument("--config", default="configs/base.yaml")
     manifest.set_defaults(func=cmd_manifest)
+
+    evaluate = sub.add_parser("evaluate", help="cross-validate the baselines")
+    evaluate.add_argument("--config", default="configs/base.yaml")
+    evaluate.add_argument("--out", default="results/phase2_baselines.json")
+    evaluate.add_argument("--bootstrap", type=int, default=500)
+    evaluate.add_argument("--coverage", type=float, default=0.90)
+    evaluate.add_argument("--no-cache", action="store_true")
+    evaluate.add_argument("--rebuild-cache", action="store_true")
+    evaluate.add_argument("--baselines-only", action="store_true")
+    evaluate.set_defaults(func=cmd_evaluate)
 
     args = parser.parse_args(argv)
     result: int = args.func(args)

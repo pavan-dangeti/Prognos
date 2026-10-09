@@ -43,6 +43,13 @@ ENV PYTHONUNBUFFERED=1 \
     UV_COMPILE_BYTECODE=1 \
     PATH="/opt/venv/bin:$PATH"
 
+# LightGBM links against the GNU OpenMP runtime, which the slim image does not
+# ship. The h5py wheels bundle their own HDF5, so that one needs nothing; this one
+# does need a system library.
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
 # The base image's own pip also vendors those libraries, so it goes too.
 RUN rm -rf /usr/local/lib/python3.12/site-packages/pip* \
     /usr/local/lib/python3.12/site-packages/setuptools* \
@@ -51,6 +58,9 @@ RUN rm -rf /usr/local/lib/python3.12/site-packages/pip* \
 
 COPY --from=builder /opt/venv /opt/venv
 COPY --from=builder /app/src /app/src
+# pyproject.toml carries the pytest configuration, including the custom markers.
+# Without it, `pytest -m smoke` runs everything and warns about unknown marks.
+COPY pyproject.toml /app/pyproject.toml
 
 WORKDIR /app
 

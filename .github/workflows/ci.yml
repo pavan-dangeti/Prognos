@@ -46,11 +46,11 @@ jobs:
         run: uv run pytest --cov --cov-report=term-missing --cov-report=xml
 
       - name: Coverage gate
-        # Core pipeline logic only. The CLI is excluded because it is a thin
-        # argparse wrapper; it is still tested, just not gated at the same level.
+        # Core pipeline logic. The CLI is excluded because it is a thin argparse
+        # wrapper; it is still tested, just not gated at the same level.
         run: >-
           uv run coverage report
-          --include='src/prognos/convert.py,src/prognos/window.py,src/prognos/split.py,src/prognos/schema.py,src/prognos/config.py'
+          --include='src/prognos/convert.py,src/prognos/window.py,src/prognos/split.py,src/prognos/schema.py,src/prognos/config.py,src/prognos/metrics.py,src/prognos/evaluate.py,src/prognos/dataset.py,src/prognos/models.py,src/prognos/features.py,src/prognos/gbm.py'
           --fail-under=95
 
       - name: Smoke test on a synthetic subset
