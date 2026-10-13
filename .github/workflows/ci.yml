@@ -88,7 +88,13 @@ jobs:
         # pip-audit cannot read uv.lock, so the lockfile is exported to
         # requirements first. Auditing the export means auditing exactly what the
         # lockfile pins, not whatever a fresh resolve would pick.
-        run: uv export --frozen --no-emit-project --all-groups --no-hashes -o requirements.txt
+        #
+        # The `+cpu` build tag is stripped because it is a local version that only
+        # exists on PyTorch's CPU index, which pip cannot resolve it from. It changes
+        # the wheel build, not the version, so the advisory set is identical.
+        run: |
+          uv export --frozen --no-emit-project --all-groups --no-hashes -o requirements.txt
+          sed -i 's/+cpu//g' requirements.txt
 
       - name: Audit Python dependencies
         # PYSEC-2025-194 and PYSEC-2026-139 are reviewed exceptions with stated
@@ -121,6 +127,12 @@ jobs:
 
       - name: Build the pipeline image
         run: docker build -f docker/Dockerfile --target runtime --tag prognos:ci .
+
+      - name: Reclaim build cache before scanning
+        # Trivy exports every layer to /tmp to analyse it, and on the runner that
+        # runs out of disk while the build cache is still resident — the scan fails
+        # with "no space left on device" rather than reporting a clean image.
+        run: docker builder prune --all --force && docker image prune --force
 
       - name: Scan the image for known vulnerabilities
         uses: aquasecurity/trivy-action@v0.36.0
