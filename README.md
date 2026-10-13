@@ -8,7 +8,8 @@ Built on NASA N-CMAPSS. Research demonstration — see
 [Limitations](docs/design.md#9-limitations) before drawing any operational
 conclusion from it.
 
-Status: Phase 5 (streaming pipeline, live coverage monitoring, dashboard).
+Status: Phase 5 complete, including the fault-injection criterion Phase 5 was
+originally missing.
 
 ## Results
 
@@ -336,6 +337,70 @@ running the thing, which is the argument for running it.
 inference mounts it. Without it the service stays unready, which is the right
 behaviour: no calibrator means no interval, and an interval-free prediction service is
 worse than one that refuses traffic.
+
+## Fault injection, and a detector I could not make trustworthy
+
+`docs/design.md` §12 sets the Phase 5 exit criterion: *every injected fault produces a
+named degraded state and an alert, with results committed.* The Phase 5 PR did not meet
+it — there was no fault detection at all, and I marked the phase complete anyway. This
+is the missing work.
+
+```bash
+uv run prognos stream --config configs/base.yaml --faults --out results/phase5_faults.json
+```
+
+Five faults injected into a clean stream, one real engine, sampled one row per cycle:
+
+| injected | detected | |
+| --- | --- | --- |
+| none (control) | `sensor_drift` | **failed** |
+| `sensor_dropout` ch 7 | `sensor_dropout` | ok |
+| `sensor_stuck` ch 3 | `sensor_stuck` | ok |
+| `sensor_drift` ch 11 | `sensor_drift` | ok |
+| `value_out_of_range` ch 2 | `sensor_stuck`, `value_out_of_range` | ok |
+
+**The control run fails, and that is the finding.** On a *healthy* engine, three
+channels — `Nf`, `Nc`, `T48` — move about 20 units between adjacent windows as ordinary
+operation. `Nf` and `Nc` are fan and core speed; they genuinely move.
+
+I tried three normalisations and each fixed one false-positive mode while creating
+another:
+
+- **Against the fleet's spread.** Flags healthy channels, because these instruments
+  differ by three orders of magnitude — core speed sits near 8,700, a temperature near
+  500 — so a fleet threshold is really a threshold on whichever channels are small.
+- **Against the channel's own spread.** Flags healthy channels, because at one row per
+  cycle the series is so smooth that ordinary movement is many times its own standard
+  deviation.
+- **Both together.** Still flags them.
+
+So `sensor_drift` is shipped as implemented and reported as failing, with the reason
+recorded in `results/phase5_faults.json` under `known_limitations`. A test asserts the
+control run **fails**, so the artifact cannot quietly go green. Tuning until it passed
+would have produced a number that means nothing, and that is the one thing this project
+exists not to do.
+
+Two other detectors were wrong in ways only real data exposed:
+
+- **`cycle_regression` fired on every healthy engine.** It treated a repeated cycle
+  number as a backwards clock. This dataset carries thousands of rows per cycle number,
+  so repetition is the normal case.
+- **Dropout could never fire.** It counted cycles, so on data where a cycle holds
+  thousands of rows the threshold was never reached.
+
+### Named states, not counts
+
+A degraded state is a name plus evidence, because "rejects: 400" is not something an
+operator can act on:
+
+```
+sensor_dropout on W_Fuel Flow, engine 3, silent 1284 rows
+sensor_drift    on Nf, engine 3: moved 18.8 between adjacent windows, 4.1x its own spread
+```
+
+Exposed through the dashboard (`GET /degraded`), the scrape
+(`prognos_degraded_states_by_kind`), and injectable over HTTP (`POST /inject`), because
+the only way to check a degraded state is observable end to end is to provoke one.
 
 ## Documentation
 

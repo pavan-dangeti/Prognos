@@ -23,6 +23,7 @@ import json
 import logging
 import time
 import uuid
+from collections import Counter
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -32,6 +33,7 @@ import numpy as np
 
 from prognos.stream.coverage import CoverageVerdict
 from prognos.stream.events import StreamStats
+from prognos.stream.faults import DegradedState
 
 _REQUEST_ID: ContextVar[str] = ContextVar("prognos_request_id", default="")
 
@@ -220,6 +222,24 @@ def record_coverage_metrics(registry: MetricsRegistry, verdict: CoverageVerdict)
         "1 when coverage is inside the tolerance band, 0 on breach",
         value=0.0 if verdict.is_breach else 1.0,
     )
+
+
+def record_fault_metrics(registry: MetricsRegistry, states: list[DegradedState]) -> None:
+    """Expose the open degraded states, so S6 is satisfied by a scrape.
+
+    Labelled by state name rather than counted into one series, because a single
+    `degraded = 3` gives an operator nothing to act on. The panel is there to say
+    *which* sensor on *which* engine.
+    """
+    counted: Counter[str] = Counter(s.state for s in states)
+    registry.gauge("degraded_states", "Degraded states open, by name", value=len(states))
+    for name, count in counted.items():
+        registry.gauge(
+            "degraded_states_by_kind",
+            "Degraded states open, by name",
+            value=count,
+            labels={"state": name},
+        )
 
 
 @contextmanager

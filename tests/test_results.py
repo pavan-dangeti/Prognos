@@ -552,3 +552,95 @@ class TestStreamingResults:
         rendered = "\n".join(report["metrics_sample"])
         assert "prognos_interval_coverage" in rendered
         assert "prognos_stream_batches_total" in rendered
+
+
+FAULT_RESULTS = Path("results/phase5_faults.json")
+
+
+class TestFaultScenarioResults:
+    """The Phase 5 exit criterion, checked from the committed artifact.
+
+    `docs/design.md` §12 requires that every injected fault produces a named degraded
+    state. This is the committed evidence for that claim.
+
+    Two of these tests deliberately assert a *failure*. The drift detector does not
+    survive its control run, and the honest artifact records that rather than a
+    threshold tuned until the control went green. A test that asserted `control_clean`
+    would have been the tuning, disguised as a check.
+    """
+
+    @pytest.fixture(scope="class")
+    def report(self) -> dict[str, object]:
+        """The fault scenario result file."""
+        return load(FAULT_RESULTS)
+
+    def _scenario(self, report: dict[str, object], fault: str) -> dict[str, object]:
+        return next(s for s in report["scenarios"] if s["fault"] == fault)
+
+    def test_records_provenance(self, report: dict[str, object]) -> None:
+        """Same provenance contract as every other result file."""
+        assert report["versions"]["lightgbm"]
+        assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", report["generated_at"])
+
+    def test_a_control_run_is_recorded(self, report: dict[str, object]) -> None:
+        """A suite that reports everything detects nothing, so the clean case is tested."""
+        assert any(not s["injected"] for s in report["scenarios"])
+
+    @pytest.mark.parametrize("fault", ["sensor_dropout", "sensor_stuck", "sensor_drift"])
+    def test_each_injected_fault_is_named(self, report: dict[str, object], fault: str) -> None:
+        scenario = self._scenario(report, fault)
+        assert scenario["injected"], f"{fault} was not actually injected"
+        assert fault in scenario["detected"], (
+            f"{fault} was injected on channel {scenario['channel']} from cycle "
+            f"{scenario['from_cycle']} and the detector named {scenario['detected']}"
+        )
+
+    def test_every_detected_fault_carries_evidence(self, report: dict[str, object]) -> None:
+        """A name with no detail is not something an operator can act on."""
+        for scenario in report["scenarios"]:
+            for state in scenario.get("states", []):
+                assert state["detail"], f"{state['state']} has no detail"
+                assert state["engine"] is not None
+                if state["channel"] is not None:
+                    assert state["instrument"] != "", (
+                        f"{state['state']} names channel {state['channel']} but not "
+                        "the instrument, so nobody knows which sensor to go and look at"
+                    )
+
+    def test_the_control_run_is_reported_as_failing(self, report: dict[str, object]) -> None:
+        """The drift detector over-fires on healthy data and the artifact says so.
+
+        Asserted rather than fixed. Three normalisations were tried — fleet-relative,
+        channel-relative, and both together — and each fixed one false-positive mode
+        while creating another. Tuning until this went green would have produced a
+        number that means nothing.
+        """
+        control = self._scenario(report, "none")
+        assert control["passed"] is False, (
+            "the control run now reports clean; if the drift detector was genuinely "
+            "fixed, update this test and the known_limitations entry together, and say "
+            "in the PR what changed"
+        )
+        assert "sensor_drift" in control["detected"]
+
+    def test_the_failure_is_documented(self, report: dict[str, object]) -> None:
+        """A red row with no explanation is worse than no row."""
+        assert report["known_limitations"], "a failing control run must carry a reason"
+        text = " ".join(report["known_limitations"]).lower()
+        assert "drift" in text and "control" in text
+
+    def test_the_replay_cadence_is_recorded(self, report: dict[str, object]) -> None:
+        """The scenarios sample one row per cycle, and a reader must be able to know."""
+        text = " ".join(report["known_limitations"]).lower()
+        assert "one row per cycle" in text
+
+    def test_control_clean_agrees_with_the_control_scenario(
+        self, report: dict[str, object]
+    ) -> None:
+        """The summary flag and the scenario it summarises must not disagree."""
+        control_passed = all(bool(s["passed"]) for s in report["scenarios"] if not s["injected"])
+        assert report["control_clean"] == control_passed
+
+    def test_all_passed_agrees_with_the_scenarios(self, report: dict[str, object]) -> None:
+        """Same, for the headline flag."""
+        assert report["all_passed"] == all(bool(s["passed"]) for s in report["scenarios"])

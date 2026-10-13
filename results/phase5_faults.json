@@ -1,0 +1,516 @@
+{
+  "all_passed": false,
+  "config": {
+    "subdatasets": [
+      "DS01-005",
+      "DS02-006",
+      "DS06"
+    ],
+    "uncertainty": {
+      "calibration_fraction": 0.3,
+      "target_coverage": 0.9
+    },
+    "window": {
+      "downsample": 10,
+      "length": 50,
+      "rul_cap": 125,
+      "stride": 10
+    }
+  },
+  "control_clean": false,
+  "degraded_states": [
+    "sensor_dropout",
+    "sensor_stuck",
+    "sensor_drift",
+    "value_out_of_range",
+    "cycle_regression",
+    "stream_silent"
+  ],
+  "engine": "DS01-005/unit001",
+  "final_test_group": {
+    "engines": [
+      3,
+      7,
+      11,
+      13,
+      18,
+      21,
+      22,
+      23,
+      24,
+      26
+    ],
+    "note": "Fault scenarios replay a cross-validation engine, not a held-out one.",
+    "status": "closed"
+  },
+  "generated_at": "2026-10-13",
+  "hardware": "Darwin arm64 / arm / Python 3.12.13",
+  "known_limitations": [
+    "sensor_drift does not survive the control run on healthy real data. Sampled one row per cycle, three channels (Nf, Nc, T48) move about 20 units between adjacent windows as ordinary operation, and no normalisation tried separates that from a genuine step: scaling by the fleet ignores that the instruments differ by three orders of magnitude, scaling by the channel ignores that its series is smooth enough that ordinary movement is many times its own spread. Reported as failing rather than tuned until the control passes, which is the one thing that would have made the number meaningless.",
+    "The scenarios replay one row per cycle, not the raw row stream. The dataset carries thousands of rows per cycle number, and a raw replay would leave the whole scenario inside a single cycle."
+  ],
+  "n_rows": 433325,
+  "scenarios": [
+    {
+      "detected": [
+        "sensor_drift"
+      ],
+      "expected": [],
+      "fault": "none",
+      "injected": false,
+      "n_detected": 1,
+      "note": "control run; a clean stream must name nothing at any point",
+      "passed": false,
+      "states": [
+        {
+          "channel": 15,
+          "detail": "Nf moved 18.8 between adjacent windows, 4.1x its own spread and 6.6x the fleet spread",
+          "details": {
+            "baseline": 2191.61083984375,
+            "channel": 15,
+            "current": 2182.03955078125,
+            "engine": 1,
+            "fleet_ratio": 6.622906352013514,
+            "previous": 2200.853759765625,
+            "ratio": 4.1013864126240716,
+            "shift": 18.814208984375
+          },
+          "engine": 1,
+          "instrument": "Nf",
+          "silent_cycles": 0,
+          "state": "sensor_drift"
+        },
+        {
+          "channel": 16,
+          "detail": "Nc moved 20.5 between adjacent windows, 9.7x its own spread and 7.2x the fleet spread",
+          "details": {
+            "baseline": 8751.869140625,
+            "channel": 16,
+            "current": 8740.263671875,
+            "engine": 1,
+            "fleet_ratio": 7.211863143604143,
+            "previous": 8760.7509765625,
+            "ratio": 9.685322647654141,
+            "shift": 20.4873046875
+          },
+          "engine": 1,
+          "instrument": "Nc",
+          "silent_cycles": 0,
+          "state": "sensor_drift"
+        },
+        {
+          "channel": 6,
+          "detail": "T48 moved 19.8 between adjacent windows, 4.4x its own spread and 6.9x the fleet spread",
+          "details": {
+            "baseline": 1890.375244140625,
+            "channel": 6,
+            "current": 1878.3829345703125,
+            "engine": 1,
+            "fleet_ratio": 6.853649859587451,
+            "previous": 1898.1793212890625,
+            "ratio": 4.392604778980181,
+            "shift": 19.79638671875
+          },
+          "engine": 1,
+          "instrument": "T48",
+          "silent_cycles": 0,
+          "state": "sensor_drift"
+        }
+      ]
+    },
+    {
+      "channel": 7,
+      "detected": [
+        "sensor_drift",
+        "sensor_dropout"
+      ],
+      "expected": [
+        "sensor_dropout"
+      ],
+      "fault": "sensor_dropout",
+      "from_cycle": 40,
+      "injected": true,
+      "n_detected": 2,
+      "passed": true,
+      "states": [
+        {
+          "channel": 15,
+          "detail": "Nf moved 18.8 between adjacent windows, 4.1x its own spread and 6.6x the fleet spread",
+          "details": {
+            "baseline": 2191.61083984375,
+            "channel": 15,
+            "current": 2182.03955078125,
+            "engine": 1,
+            "fleet_ratio": 6.622906352013514,
+            "previous": 2200.853759765625,
+            "ratio": 4.1013864126240716,
+            "shift": 18.814208984375
+          },
+          "engine": 1,
+          "instrument": "Nf",
+          "silent_cycles": 0,
+          "state": "sensor_drift"
+        },
+        {
+          "channel": 16,
+          "detail": "Nc moved 20.5 between adjacent windows, 9.7x its own spread and 7.2x the fleet spread",
+          "details": {
+            "baseline": 8751.869140625,
+            "channel": 16,
+            "current": 8740.263671875,
+            "engine": 1,
+            "fleet_ratio": 7.211863143604143,
+            "previous": 8760.7509765625,
+            "ratio": 9.685322647654141,
+            "shift": 20.4873046875
+          },
+          "engine": 1,
+          "instrument": "Nc",
+          "silent_cycles": 0,
+          "state": "sensor_drift"
+        },
+        {
+          "channel": 6,
+          "detail": "T48 moved 19.8 between adjacent windows, 4.4x its own spread and 6.9x the fleet spread",
+          "details": {
+            "baseline": 1890.375244140625,
+            "channel": 6,
+            "current": 1878.3829345703125,
+            "engine": 1,
+            "fleet_ratio": 6.853649859587451,
+            "previous": 1898.1793212890625,
+            "ratio": 4.392604778980181,
+            "shift": 19.79638671875
+          },
+          "engine": 1,
+          "instrument": "T48",
+          "silent_cycles": 0,
+          "state": "sensor_drift"
+        },
+        {
+          "channel": 7,
+          "detail": "T50 stopped reporting",
+          "details": {
+            "channel": 7,
+            "engine": 1
+          },
+          "engine": 1,
+          "instrument": "T50",
+          "silent_cycles": 20,
+          "state": "sensor_dropout"
+        }
+      ],
+      "still_open": [
+        "sensor_dropout"
+      ]
+    },
+    {
+      "channel": 3,
+      "detected": [
+        "sensor_drift",
+        "sensor_stuck"
+      ],
+      "expected": [
+        "sensor_stuck"
+      ],
+      "fault": "sensor_stuck",
+      "from_cycle": 40,
+      "injected": true,
+      "n_detected": 2,
+      "passed": true,
+      "states": [
+        {
+          "channel": 15,
+          "detail": "Nf moved 18.8 between adjacent windows, 4.1x its own spread and 6.6x the fleet spread",
+          "details": {
+            "baseline": 2191.61083984375,
+            "channel": 15,
+            "current": 2182.03955078125,
+            "engine": 1,
+            "fleet_ratio": 6.622906352013514,
+            "previous": 2200.853759765625,
+            "ratio": 4.1013864126240716,
+            "shift": 18.814208984375
+          },
+          "engine": 1,
+          "instrument": "Nf",
+          "silent_cycles": 0,
+          "state": "sensor_drift"
+        },
+        {
+          "channel": 16,
+          "detail": "Nc moved 20.5 between adjacent windows, 9.7x its own spread and 7.2x the fleet spread",
+          "details": {
+            "baseline": 8751.869140625,
+            "channel": 16,
+            "current": 8740.263671875,
+            "engine": 1,
+            "fleet_ratio": 7.211863143604143,
+            "previous": 8760.7509765625,
+            "ratio": 9.685322647654141,
+            "shift": 20.4873046875
+          },
+          "engine": 1,
+          "instrument": "Nc",
+          "silent_cycles": 0,
+          "state": "sensor_drift"
+        },
+        {
+          "channel": 6,
+          "detail": "T48 moved 19.8 between adjacent windows, 4.4x its own spread and 6.9x the fleet spread",
+          "details": {
+            "baseline": 1890.375244140625,
+            "channel": 6,
+            "current": 1878.3829345703125,
+            "engine": 1,
+            "fleet_ratio": 6.853649859587451,
+            "previous": 1898.1793212890625,
+            "ratio": 4.392604778980181,
+            "shift": 19.79638671875
+          },
+          "engine": 1,
+          "instrument": "T48",
+          "silent_cycles": 0,
+          "state": "sensor_drift"
+        },
+        {
+          "channel": 3,
+          "detail": "T2 has held 520.713 for 40 cycles",
+          "details": {
+            "channel": 3,
+            "cycles": 40,
+            "engine": 1,
+            "value": 520.71337890625
+          },
+          "engine": 1,
+          "instrument": "T2",
+          "silent_cycles": 0,
+          "state": "sensor_stuck"
+        }
+      ],
+      "still_open": [
+        "sensor_stuck"
+      ]
+    },
+    {
+      "channel": 11,
+      "detected": [
+        "sensor_drift"
+      ],
+      "expected": [
+        "sensor_drift"
+      ],
+      "fault": "sensor_drift",
+      "from_cycle": 40,
+      "injected": true,
+      "n_detected": 1,
+      "passed": true,
+      "states": [
+        {
+          "channel": 11,
+          "detail": "P24 moved 20 between adjacent windows, 48.0x its own spread and 6.0x the fleet spread",
+          "details": {
+            "baseline": 24.657630920410156,
+            "channel": 11,
+            "current": 44.705780029296875,
+            "engine": 1,
+            "fleet_ratio": 6.018104048256764,
+            "previous": 24.741247177124023,
+            "ratio": 48.0271791832738,
+            "shift": 19.96453285217285
+          },
+          "engine": 1,
+          "instrument": "P24",
+          "silent_cycles": 0,
+          "state": "sensor_drift"
+        },
+        {
+          "channel": 15,
+          "detail": "Nf moved 18.8 between adjacent windows, 4.1x its own spread and 5.8x the fleet spread",
+          "details": {
+            "baseline": 2191.61083984375,
+            "channel": 15,
+            "current": 2182.03955078125,
+            "engine": 1,
+            "fleet_ratio": 5.750494070570183,
+            "previous": 2200.853759765625,
+            "ratio": 4.1013864126240716,
+            "shift": 18.814208984375
+          },
+          "engine": 1,
+          "instrument": "Nf",
+          "silent_cycles": 0,
+          "state": "sensor_drift"
+        },
+        {
+          "channel": 16,
+          "detail": "Nc moved 20.5 between adjacent windows, 9.7x its own spread and 6.3x the fleet spread",
+          "details": {
+            "baseline": 8751.869140625,
+            "channel": 16,
+            "current": 8740.263671875,
+            "engine": 1,
+            "fleet_ratio": 6.261869644653952,
+            "previous": 8760.7509765625,
+            "ratio": 9.685322647654141,
+            "shift": 20.4873046875
+          },
+          "engine": 1,
+          "instrument": "Nc",
+          "silent_cycles": 0,
+          "state": "sensor_drift"
+        },
+        {
+          "channel": 6,
+          "detail": "T48 moved 19.8 between adjacent windows, 4.4x its own spread and 6.0x the fleet spread",
+          "details": {
+            "baseline": 1890.375244140625,
+            "channel": 6,
+            "current": 1878.3829345703125,
+            "engine": 1,
+            "fleet_ratio": 5.99165605242161,
+            "previous": 1898.1793212890625,
+            "ratio": 4.392604778980181,
+            "shift": 19.79638671875
+          },
+          "engine": 1,
+          "instrument": "T48",
+          "silent_cycles": 0,
+          "state": "sensor_drift"
+        }
+      ],
+      "still_open": []
+    },
+    {
+      "channel": 2,
+      "detected": [
+        "sensor_drift",
+        "sensor_stuck",
+        "value_out_of_range"
+      ],
+      "expected": [
+        "value_out_of_range"
+      ],
+      "fault": "value_out_of_range",
+      "from_cycle": 40,
+      "injected": true,
+      "n_detected": 3,
+      "passed": true,
+      "states": [
+        {
+          "channel": 2,
+          "detail": "TRA reported 1e+12",
+          "details": {
+            "channel": 2,
+            "engine": 1,
+            "value": 999999995904.0
+          },
+          "engine": 1,
+          "instrument": "TRA",
+          "silent_cycles": 0,
+          "state": "value_out_of_range"
+        },
+        {
+          "channel": 2,
+          "detail": "TRA moved 1.67e+11 between adjacent windows, 54994366709.9x its own spread and 49108203698.7x the fleet spread",
+          "details": {
+            "baseline": 76.31049346923828,
+            "channel": 2,
+            "current": 166666665984.0,
+            "engine": 1,
+            "fleet_ratio": 49108203698.71499,
+            "previous": 77.07953643798828,
+            "ratio": 54994366709.85078,
+            "shift": 166666665906.92047
+          },
+          "engine": 1,
+          "instrument": "TRA",
+          "silent_cycles": 0,
+          "state": "sensor_drift"
+        },
+        {
+          "channel": 15,
+          "detail": "Nf moved 18.8 between adjacent windows, 4.1x its own spread and 5.8x the fleet spread",
+          "details": {
+            "baseline": 2191.61083984375,
+            "channel": 15,
+            "current": 2182.03955078125,
+            "engine": 1,
+            "fleet_ratio": 5.831063126139519,
+            "previous": 2200.853759765625,
+            "ratio": 4.1013864126240716,
+            "shift": 18.814208984375
+          },
+          "engine": 1,
+          "instrument": "Nf",
+          "silent_cycles": 0,
+          "state": "sensor_drift"
+        },
+        {
+          "channel": 16,
+          "detail": "Nc moved 20.5 between adjacent windows, 9.7x its own spread and 6.3x the fleet spread",
+          "details": {
+            "baseline": 8751.869140625,
+            "channel": 16,
+            "current": 8740.263671875,
+            "engine": 1,
+            "fleet_ratio": 6.349603484073081,
+            "previous": 8760.7509765625,
+            "ratio": 9.685322647654141,
+            "shift": 20.4873046875
+          },
+          "engine": 1,
+          "instrument": "Nc",
+          "silent_cycles": 0,
+          "state": "sensor_drift"
+        },
+        {
+          "channel": 6,
+          "detail": "T48 moved 19.8 between adjacent windows, 4.4x its own spread and 6.1x the fleet spread",
+          "details": {
+            "baseline": 1890.375244140625,
+            "channel": 6,
+            "current": 1878.3829345703125,
+            "engine": 1,
+            "fleet_ratio": 6.078926117735396,
+            "previous": 1898.1793212890625,
+            "ratio": 4.392604778980181,
+            "shift": 19.79638671875
+          },
+          "engine": 1,
+          "instrument": "T48",
+          "silent_cycles": 0,
+          "state": "sensor_drift"
+        },
+        {
+          "channel": 2,
+          "detail": "TRA has held 1e+12 for 40 cycles",
+          "details": {
+            "channel": 2,
+            "cycles": 40,
+            "engine": 1,
+            "value": 999999995904.0
+          },
+          "engine": 1,
+          "instrument": "TRA",
+          "silent_cycles": 0,
+          "state": "sensor_stuck"
+        }
+      ],
+      "still_open": [
+        "sensor_stuck",
+        "value_out_of_range"
+      ]
+    }
+  ],
+  "versions": {
+    "h5py": "3.16.0",
+    "lightgbm": "4.6.0",
+    "numpy": "2.4.1",
+    "pandas": "3.0.1",
+    "pyarrow": "26.0.0",
+    "python": "3.12.13",
+    "scikit-learn": "1.8.0",
+    "torch": "2.10.0"
+  }
+}
