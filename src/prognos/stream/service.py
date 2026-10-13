@@ -27,6 +27,7 @@ from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Protocol
 
+from prognos.stream.auth import Authorizer, RateLimiter, check_request
 from prognos.stream.observability import MetricsRegistry, RequestContext, log_event
 
 
@@ -56,6 +57,12 @@ class ServiceState:
     logger: logging.Logger | None = None
     routes: dict[str, Any] = field(default_factory=dict)
     list_route: dict[str, Any] = field(default_factory=dict)
+    #: Bearer-token check and rate limit, both optional. Left unset by default so a
+    #: local run needs no credential; the compose file keeps every published port on
+    #: loopback for the same reason. See docs/runbook.md before exposing either.
+    authorizer: Any = None
+    rate_limiter: Any = None
+    trust_forwarded_for: bool = False
 
     def __post_init__(self) -> None:
         """Publish a liveness series, so a scrape is never a blank page.
@@ -93,6 +100,45 @@ class _Handler(BaseHTTPRequestHandler):
         encoded = json.dumps(body, default=str).encode()
         self._send(status, encoded, "application/json")
 
+    def _authorise(self, route: str) -> bool:
+        """Check the token and the rate limit. Returns False once a reply is sent.
+
+        `/healthz` is never authenticated: an orchestrator's liveness probe has no
+        credential to send, and a probe returning 401 would restart the process forever
+        over a missing secret.
+        """
+        if route == "/healthz":
+            return True
+        authorizer = self.state.authorizer
+        limiter = self.state.rate_limiter
+        if authorizer is None and limiter is None:
+            return True
+        allowed, status, body = check_request(
+            self.headers.get("Authorization"),
+            authorizer if authorizer is not None else Authorizer(),
+            limiter if limiter is not None else RateLimiter(),
+            self._client_identity(),
+        )
+        if allowed:
+            return True
+        self._respond(status, body)
+        return False
+
+    def _client_identity(self) -> str:
+        """Identify the caller for rate limiting.
+
+        The socket peer, not `X-Forwarded-For`, unless the deployment has explicitly
+        declared itself behind a trusted proxy. Trusting that header from an arbitrary
+        caller would let anyone mint a fresh allowance per request, which defeats the
+        limiter entirely.
+        """
+        peer = self.client_address[0] if self.client_address else "?"
+        if self.state.trust_forwarded_for:
+            forwarded = self.headers.get("X-Forwarded-For", "")
+            if forwarded:
+                return forwarded.split(",")[0].strip()
+        return peer
+
     def _send(self, status: int, encoded: bytes, content_type: str) -> None:
         """Send an already-encoded body with an accurate Content-Length.
 
@@ -111,6 +157,8 @@ class _Handler(BaseHTTPRequestHandler):
         request_id = self.headers.get("X-Request-Id") or None
         with RequestContext(request_id or ""):
             route = self.path.split("?", 1)[0].rstrip("/") or "/"
+            if not self._authorise(route):
+                return
             if route == "/healthz":
                 self._respond(200, {"status": "ok", "service": self.state.name})
             elif route == "/readyz":
@@ -156,6 +204,8 @@ class _Handler(BaseHTTPRequestHandler):
         request_id = self.headers.get("X-Request-Id") or None
         with RequestContext(request_id or ""):
             route = self.path.split("?", 1)[0].rstrip("/") or "/"
+            if not self._authorise(route):
+                return
             key = f"POST {route}"
             handler = self.state.routes.get(key)
             if handler is None:

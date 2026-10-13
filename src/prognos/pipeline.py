@@ -22,6 +22,7 @@ prediction by an index.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -52,6 +53,10 @@ class ReplayOutcome:
     report: dict[str, Any]
     verdict: CoverageVerdict
     alerts: dict[int, MaintenanceAlert]
+    #: The pipeline that ran, so a caller can keep reading the live fleet view after
+    #: the replay. Without it the fleet view only exists inside this function, and the
+    #: dashboard can only ever show an empty fleet.
+    pipeline: StreamPipeline
 
     @property
     def total_alerts(self) -> int:
@@ -86,6 +91,7 @@ def replay_pipeline(
     config: Config,
     seed: int,
     calibration_fraction: float | None = None,
+    on_pipeline: Callable[[StreamPipeline], None] | None = None,
     model_dir: Path | None = None,
     logger: logging.Logger | None = None,
 ) -> ReplayOutcome:
@@ -157,6 +163,10 @@ def replay_pipeline(
     )
     metrics = MetricsRegistry()
     pipeline = StreamPipeline(predictor, pipeline_config, metrics=metrics, logger=log)
+    if on_pipeline is not None:
+        # Handed out the moment it exists, so a caller serving the dashboard sees the
+        # fleet view fill as the replay runs rather than appearing in full at the end.
+        on_pipeline(pipeline)
 
     per_engine: list[dict[str, Any]] = []
     for group in engines:
@@ -167,7 +177,9 @@ def replay_pipeline(
             print(f"  engine {group}: no Parquet table for {key.label()}, skipping", flush=True)
             continue
         truth = _truth_per_cycle(cycles, rul)
-        replay = pipeline.run_engine(group, cycles, features, truth_by_cycle=truth)
+        replay = pipeline.run_engine(
+            key.unit, cycles, features, truth_by_cycle=truth, source=key.subdataset
+        )
         per_engine.append(
             {
                 "engine": key.label(),
@@ -231,7 +243,9 @@ def replay_pipeline(
         },
         "metrics_sample": metrics.render().splitlines()[:40],
     }
-    return ReplayOutcome(report=report, verdict=verdict, alerts=pipeline.open_alerts)
+    return ReplayOutcome(
+        report=report, verdict=verdict, alerts=pipeline.open_alerts, pipeline=pipeline
+    )
 
 
 def _hardware() -> str:

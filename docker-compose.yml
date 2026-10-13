@@ -22,6 +22,7 @@ services:
     environment:
       PROGNOS_SERVICE: ingestion
       PROGNOS_PORT: "8081"
+      PROGNOS_API_TOKEN: "${PROGNOS_API_TOKEN:-}"
       # Secrets come from the environment, never from a build argument. See
       # docs/design.md §11.
       NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
@@ -47,6 +48,7 @@ services:
     environment:
       PROGNOS_SERVICE: inference
       PROGNOS_PORT: "8082"
+      PROGNOS_API_TOKEN: "${PROGNOS_API_TOKEN:-}"
     ports:
       - "127.0.0.1:8082:8082"
     volumes:
@@ -79,6 +81,7 @@ services:
     environment:
       PROGNOS_SERVICE: alerting
       PROGNOS_PORT: "8083"
+      PROGNOS_API_TOKEN: "${PROGNOS_API_TOKEN:-}"
     ports:
       - "127.0.0.1:8083:8083"
     healthcheck:
@@ -97,6 +100,10 @@ services:
     environment:
       PROGNOS_SERVICE: dashboard
       PROGNOS_PORT: "8084"
+      # Empty means authentication is off, which is only safe because every published
+      # port below is bound to loopback. Set PROGNOS_API_TOKEN in .env before exposing
+      # any of them; see docs/runbook.md.
+      PROGNOS_API_TOKEN: "${PROGNOS_API_TOKEN:-}"
     ports:
       - "127.0.0.1:8084:8084"
     depends_on: [inference, alerting]

@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import platform
 import sys
+import threading
+import time
 from datetime import date
 from pathlib import Path
 from typing import Any, TypedDict, cast
@@ -355,14 +358,41 @@ def cmd_stream(args: argparse.Namespace) -> int:
         flush=True,
     )
 
-    outcome = replay_pipeline(
-        data,
-        engines,
-        config,
-        seed=config.split.seed,
-        calibration_fraction=args.calibration_fraction,
-        model_dir=Path(args.model_dir),
-    )
+    holder: dict[str, Any] = {}
+
+    def run() -> None:
+        """The replay, on its own thread when a dashboard is watching it.
+
+        A failure is carried back to the caller rather than dying on the thread, where
+        it would surface as a bare exit code with no explanation.
+        """
+        try:
+            holder["outcome"] = replay_pipeline(
+                data,
+                engines,
+                config,
+                seed=config.split.seed,
+                calibration_fraction=args.calibration_fraction,
+                model_dir=Path(args.model_dir),
+                on_pipeline=lambda p: holder.update(pipeline=p),
+            )
+        except BaseException as error:
+            holder["error"] = error
+
+    if args.serve:
+        # The dashboard reads the pipeline the replay is feeding, so the fleet view is
+        # live while the replay runs rather than appearing all at once at the end.
+        worker = threading.Thread(target=run, name="prognos-replay", daemon=True)
+        worker.start()
+        _serve_until_done(holder, worker, args)
+        if "error" in holder:
+            raise holder["error"]
+        if "outcome" not in holder:
+            print("the replay produced no result", file=sys.stderr)
+            return 1
+    else:
+        run()
+    outcome = holder["outcome"]
 
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -379,6 +409,42 @@ def cmd_stream(args: argparse.Namespace) -> int:
         )
     print(f"alerts opened: {outcome.total_alerts}")
     return 0
+
+
+def _serve_until_done(
+    holder: dict[str, Any], worker: threading.Thread, args: argparse.Namespace
+) -> None:
+    """Serve the dashboard until the replay finishes.
+
+    The server is started as soon as the pipeline exists and stopped when the worker
+    ends, so `Ctrl-C` during a replay does not leave a port bound.
+    """
+    from prognos.stream.api import build_component
+    from prognos.stream.auth import Authorizer, RateLimiter, token_from_env
+    from prognos.stream.observability import MetricsRegistry
+    from prognos.stream.service import build_server
+
+    logger = logging.getLogger("prognos.dashboard")
+    while "pipeline" not in holder and worker.is_alive():
+        time.sleep(0.1)
+    if "pipeline" not in holder:
+        return  # the replay failed before it built one; the caller re-raises
+
+    def state() -> Any:  # noqa: ANN401
+        """The live pipeline's fleet, with the same auth the other services use."""
+        built = build_component(
+            "dashboard", metrics=MetricsRegistry(), logger=logger, fleet=holder["pipeline"].fleet
+        )
+        built.authorizer = Authorizer(token=token_from_env())
+        built.rate_limiter = RateLimiter(limit=args.rate_limit, window_seconds=args.rate_window)
+        return built
+
+    httpd = build_server(state(), host=args.host, port=args.port)
+    print(f"dashboard on http://{args.host}:{httpd.server_address[1]}/fleet", flush=True)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    worker.join()
+    httpd.shutdown()
+    httpd.server_close()
 
 
 def _run_fault_scenarios(data: WindowSource, config: Config, args: argparse.Namespace) -> int:
@@ -469,7 +535,8 @@ def cmd_serve(args: argparse.Namespace) -> int:
     import logging
 
     from prognos.stream.api import build_component, default_port
-    from prognos.stream.observability import JsonLogFormatter
+    from prognos.stream.auth import Authorizer, RateLimiter, token_from_env
+    from prognos.stream.observability import JsonLogFormatter, log_event
     from prognos.stream.service import serve
 
     handlers = [
@@ -493,6 +560,20 @@ def cmd_serve(args: argparse.Namespace) -> int:
         options["hysteresis"] = args.alert_hysteresis
 
     state = build_component(args.component, **options)
+
+    # Read the token here rather than inside the service, so the decision is visible in
+    # one place and a component built in-process can deliberately stay unauthenticated.
+    state.authorizer = Authorizer(token=token_from_env())
+    state.rate_limiter = RateLimiter(limit=args.rate_limit, window_seconds=args.rate_window)
+    if state.authorizer.enabled:
+        log_event(
+            logger,
+            "service.auth_enabled",
+            service=args.component,
+            host=args.host,
+            rate_limit=args.rate_limit,
+        )
+
     port = args.port or default_port(args.component)
     serve(state, host=args.host, port=port)
     return 0
@@ -564,6 +645,15 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="inject each named sensor fault into a clean stream and record what is detected",
     )
+    stream.add_argument(
+        "--serve",
+        action="store_true",
+        help="serve the dashboard from the replay's own pipeline, so the fleet view is live",
+    )
+    stream.add_argument("--host", default="127.0.0.1")
+    stream.add_argument("--port", type=int, default=8090)
+    stream.add_argument("--rate-limit", type=int, default=600)
+    stream.add_argument("--rate-window", type=float, default=60.0)
     stream.add_argument("--no-cache", action="store_true")
     stream.add_argument("--rebuild-cache", action="store_true")
     stream.set_defaults(func=cmd_stream)
@@ -575,6 +665,10 @@ def main(argv: list[str] | None = None) -> int:
     serve_cmd.add_argument("--model-dir", default="artifacts/model")
     serve_cmd.add_argument("--alert-threshold", type=float, default=20.0)
     serve_cmd.add_argument("--alert-hysteresis", type=float, default=5.0)
+    serve_cmd.add_argument(
+        "--rate-limit", type=int, default=120, help="requests per window, per client"
+    )
+    serve_cmd.add_argument("--rate-window", type=float, default=60.0)
     serve_cmd.set_defaults(func=cmd_serve)
 
     args = parser.parse_args(argv)

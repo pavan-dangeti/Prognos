@@ -47,7 +47,15 @@ def pipeline(**overrides: object) -> StreamPipeline:
         "min_coverage_samples": 5,
     }
     settings.update(overrides)
-    return StreamPipeline(predictor(), PipelineConfig(**settings))  # type: ignore[arg-type]
+    # `detect_faults` belongs to the pipeline, not the config; accept either spelling
+    # so a test asking for it does not have to know which is which.
+    detect = bool(overrides.pop("detect_faults", True))
+    settings.pop("detect_faults", None)
+    return StreamPipeline(
+        predictor(),
+        PipelineConfig(**settings),
+        detect_faults=detect,  # type: ignore[arg-type]
+    )
 
 
 def an_engine(seed: int = 1) -> tuple[np.ndarray, np.ndarray]:
@@ -186,3 +194,71 @@ class TestObservationIsAValue:
         observation = Observation(unit=1, truth=10.0, lower=5.0, upper=15.0, point=10.0)
         with pytest.raises(dataclasses.FrozenInstanceError):
             observation.truth = 99.0  # type: ignore[misc]
+
+
+class TestFleetViewIsFedByTheStream:
+    """The `/fleet` route is decoration unless the pipeline actually writes to it.
+
+    An endpoint that returns an empty fleet forever is worse than no endpoint: it looks
+    like a working feature, and an operator watching it sees a fleet that never sends
+    data when the truth is that nothing was wired up.
+    """
+
+    def test_predictions_populate_the_fleet(self) -> None:
+        cycles, rows = an_engine()
+        stream = pipeline()
+        stream.run_engine(4, cycles, rows, source="DS01-004")
+
+        seen = stream.fleet.rows()
+        assert [r["unit"] for r in seen] == [4]
+        assert seen[0]["engine"] == "DS01-004/unit004"
+        assert seen[0]["cycle"] > 0
+
+    def test_the_fleet_carries_the_latest_cycle_not_every_one(self) -> None:
+        """A view with a row per reading is a log file wearing a table's clothes."""
+        cycles, rows = an_engine(seed=3)
+        stream = pipeline()
+        stream.run_engine(4, cycles, rows)
+        assert len(stream.fleet.rows()) == 1
+        assert stream.fleet.rows()[0]["cycle"] == int(cycles.max())
+
+    def test_two_engines_are_two_rows(self) -> None:
+        cycles, rows = an_engine(seed=4)
+        stream = pipeline()
+        stream.run_engine(1, cycles, rows, source="DS01-001")
+        stream.run_engine(2, cycles, rows, source="DS01-002")
+        assert len(stream.fleet.rows()) == 2
+
+    def test_engines_from_different_subdatasets_do_not_collide(self) -> None:
+        """Unit numbers restart per sub-dataset. Merging them is the coverage bug."""
+        cycles, rows = an_engine(seed=5)
+        stream = pipeline()
+        stream.run_engine(1, cycles, rows, source="DS01-001")
+        stream.run_engine(1, cycles, rows, source="DS02-001")
+        assert {r["engine"] for r in stream.fleet.rows()} == {
+            "DS01-001/unit001",
+            "DS02-001/unit001",
+        }
+
+    def test_a_degraded_engine_is_marked_degraded(self) -> None:
+        """The status column is the sort key an operator actually uses."""
+        cycles, rows = an_engine(seed=6)
+        # `len(rows)`, not `rows.size`: `size` is the element count, so halving it
+        # indexes past the end of the array and the slice is silently empty.
+        rows[len(rows) // 2 :, 5] = 1e12  # out of range for the tail of the stream
+        stream = pipeline(detect_faults=True)
+        stream.run_engine(7, cycles, rows)
+        assert {r["status"] for r in stream.fleet.rows()} == {"degraded"}
+
+    def test_a_clean_engine_is_nominal(self) -> None:
+        cycles, rows = an_engine(seed=7)
+        stream = pipeline(detect_faults=True)
+        stream.run_engine(7, cycles, rows)
+        assert {r["status"] for r in stream.fleet.rows()} == {"nominal"}
+
+    def test_the_summary_exposes_the_fleet(self) -> None:
+        """`summary()` has claimed "for the dashboard" since it was written."""
+        cycles, rows = an_engine(seed=8)
+        stream = pipeline()
+        stream.run_engine(2, cycles, rows)
+        assert stream.summary()["fleet"][0]["unit"] == 2
