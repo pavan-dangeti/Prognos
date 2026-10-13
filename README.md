@@ -8,7 +8,7 @@ Built on NASA N-CMAPSS. Research demonstration — see
 [Limitations](docs/design.md#9-limitations) before drawing any operational
 conclusion from it.
 
-Status: Phase 4 (intervals and cost-based maintenance policy).
+Status: Phase 5 (streaming pipeline, live coverage monitoring, dashboard).
 
 ## Results
 
@@ -213,8 +213,92 @@ argument, so passing the bounds as the second argument silently averaged the bou
 The reported interval was a real number and was not a confidence interval at all.
 Fixed, and pinned by a test that the interval must bracket its own point estimate.
 
+## The streaming pipeline
+
+Phase 5. Six components over `docker compose`, replaying held-out engines as a live
+fleet, with the S5 coverage check actually implemented rather than merely specified.
+
+```bash
+uv run prognos stream --config configs/base.yaml --out results/phase5_streaming.json
+docker compose up -d        # ingestion, inference, dashboard, Prometheus, Grafana
+```
+
+~6 minutes for all 19 cross-validation engines. 100,000 scored predictions, 91
+maintenance alerts. The 10-engine final test group is still closed.
+
+### The online window reproduces the offline builder exactly
+
+`docs/design.md` §4.6 requires it, and nothing enforces that requirement except a test.
+Compared against `iter_windows` and `stack_windows` themselves — not a restatement of
+the formula — on a real engine: **8,204 windows, maximum feature difference 0.0.**
+
+This is not a formality. The first implementation assumed one row per cycle. This
+dataset has ~11,000 rows per cycle number, and `iter_windows` downsamples *within* the
+cycle block. The wrong implementation produces plausible features and a quietly worse
+model. A second off-by-one, taking downsampled indices `d-1, 2d-1, …` instead of
+`0, d, 2d, …`, shifted every window by one row and was caught only by that comparison.
+
+### Live coverage: 0.991 against a 0.90 target
+
+| | Phase 4 (offline, nested CV) | Phase 5 (live fleet replay) |
+| --- | --- | --- |
+| coverage | 0.926 | **0.991** |
+| interval width | 38.0 | 35.0 |
+| conformal half-width | 19.0 | 17.5 |
+| scored predictions | 138,076 | 100,000 |
+
+The SLO band is 0.90 ± 5 points. **0.991 is outside that band**, over-covering by 9
+points. The monitor reports `ok`, and that is a deliberate asymmetry worth stating
+plainly: under-covering is dangerous, because a decision is being taken on a range that
+does not hold, while over-covering is merely wasteful. But it is not an SLO pass, and
+an interval of half-width 17.5 on an RUL scale capped at 125 is not sharp enough to
+schedule against. The honest conclusion is that the point model, not the interval
+width, is the binding constraint.
+
+### The check caught a real bug, which is the best evidence it works
+
+The first replaying run reported **coverage 0.716 — a breach**. Every other number in
+that result file looked entirely reasonable: 19 engines, sensible window counts,
+plausible alert counts. The breach was the only thing that gave it away.
+
+The cause: the replay driver used the **global engine index as a Parquet file number**.
+Engine `GroupKey` is `(sub-dataset, unit)`; global index 1 is `DS01-005` unit 2, but the
+driver read `unit_001.parquet` — a different engine the model had never been fitted on.
+The coverage check flagged it automatically. A test now asserts that every replayed
+engine exists in the dataset and carries its sub-dataset.
+
+### What did not change
+
+Calibration breadth barely moves coverage on this fleet, which contradicts the obvious
+guess that a narrow calibration set is the problem:
+
+| calibration fraction | engines | live coverage |
+| --- | --- | --- |
+| 0.05 | 1 | 0.986 |
+| 0.15 | 3 | 0.995 |
+| 0.30 | 13 | 0.991 |
+
+All three over-cover. The interval is wide because the model's error is large, not
+because the calibration is thin — which is the same conclusion Phase 4 reached about
+the 38-wide intervals, now confirmed on the live path.
+
+### Serving LightGBM, not the CNN
+
+The CNN is 2.4 cycles better on cross-validated RMSE. torch costs roughly 800 MB
+resident per process, and the free Always Free target is 12 GB for the whole stack.
+Shipping it for a demo that does not need it is not justified. The architecture does
+not prevent shipping it later — it is a different payload in the same slot — and the
+trade-off is recorded here rather than buried.
+
+### One image, six services
+
+Six images would mean six builds and six vulnerability scans for the same code. The
+compose file runs all six components from one image with different commands. Grafana
+and Prometheus are pinned by digest, as the base image is.
+
 ## Documentation
 
+- [Runbook](docs/runbook.md) — triage by verdict, ingestion failures, calibration
 - [Design document](docs/design.md)
 - [Architecture decision records](docs/adr/)
 - [Data setup](docs/data.md)

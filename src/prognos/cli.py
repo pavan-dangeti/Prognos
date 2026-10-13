@@ -316,6 +316,61 @@ def _policy_rows_sorted(decision: dict[str, Any]) -> list[PolicyRow]:
     return sorted(rows, key=lambda row: row["total_cost"])
 
 
+def cmd_stream(args: argparse.Namespace) -> int:
+    """Replay held-out engines through the streaming pipeline and check S5."""
+    from prognos.evaluate import build_folds
+    from prognos.pipeline import replay_pipeline
+
+    config = load_config(Path(args.config))
+    cache_dir = None if args.no_cache else config.data.parquet_dir.parent / "cache"
+
+    print("loading windows", flush=True)
+    data = load_windows(
+        config.data.parquet_dir,
+        config.window,
+        config.data.subdatasets,
+        cache_dir=cache_dir,
+        rebuild=args.rebuild_cache,
+    )
+    folds = build_folds(
+        data,
+        n_splits=config.split.n_splits,
+        test_fraction=config.split.test_fraction,
+        seed=config.split.seed,
+    )
+    cv_units = sorted({int(u) for f in folds for u in f.split.val_units})
+    engines = cv_units[: args.engines] if args.engines else cv_units
+    print(
+        f"replaying {len(engines)} cross-validation engines; "
+        f"final test group of {len(folds[0].split.test_units)} stays closed",
+        flush=True,
+    )
+
+    outcome = replay_pipeline(
+        data,
+        engines,
+        config,
+        seed=config.split.seed,
+        calibration_fraction=args.calibration_fraction,
+    )
+
+    out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(outcome.report, indent=2, sort_keys=True, default=float) + "\n")
+    print(f"wrote {out_path}", flush=True)
+
+    verdict = outcome.verdict
+    if verdict.measured is None:
+        print(f"coverage: not enough data ({verdict.n_samples} scored predictions)")
+    else:
+        print(
+            f"coverage: {verdict.measured:.3f} against a {verdict.target:.0%} target "
+            f"({verdict.status}, {verdict.n_samples} predictions)"
+        )
+    print(f"alerts opened: {outcome.total_alerts}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Parse arguments and dispatch."""
     parser = argparse.ArgumentParser(prog="prognos", description="Prognos pipeline")
@@ -359,6 +414,20 @@ def main(argv: list[str] | None = None) -> int:
     policy.add_argument("--no-cache", action="store_true")
     policy.add_argument("--rebuild-cache", action="store_true")
     policy.set_defaults(func=cmd_policy)
+
+    stream = sub.add_parser("stream", help="replay held-out engines through the streaming pipeline")
+    stream.add_argument("--config", default="configs/base.yaml")
+    stream.add_argument("--out", default="results/phase5_streaming.json")
+    stream.add_argument("--engines", type=int, default=0, help="0 means every CV engine")
+    stream.add_argument(
+        "--calibration-fraction",
+        type=float,
+        default=None,
+        help="fraction of engines held out to calibrate; drives interval width",
+    )
+    stream.add_argument("--no-cache", action="store_true")
+    stream.add_argument("--rebuild-cache", action="store_true")
+    stream.set_defaults(func=cmd_stream)
 
     args = parser.parse_args(argv)
     result: int = args.func(args)

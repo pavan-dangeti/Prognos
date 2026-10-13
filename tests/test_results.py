@@ -433,3 +433,122 @@ class TestPolicyResults:
 def policies_cost(rows: list[dict[str, object]], name: str) -> float:
     """Total cost of one named policy, for failure messages."""
     return float(next(row["total_cost"] for row in rows if row["policy"] == name))
+
+
+STREAM_RESULTS = Path("results/phase5_streaming.json")
+
+
+class TestStreamingResults:
+    """Phase 5: the replayed fleet and the S5 verdict.
+
+    The guard that matters is the engine identity. The first replaying run reported
+    0.716 coverage — a real breach — because the driver used the global engine index
+    as a Parquet file number, so it fed the model rows from engines it had never been
+    fitted on. Every other number in that file looked entirely plausible. The breach
+    was the only thing that gave it away, which is the argument for having the check.
+    """
+
+    @pytest.fixture(scope="class")
+    def report(self) -> dict[str, object]:
+        """The phase 5 result file."""
+        return load(STREAM_RESULTS)
+
+    def test_records_provenance(self, report: dict[str, object]) -> None:
+        """Same provenance contract as every other result file."""
+        assert report["versions"]["torch"]
+        assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", report["generated_at"])
+        assert report["hardware"]
+
+    def test_final_test_group_stays_closed(self, report: dict[str, object]) -> None:
+        """Phase 5 replayed cross-validation engines, not the held-out ten."""
+        assert report["final_test_group"]["status"] == "closed"
+
+    def test_replayed_engines_exist_in_the_dataset(self, report: dict[str, object]) -> None:
+        """Every replayed engine must be a real engine of the dataset.
+
+        This is the guard for the bug above. The driver used a global engine index as
+        a Parquet filename, so it read a *different* engine than the one it named, and
+        the file recorded the mismatch in neither direction.
+        """
+        known = set(report["data"]["engines"])
+        assert known, "no engines listed in the dataset summary"
+        for engine in report["engines"]:
+            assert engine["engine"] in known, (
+                f"{engine['engine']} was replayed but is not an engine of the dataset"
+            )
+
+    def test_replayed_engines_carry_their_subdataset(self, report: dict[str, object]) -> None:
+        """Engine identity is (sub-dataset, unit); a bare unit number is ambiguous."""
+        for engine in report["engines"]:
+            assert "/" in engine["engine"], (
+                f"{engine['engine']} has no sub-dataset, so its unit number is ambiguous"
+            )
+
+    def test_every_engine_produced_windows(self, report: dict[str, object]) -> None:
+        """An engine that produced no windows is a replay that failed, not a finding."""
+        for engine in report["engines"]:
+            assert engine["n_windows"] > 0, f"{engine['engine']} produced no windows"
+            assert engine["n_rows"] >= engine["n_windows"]
+
+    def test_coverage_is_a_probability_within_the_monitor_bounds(
+        self, report: dict[str, object]
+    ) -> None:
+        coverage = report["coverage"]
+        measured = coverage["measured_coverage"]
+        assert measured is None or 0.0 <= measured <= 1.0
+        assert coverage["status"] in {"ok", "breach", "insufficient_data"}
+
+    def test_breach_status_matches_the_tolerance(self, report: dict[str, object]) -> None:
+        """A verdict that says breach without being under the band is a false alarm."""
+        coverage = report["coverage"]
+        measured = coverage["measured_coverage"]
+        if measured is None:
+            assert coverage["status"] == "insufficient_data"
+            return
+        below = measured < coverage["target_coverage"] - coverage["tolerance"]
+        assert (coverage["status"] == "breach") == below, (
+            f"status {coverage['status']!r} disagrees with measured coverage "
+            f"{measured:.3f} against a {coverage['target_coverage']:.0%} target"
+        )
+
+    def test_the_monitor_reached_a_verdict(self, report: dict[str, object]) -> None:
+        """S5 only means something once enough predictions have been scored."""
+        assert report["coverage"]["n_samples"] >= 50
+        assert report["coverage"]["measured_coverage"] is not None
+
+    def test_calibration_engines_are_disjoint_from_the_fit_set(
+        self, report: dict[str, object]
+    ) -> None:
+        """Calibrating on an engine that was fitted on invalidates the interval."""
+        calibration = set(report["calibration"]["engines"])
+        fitting = set(report["calibration"]["fit_engines"])
+        assert calibration, "no calibration engines recorded"
+        assert not calibration & fitting, (
+            f"engines both fitted and calibrated: {sorted(calibration & fitting)}"
+        )
+
+    def test_calibration_is_wide_enough_to_be_useful(self, report: dict[str, object]) -> None:
+        """An interval covering everything is not a result, and its width gives it away.
+
+        Recorded so a regression to an unusably narrow or unusably wide interval is
+        visible in the diff rather than only in the coverage figure.
+        """
+        half_width = report["calibration"]["half_width"]
+        cap = report["config"]["window"]["rul_cap"]
+        assert half_width > 0.0
+        assert half_width < cap, (
+            f"half-width {half_width:.1f} exceeds the RUL cap {cap}, so the interval "
+            "spans the whole operating range and conveys nothing"
+        )
+
+    def test_alerts_are_counted_and_open_ones_are_named(self, report: dict[str, object]) -> None:
+        """An alert total without the open set is not something an operator can act on."""
+        alerts = report["alerts"]
+        assert alerts["total"] >= 0
+        assert isinstance(alerts["open"], dict)
+
+    def test_metrics_are_exposed_for_a_scrape(self, report: dict[str, object]) -> None:
+        """The coverage verdict has to be on a scrape, not only in the result file."""
+        rendered = "\n".join(report["metrics_sample"])
+        assert "prognos_interval_coverage" in rendered
+        assert "prognos_stream_batches_total" in rendered
