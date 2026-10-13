@@ -23,6 +23,7 @@ from typing import Any
 from .alerting import AlertingService
 from .coverage import CoverageMonitor
 from .events import MAX_BATCH_ROWS, Reading, StreamStats, TelemetryBatch, validate_batch
+from .faults import DEGRADED_STATES, InjectedFault, channel_of
 from .inference import RulPredictor
 from .observability import (
     MetricsRegistry,
@@ -220,9 +221,39 @@ def build_dashboard_state(
     metrics: MetricsRegistry | None = None,
     logger: logging.Logger | None = None,
 ) -> ServiceState:
-    """The dashboard service: the fleet summary an operator reads."""
+    """The dashboard service: the fleet summary an operator reads.
+
+    Also the fault-injection control surface the design document asks for. Injection is
+    exposed as a control rather than left in a test fixture, because the only way to
+    check that a degraded state is observable end to end is to provoke one against a
+    running system.
+    """
     registry = metrics or MetricsRegistry()
     coverage = monitor or CoverageMonitor()
+    injectors: dict[int, InjectedFault] = {}
+
+    def fault_control(payload: dict[str, Any]) -> dict[str, Any]:
+        """Arm or disarm a named fault on an engine."""
+        kind = payload.get("fault")
+        if kind in (None, "none"):
+            return {"armed": {}, "available": list(DEGRADED_STATES)}
+        if kind not in DEGRADED_STATES:
+            raise HttpError(400, f"unknown fault {kind!r}")
+        try:
+            fault = InjectedFault(
+                kind=kind,
+                channel=int(payload.get("channel", 0)),
+                from_cycle=int(payload.get("from_cycle", 1)),
+                magnitude=float(payload.get("magnitude", 40.0)),
+            )
+        except (TypeError, ValueError) as error:
+            raise HttpError(400, f"malformed fault: {error}") from None
+        injectors[int(payload.get("engine", 1))] = fault
+        return {"armed": {str(k): v.kind for k, v in injectors.items()}}
+
+    def degraded() -> dict[str, Any]:
+        """Every degraded state this service knows about, by name."""
+        return {"states": list(DEGRADED_STATES), "instruments": [channel_of(c) for c in range(4)]}
 
     def coverage_payload() -> dict[str, Any]:
         """The live verdict, published as a GET so it carries no side effect."""
@@ -233,7 +264,8 @@ def build_dashboard_state(
         name="dashboard",
         metrics=registry,
         ready=lambda: (True, {"coverage": coverage.verdict().status}),
-        list_route={"coverage": coverage_payload},
+        list_route={"coverage": coverage_payload, "degraded": degraded},
+        routes={"POST /inject": fault_control},
         logger=logger,
     )
 

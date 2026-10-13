@@ -28,6 +28,7 @@ import numpy.typing as npt
 from prognos.stream.alerting import AlertingService, MaintenanceAlert
 from prognos.stream.coverage import CoverageMonitor, CoverageVerdict, Observation
 from prognos.stream.events import StreamStats, TelemetryBatch, validate_batch
+from prognos.stream.faults import FaultDetector
 from prognos.stream.inference import Prediction, RulPredictor
 from prognos.stream.observability import (
     MetricsRegistry,
@@ -66,6 +67,7 @@ class EngineReplay:
     n_rows: int
     predictions: list[Prediction] = field(default_factory=list)
     alerts: list[MaintenanceAlert] = field(default_factory=list)
+    faults: list[dict[str, object]] = field(default_factory=list)
     coverage: list[float] = field(default_factory=list)
 
 
@@ -81,6 +83,7 @@ class StreamPipeline:
         "_alerting",
         "_config",
         "_coverage",
+        "_detectors",
         "_logger",
         "_metrics",
         "_predictor",
@@ -93,13 +96,20 @@ class StreamPipeline:
         config: PipelineConfig,
         metrics: MetricsRegistry | None = None,
         logger: logging.Logger | None = None,
+        detect_faults: bool = True,
     ) -> None:
-        """Wire the pipeline around a predictor."""
+        """Wire the pipeline around a predictor.
+
+        `detect_faults` exists so a caller can replay a clean stream without paying for
+        detection. It defaults on because S6 requires any degraded state to be
+        observable, and a detector that is off by default is a detector nobody turned on.
+        """
         self._predictor = predictor
         self._config = config
         self._metrics = metrics or MetricsRegistry()
         self._logger = logger or logging.getLogger("prognos.pipeline")
         self._stats = StreamStats()
+        self._detectors: dict[int, FaultDetector] | None = {} if detect_faults else None
         self._coverage = CoverageMonitor(
             target=config.target_coverage, min_samples=config.min_coverage_samples
         )
@@ -116,6 +126,26 @@ class StreamPipeline:
     def coverage_verdict(self) -> CoverageVerdict:
         """The current S5 verdict."""
         return self._coverage.verdict()
+
+    def _detector_for(self, unit: int) -> FaultDetector | None:
+        """One detector per engine, created on first sight."""
+        if self._detectors is None:
+            return None
+        return self._detectors.setdefault(unit, FaultDetector(unit=unit))
+
+    @property
+    def degraded_states(self) -> list[dict[str, object]]:
+        """Every fault currently open, for the dashboard and the metrics endpoint.
+
+        S6: any degraded state must be observable. A fault that is detected and then
+        dropped on the floor is the same as one never detected.
+        """
+        if self._detectors is None:
+            return []
+        states: list[dict[str, object]] = []
+        for detector in self._detectors.values():
+            states.extend(state.to_dict() for state in detector.active())
+        return states
 
     @property
     def open_alerts(self) -> dict[int, MaintenanceAlert]:
@@ -143,6 +173,7 @@ class StreamPipeline:
         replay = EngineReplay(unit=unit, n_windows=0, n_rows=int(cycles.size))
         cycle_array = np.asarray(cycles, dtype=np.int64)
         block = np.asarray(rows, dtype=np.float32)
+        detector = self._detector_for(unit)
 
         # Counted once per engine rather than per row. Validating row by row would add
         # a million empty batches to the counters and make the scrape useless.
@@ -151,6 +182,10 @@ class StreamPipeline:
 
         for index in range(cycle_array.size):
             cycle = int(cycle_array[index])
+            if detector is not None:
+                detector.observe(cycle, block[index])
+                for state in detector.active():
+                    replay.faults.append(detector.raise_alert_for(state))
             window.push(cycle, block[index])
 
             if not window.has_window:
@@ -204,6 +239,7 @@ class StreamPipeline:
             "open_alerts": {
                 str(unit): alert.to_dict() for unit, alert in self._alerting.alerts().items()
             },
+            "degraded_states": self.degraded_states,
             "model": self._predictor.model_name,
             "target_coverage": self._config.target_coverage,
         }

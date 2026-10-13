@@ -6,12 +6,13 @@ import argparse
 import json
 import platform
 import sys
+from datetime import date
 from pathlib import Path
 from typing import Any, TypedDict, cast
 
-from .config import load_config
+from .config import Config, load_config
 from .convert import convert_subdataset, sha256_file, write_manifest
-from .dataset import load_windows
+from .dataset import WindowSource, load_windows
 
 H5_SUFFIX = ".h5"
 
@@ -317,7 +318,12 @@ def _policy_rows_sorted(decision: dict[str, Any]) -> list[PolicyRow]:
 
 
 def cmd_stream(args: argparse.Namespace) -> int:
-    """Replay held-out engines through the streaming pipeline and check S5."""
+    """Replay held-out engines through the streaming pipeline and check S5.
+
+    With `--faults`, skips the replay entirely and runs the fault scenarios instead:
+    each named fault injected into a clean stream, recording what the detector named.
+    That is the Phase 5 exit criterion from `docs/design.md` §12.
+    """
     from prognos.evaluate import build_folds
     from prognos.pipeline import replay_pipeline
 
@@ -332,6 +338,9 @@ def cmd_stream(args: argparse.Namespace) -> int:
         cache_dir=cache_dir,
         rebuild=args.rebuild_cache,
     )
+    if args.faults:
+        return _run_fault_scenarios(data, config, args)
+
     folds = build_folds(
         data,
         n_splits=config.split.n_splits,
@@ -369,6 +378,89 @@ def cmd_stream(args: argparse.Namespace) -> int:
             f"({verdict.status}, {verdict.n_samples} predictions)"
         )
     print(f"alerts opened: {outcome.total_alerts}")
+    return 0
+
+
+def _run_fault_scenarios(data: WindowSource, config: Config, args: argparse.Namespace) -> int:
+    """Inject each named fault into one clean engine and record what was detected.
+
+    This is the Phase 5 exit criterion executed rather than asserted: each named fault
+    goes into an otherwise clean stream, and what the detector named is written to a
+    committed file so the claim can be checked later.
+    """
+    from prognos.evaluate import build_folds, library_versions
+    from prognos.pipeline import _unit_table, run_fault_scenarios
+    from prognos.stream.faults import DEGRADED_STATES, InjectedFault
+
+    folds = build_folds(
+        data,
+        n_splits=config.split.n_splits,
+        test_fraction=config.split.test_fraction,
+        seed=config.split.seed,
+    )
+    unit = sorted({int(u) for f in folds for u in f.split.val_units})[0]
+    label = data.group_labels[unit]
+    cycles, features, _rul = _unit_table(
+        Path(config.data.parquet_dir), label.subdataset, label.unit
+    )
+
+    faults = [
+        InjectedFault("sensor_dropout", channel=7, from_cycle=40),
+        InjectedFault("sensor_stuck", channel=3, from_cycle=40),
+        InjectedFault("sensor_drift", channel=11, from_cycle=40),
+        InjectedFault("value_out_of_range", channel=2, from_cycle=40),
+    ]
+    print(f"injecting {len(faults)} named faults into {label.label()}", flush=True)
+    scenarios = run_fault_scenarios(cycles, features, faults)
+
+    report: dict[str, Any] = {
+        "config": {
+            "window": config.window.model_dump(),
+            "uncertainty": config.uncertainty.model_dump(),
+            "subdatasets": list(config.data.subdatasets),
+        },
+        "hardware": hardware_description(),
+        "versions": library_versions(),
+        "generated_at": date.today().isoformat(),
+        "final_test_group": {
+            "engines": sorted(folds[0].split.test_units),
+            "status": "closed",
+            "note": "Fault scenarios replay a cross-validation engine, not a held-out one.",
+        },
+        "degraded_states": list(DEGRADED_STATES),
+        "engine": label.label(),
+        "n_rows": len(cycles),
+        "scenarios": scenarios,
+        "all_passed": all(bool(s["passed"]) for s in scenarios),
+        "control_clean": all(bool(s["passed"]) for s in scenarios if not s["injected"]),
+        "known_limitations": [
+            (
+                "sensor_drift does not survive the control run on healthy real data. "
+                "Sampled one row per cycle, three channels (Nf, Nc, T48) move about "
+                "20 units between adjacent windows as ordinary operation, and no "
+                "normalisation tried separates that from a genuine step: scaling by "
+                "the fleet ignores that the instruments differ by three orders of "
+                "magnitude, scaling by the channel ignores that its series is smooth "
+                "enough that ordinary movement is many times its own spread. Reported "
+                "as failing rather than tuned until the control passes, which is the "
+                "one thing that would have made the number meaningless."
+            ),
+            (
+                "The scenarios replay one row per cycle, not the raw row stream. The "
+                "dataset carries thousands of rows per cycle number, and a raw replay "
+                "would leave the whole scenario inside a single cycle."
+            ),
+        ],
+    }
+    out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True, default=float) + "\n")
+    print(f"wrote {out_path}", flush=True)
+    for scenario in scenarios:
+        print(
+            f"  {scenario['fault']:20s} detected={scenario['detected']} "
+            f"{'ok' if scenario['passed'] else 'MISSED'}"
+        )
     return 0
 
 
@@ -466,6 +558,11 @@ def main(argv: list[str] | None = None) -> int:
         "--model-dir",
         default="artifacts/model",
         help="where the fitted model and its calibrator are written for inference to load",
+    )
+    stream.add_argument(
+        "--faults",
+        action="store_true",
+        help="inject each named sensor fault into a clean stream and record what is detected",
     )
     stream.add_argument("--no-cache", action="store_true")
     stream.add_argument("--rebuild-cache", action="store_true")

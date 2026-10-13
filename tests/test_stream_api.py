@@ -20,10 +20,13 @@ import urllib.request
 from collections.abc import Iterator
 from typing import Any
 
+import numpy as np
 import pytest
 
 from prognos.stream.api import build_component
+from prognos.stream.faults import DEGRADED_STATES, FaultDetector
 from prognos.stream.service import ServiceState, build_server
+from prognos.uncertainty import Interval
 
 
 def request(url: str, payload: dict[str, Any] | None = None) -> tuple[int, str]:
@@ -468,3 +471,141 @@ class TestServiceGuards:
         status, body = post_raw(f"{base}/telemetry", b"not json at all")
         assert status == 400
         assert "Traceback" not in body
+
+
+class TestFaultsAreObservableThroughTheService:
+    """S6: a degraded state must be observable in metrics, logs and the dashboard."""
+
+    @staticmethod
+    def _stream(n_cycles: int = 60, seed: int = 0) -> np.ndarray:
+        """A healthy stream with the per-channel variance the stuck detector needs."""
+        from prognos.stream.window import N_CHANNELS
+
+        return (
+            np.random.default_rng(seed)
+            .normal(100.0, 5.0, size=(n_cycles, N_CHANNELS))
+            .astype(np.float32)
+        )
+
+    """S6: a degraded state must be observable in metrics, logs and the dashboard.
+
+    A detector that fires and is then dropped on the floor is the same as one that
+    never existed, so these check the path all the way to a scrape and an HTTP
+    response rather than the detector in isolation.
+    """
+
+    def test_the_dashboard_publishes_the_state_names(self, service) -> None:
+        base = service("dashboard")
+        status, body = get(f"{base}/degraded")
+        assert status == 200
+        assert set(body["states"]) == set(DEGRADED_STATES)
+
+    def test_an_injected_fault_can_be_armed_over_http(self, service) -> None:
+        """The injection control the design document asks the dashboard to carry."""
+        base = service("dashboard")
+        status, body = post(
+            f"{base}/inject",
+            {"engine": 2, "fault": "sensor_drift", "channel": 4, "from_cycle": 50},
+        )
+        assert status == 200
+        assert body["armed"] == {"2": "sensor_drift"}
+
+    def test_arming_nothing_clears_the_controls(self, service) -> None:
+        base = service("dashboard")
+        post(f"{base}/inject", {"engine": 2, "fault": "sensor_drift"})
+        status, body = post(f"{base}/inject", {"engine": 2, "fault": "none"})
+        assert status == 200
+        assert body["armed"] == {}
+
+    def test_an_unknown_fault_is_a_400(self, service) -> None:
+        """A typo in a dashboard control must fail, not silently inject nothing."""
+        base = service("dashboard")
+        status, _ = post(f"{base}/inject", {"engine": 1, "fault": "snesor_dropout"})
+        assert status == 400
+
+    def test_a_degraded_state_reaches_the_scrape(self, service) -> None:
+        """The metrics endpoint is where a fault becomes visible without a human."""
+        import numpy as np
+
+        from prognos.stream.observability import MetricsRegistry, record_fault_metrics
+
+        registry = MetricsRegistry()
+        detector = FaultDetector(unit=1)
+        rows = self._stream()
+        for cycle, row in enumerate(rows, start=1):
+            values = row.copy()
+            if cycle > 30:
+                values[7] = np.nan
+            detector.observe(cycle, values)
+        record_fault_metrics(registry, detector.active())
+
+        rendered = registry.render()
+        assert "prognos_degraded_states" in rendered
+        assert 'state="sensor_dropout"' in rendered
+
+
+class TestLogFieldCoercion:
+    """Log fields arrive from numpy, from dataclasses and from call sites.
+
+    A log line that silently drops its payload is how a debugging session goes
+    nowhere, so every coercion path is exercised rather than assumed.
+    """
+
+    def _emit(self, **fields: object) -> dict:
+        import io
+        import logging
+
+        from prognos.stream.observability import JsonLogFormatter, log_event
+
+        stream = io.StringIO()
+        handler = logging.StreamHandler(stream)
+        handler.setFormatter(JsonLogFormatter(service="test"))
+        logger = logging.getLogger(f"prognos.test.coerce.{id(fields)}")
+        logger.handlers = [handler]
+        logger.setLevel(logging.INFO)
+        logger.propagate = False
+        log_event(logger, "test.event", **fields)
+        return json.loads(stream.getvalue().splitlines()[0])
+
+    def test_numpy_scalars_survive_as_numbers(self) -> None:
+        """A numpy float is not JSON serialisable, and json.dumps would raise."""
+        import numpy as np
+
+        record = self._emit(value=np.float32(7.5), count=np.int64(3))
+        assert record["value"] == pytest.approx(7.5)
+        assert record["count"] == 3
+
+    def test_arrays_become_lists(self) -> None:
+        import numpy as np
+
+        record = self._emit(values=np.array([1.0, 2.0]))
+        assert record["values"] == [1.0, 2.0]
+
+    def test_an_arbitrary_object_is_stringified_not_dropped(self) -> None:
+        """Dropping an unserialisable field loses the evidence; stringifying keeps it."""
+        record = self._emit(interval=Interval(1.0, 2.0, 3.0))
+        assert "1.0" in str(record["interval"]) or record["interval"]
+
+    def test_none_and_booleans_pass_through(self) -> None:
+        record = self._emit(flag=False, missing=None)
+        assert record["flag"] is False
+        assert record["missing"] is None
+
+    def test_a_prometheus_label_is_never_a_free_text_reason(self) -> None:
+        """Metric labels must be low cardinality or the scrape breaks under load."""
+        from prognos.stream.events import Reading, StreamStats, TelemetryBatch, validate_batch
+        from prognos.stream.observability import MetricsRegistry, record_stream_metrics
+
+        registry = MetricsRegistry()
+        stats = StreamStats()
+        for channel in (0, 999, 1000, 2000):
+            batch = TelemetryBatch(source="s", unit=1, rows=[Reading(1, 0, channel, 1.0)])
+            stats.record(batch, validate_batch(batch))
+        record_stream_metrics(registry, stats)
+        labels = {
+            part.split("reason=")[1].strip('"} ')
+            for part in registry.render().splitlines()
+            if "reason=" in part
+        }
+        assert labels, "no reject labels were published"
+        assert all(len(label) < 40 for label in labels)

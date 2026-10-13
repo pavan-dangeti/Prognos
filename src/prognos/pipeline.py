@@ -37,6 +37,7 @@ from .evaluate import build_folds, library_versions
 from .policy_eval import split_fit_and_calibration
 from .stream.alerting import MaintenanceAlert
 from .stream.coverage import CoverageVerdict
+from .stream.faults import DEGRADED_STATES, FaultDetector, FaultInjector, InjectedFault
 from .stream.inference import RulPredictor
 from .stream.observability import MetricsRegistry
 from .stream.pipeline import PipelineConfig, StreamPipeline
@@ -241,3 +242,90 @@ def _hardware() -> str:
 
 
 __all__ = ["ReplayOutcome", "replay_pipeline", "replay_windows"]
+
+
+def run_fault_scenarios(
+    cycles: npt.NDArray[np.int64],
+    rows: npt.NDArray[np.float32],
+    faults: list[InjectedFault],
+    min_cycles: int = 20,
+    max_cycles: int = 600,
+) -> list[dict[str, Any]]:
+    """Inject each named fault into a clean stream and record what was detected.
+
+    This is the Phase 5 exit criterion, executed: every injected fault produces a named
+    degraded state. Each scenario is a clean stream plus one fault, so a scenario that
+    fails to be detected cannot be blamed on interference from another.
+
+    The clean stream is checked too. A detector suite that reports everything detects
+    nothing, so a control run with no fault injected is part of the result rather than
+    an afterthought.
+
+    `max_cycles` bounds the replay. Detection is per-cycle Python over a 40-row window,
+    and a full engine is 433,325 rows; five scenarios of that is half an hour to learn
+    nothing more, since the faults start at cycle 40 and the detectors need a few dozen
+    cycles either side. The bound is recorded in the result file.
+    """
+    # One row per cycle, which is the cadence the window builder downsamples to anyway.
+    # Taking a raw prefix instead would put the whole replay inside a single cycle
+    # number — this dataset carries thousands of rows per cycle — and the detectors
+    # would then be judging within-cycle scatter rather than engine behaviour.
+    firsts = np.flatnonzero(np.r_[True, np.diff(np.asarray(cycles)) != 0])
+    cycles = np.asarray(cycles)[firsts]
+    rows = np.asarray(rows)[firsts]
+    horizon = min(int(cycles.size), max_cycles)
+    cycles = cycles[:horizon]
+    rows = rows[:horizon]
+    scenarios: list[dict[str, Any]] = []
+
+    control = FaultDetector(unit=1, min_cycles=min_cycles)
+    for index, cycle in enumerate(cycles):
+        control.observe(int(cycle), rows[index])
+    # Union of what was ever named and what is still open. Checking only `active()`
+    # makes this control pass while the detector was firing steadily, because a step
+    # clears once both its windows have moved — a falsely clean result is worse than a
+    # missing one.
+    control_names = sorted({s.state for s in control.active()} | {h.state for h in control.history})
+    scenarios.append(
+        {
+            "fault": "none",
+            "injected": False,
+            "expected": [],
+            "detected": control_names,
+            "n_detected": len(control_names),
+            "passed": not control_names,
+            "states": [h.to_dict() for h in control.history],
+            "note": "control run; a clean stream must name nothing at any point",
+        }
+    )
+
+    for fault in faults:
+        detector = FaultDetector(unit=1, min_cycles=min_cycles)
+        injector = FaultInjector(unit=1, fault=fault)
+        for index, cycle in enumerate(cycles):
+            detector.observe(int(cycle), injector.apply(int(cycle), rows[index].copy()))
+        ever = {s.state for s in detector.active()} | {h.state for h in detector.history}
+        scenarios.append(
+            {
+                "fault": fault.kind,
+                "injected": True,
+                "channel": fault.channel,
+                "from_cycle": fault.from_cycle,
+                "expected": [fault.kind],
+                "detected": sorted(ever),
+                "still_open": sorted({s.state for s in detector.active()}),
+                "n_detected": len(ever),
+                "passed": fault.kind in ever,
+                "states": [h.to_dict() for h in detector.history],
+            }
+        )
+    return scenarios
+
+
+__all__ = [
+    "DEGRADED_STATES",
+    "InjectedFault",
+    "ReplayOutcome",
+    "replay_pipeline",
+    "run_fault_scenarios",
+]

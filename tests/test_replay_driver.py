@@ -200,3 +200,92 @@ class TestReplayPipeline:
 def test_schema_column_count_matches_the_fixture() -> None:
     """A fixture that silently drops channels would make every test above vacuous."""
     assert len(FEATURE_COLUMNS) == len(SCENARIO_DESCRIPTORS) + len(MEASURED_SENSORS)
+
+
+class TestFaultScenarios:
+    """`run_fault_scenarios` is the Phase 5 exit criterion, executed.
+
+    The control row is the important one. It is the only evidence that the detector is
+    not simply reporting everything, and it is what stopped three different drift
+    normalisations from being shipped as working.
+    """
+
+    @staticmethod
+    def _engine(rows: int = 200, seed: int = 1) -> tuple[np.ndarray, np.ndarray]:
+        """A clean stream at engine cadence, which is what the scenarios sample."""
+        from prognos.stream.window import N_CHANNELS
+
+        rng = np.random.default_rng(seed)
+        cycles = np.arange(1, rows + 1, dtype=np.int64)
+        return cycles, rng.normal(100.0, 5.0, size=(rows, N_CHANNELS)).astype(np.float32)
+
+    def test_the_control_row_names_nothing_on_a_clean_stream(self) -> None:
+        """The property that matters most, and the hardest to keep."""
+        from prognos.pipeline import run_fault_scenarios
+
+        cycles, rows = self._engine()
+        scenarios = run_fault_scenarios(cycles, rows, [], max_cycles=200)
+        control = next(s for s in scenarios if not s["injected"])
+        assert control["detected"] == [], f"a clean stream produced {control['detected']}"
+        assert control["passed"] is True
+
+    def test_an_injected_fault_is_named(self) -> None:
+        from prognos.pipeline import run_fault_scenarios
+        from prognos.stream.faults import InjectedFault
+
+        cycles, rows = self._engine()
+        scenarios = run_fault_scenarios(
+            cycles,
+            rows,
+            [InjectedFault("sensor_dropout", channel=5, from_cycle=40)],
+            max_cycles=200,
+        )
+        scenario = next(s for s in scenarios if s["fault"] == "sensor_dropout")
+        assert scenario["passed"] is True
+        assert "sensor_dropout" in scenario["detected"]
+
+    def test_a_detection_is_recorded_even_once_it_has_cleared(self) -> None:
+        """A step is an event. Checking only what is still open misses it entirely.
+
+        This is the check whose absence made the control run look clean while the
+        detector was firing steadily — a falsely clean result is worse than a missing
+        one, because it stops anyone looking.
+        """
+        from prognos.pipeline import run_fault_scenarios
+        from prognos.stream.faults import InjectedFault
+
+        cycles, rows = self._engine()
+        scenarios = run_fault_scenarios(
+            cycles,
+            rows,
+            [InjectedFault("sensor_drift", channel=5, from_cycle=40)],
+            max_cycles=200,
+        )
+        scenario = next(s for s in scenarios if s["fault"] == "sensor_drift")
+        assert scenario["passed"] is True
+        assert "still_open" in scenario
+
+    def test_the_replay_is_bounded(self) -> None:
+        """Detection is per-cycle Python; an unbounded replay takes half an hour."""
+        from prognos.pipeline import run_fault_scenarios
+
+        cycles, rows = self._engine(rows=1000)
+        scenarios = run_fault_scenarios(cycles, rows, [], max_cycles=50)
+        control = next(s for s in scenarios if not s["injected"])
+        assert control["passed"] is True
+
+    def test_every_scenario_is_recorded_with_its_expectation(self) -> None:
+        from prognos.pipeline import run_fault_scenarios
+        from prognos.stream.faults import InjectedFault
+
+        cycles, rows = self._engine()
+        faults = [
+            InjectedFault("sensor_dropout", channel=2, from_cycle=40),
+            InjectedFault("sensor_stuck", channel=3, from_cycle=40),
+        ]
+        scenarios = run_fault_scenarios(cycles, rows, faults, max_cycles=200)
+        assert len(scenarios) == len(faults) + 1
+        for scenario in scenarios:
+            if scenario["injected"]:
+                assert scenario["expected"] == [scenario["fault"]]
+                assert scenario["channel"] is not None
