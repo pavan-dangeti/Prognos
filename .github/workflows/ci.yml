@@ -50,7 +50,7 @@ jobs:
         # wrapper; it is still tested, just not gated at the same level.
         run: >-
           uv run coverage report
-          --include='src/prognos/convert.py,src/prognos/window.py,src/prognos/split.py,src/prognos/schema.py,src/prognos/config.py,src/prognos/metrics.py,src/prognos/evaluate.py,src/prognos/dataset.py,src/prognos/models.py,src/prognos/features.py,src/prognos/gbm.py'
+          --include='src/prognos/convert.py,src/prognos/window.py,src/prognos/split.py,src/prognos/schema.py,src/prognos/config.py,src/prognos/metrics.py,src/prognos/evaluate.py,src/prognos/dataset.py,src/prognos/models.py,src/prognos/features.py,src/prognos/gbm.py,src/prognos/sequence.py'
           --fail-under=95
 
       - name: Smoke test on a synthetic subset
@@ -91,7 +91,13 @@ jobs:
         run: uv export --frozen --no-emit-project --all-groups --no-hashes -o requirements.txt
 
       - name: Audit Python dependencies
-        run: uv run pip-audit --strict -r requirements.txt
+        # PYSEC-2025-194 and PYSEC-2026-139 are reviewed exceptions with stated
+        # reasons and limits in pip-audit.toml. tests/test_security_policy.py fails if
+        # this list and that file disagree, so an exception cannot be widened quietly.
+        run: >-
+          uv run pip-audit --strict -r requirements.txt
+          --ignore-vuln PYSEC-2025-194
+          --ignore-vuln PYSEC-2026-139
 
       - name: Scan git history for committed secrets
         # Run as a pinned binary rather than the action: the action tries to

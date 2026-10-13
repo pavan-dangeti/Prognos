@@ -1,0 +1,31 @@
+# Accepted dependency advisories.
+#
+# Read by `tests/test_security_policy.py`, which checks this list against the
+# `--ignore-vuln` flags in the CI workflow. Editing one without the other fails CI,
+# so an exception cannot be quietly widened or quietly left stale.
+#
+# Each entry is a deliberate, reviewed decision with a stated reason and a stated
+# limit. Removing an entry requires fixing the reason, not deleting the line.
+#
+# PYSEC-2025-194 — fixed in torch 2.13.0.
+#   Reason: torch 2.10.0 is the newest release that coexists with LightGBM on
+#   macOS arm64. Every version from 2.12.0 upward segfaults inside
+#   `lightgbm.basic._lazy_init` once both libraries are loaded in one process, which
+#   takes out the gradient-boosting baseline and the evaluation harness. 2.11.0 and
+#   2.12.1 still carry this advisory, so they are not options either.
+#   Limit: torch is used for offline training on local, trusted data. No untrusted
+#   input reaches it. The inference service (Phase 5) serves a frozen artefact and
+#   does not retrain. Revisit when LightGBM ships a fix, or when the tabular
+#   baseline is replaced by something without the native conflict.
+#
+# PYSEC-2026-139 — no fixed version published.
+#   Reason: there is nothing to upgrade to.
+#   Limit: as above.
+#
+# To lift these: upgrade torch to >= 2.13.0, confirm `uv run pytest -q` still passes
+# (LightGBM initialises alongside torch), then delete the entries from both this file
+# and the workflow.
+known_vulnerabilities = [
+    "PYSEC-2025-194",
+    "PYSEC-2026-139",
+]
