@@ -29,6 +29,7 @@ from prognos.stream.alerting import AlertingService, MaintenanceAlert
 from prognos.stream.coverage import CoverageMonitor, CoverageVerdict, Observation
 from prognos.stream.events import StreamStats, TelemetryBatch, validate_batch
 from prognos.stream.faults import FaultDetector
+from prognos.stream.fleet import FleetView
 from prognos.stream.inference import Prediction, RulPredictor
 from prognos.stream.observability import (
     MetricsRegistry,
@@ -84,6 +85,7 @@ class StreamPipeline:
         "_config",
         "_coverage",
         "_detectors",
+        "_fleet",
         "_logger",
         "_metrics",
         "_predictor",
@@ -116,6 +118,16 @@ class StreamPipeline:
         self._alerting = AlertingService(
             threshold=config.alert_threshold, hysteresis=config.alert_hysteresis
         )
+        self._fleet = FleetView()
+
+    @property
+    def fleet(self) -> FleetView:
+        """The live fleet view, fed as predictions arrive.
+
+        Owned by the pipeline rather than the dashboard because the pipeline is the
+        only thing that sees the stream. The dashboard reads it; it does not build it.
+        """
+        return self._fleet
 
     @property
     def metrics(self) -> MetricsRegistry:
@@ -158,6 +170,7 @@ class StreamPipeline:
         cycles: npt.NDArray[np.int64],
         rows: npt.NDArray[np.float32],
         truth_by_cycle: dict[int, float] | None = None,
+        source: str | None = None,
     ) -> EngineReplay:
         """Replay one engine end to end.
 
@@ -165,6 +178,14 @@ class StreamPipeline:
         dataset. It is what the coverage monitor scores against. Passing it as an
         argument rather than reading it from a global is deliberate: a monitor that
         cannot be given the wrong truth is a monitor that cannot be quietly wrong.
+
+        `source` is the sub-dataset, which is half of an engine's identity: unit
+        numbers restart per sub-dataset, so keying on `unit` alone merges engines that
+        are not the same engine. That mistake once produced a 0.716 coverage figure.
+
+        `unit` is therefore the engine's own unit number and not a row or group index.
+        The two differ — group 0 is DS01 unit 1 — and an operator reading a fleet view
+        showing `unit000` would be reading an identifier that means nothing.
         """
         config = self._config
         window = OnlineWindow(
@@ -204,6 +225,7 @@ class StreamPipeline:
                 )
                 replay.predictions.append(prediction)
                 replay.coverage.append(float(interval.point))
+                self._fleet.record(unit=unit, cycle=cycle, interval=interval, source=source)
 
                 if truth_by_cycle is not None and cycle in truth_by_cycle:
                     self._coverage.record(
@@ -220,6 +242,12 @@ class StreamPipeline:
                         unit=unit, cycle=cycle, lower=interval.lower, point=interval.point
                     )
                 )
+                open_alert = self._alerting.alerts().get(unit)
+                self._fleet.set_alert(
+                    unit, open_alert.to_dict() if open_alert is not None else None
+                )
+                if detector is not None:
+                    self._fleet.set_degraded(unit, [state.to_dict() for state in detector.active()])
                 replay.n_windows += 1
 
         return replay
@@ -240,6 +268,7 @@ class StreamPipeline:
                 str(unit): alert.to_dict() for unit, alert in self._alerting.alerts().items()
             },
             "degraded_states": self.degraded_states,
+            "fleet": self._fleet.rows(),
             "model": self._predictor.model_name,
             "target_coverage": self._config.target_coverage,
         }

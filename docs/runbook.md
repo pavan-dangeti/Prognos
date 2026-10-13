@@ -88,6 +88,50 @@ Every service exposes `/healthz`, `/readyz` and `/metrics`.
 Do not point a liveness probe at a dependency. Restarting a process because a database
 is down does not fix the database and does lose in-flight work.
 
+## Before you expose any port
+
+Every published port is bound to `127.0.0.1`, which is the only reason an unset token is
+not yet a problem. It stops being the only reason the moment a port is published, a
+reverse proxy is added, or the host is reachable from somewhere else.
+
+Set a token before any of that happens:
+
+```bash
+echo "PROGNOS_API_TOKEN=$(python3 -c 'import secrets;print(secrets.token_urlsafe(32))')" >> .env
+docker compose up -d
+curl -H "Authorization: Bearer $PROGNOS_API_TOKEN" http://127.0.0.1:8084/fleet
+```
+
+`PROGNOS_API_TOKEN` is read from the environment only. It is never a build argument, a
+file in the image, or a constant in the source. An empty value is treated as unset, not
+as an empty token, because an env var nobody set is the usual way this goes wrong.
+
+What that buys, and what it does not:
+
+- **Bearer token, compared in constant time.** `==` on a secret leaks through timing
+  whether a prefix matched.
+- **Sliding-window rate limit, per client, keyed on the socket peer.** Fixed windows are
+  trivially evaded at the boundary. `X-Forwarded-For` is ignored unless
+  `trust_forwarded_for` is set, because trusting it from an arbitrary caller lets anyone
+  mint a fresh allowance per request.
+- **The 401 body says nothing.** A refusal that names the header it expects is a
+  specification for whoever is guessing.
+- **`/healthz` is never authenticated.** An orchestrator's probe has no credential, and
+  a probe returning 401 restarts the process forever over a missing secret.
+
+It does **not** add TLS, per-user identity, or audit of who called what. A token is a
+shared secret: it tells you the caller was holding the right string, not who they were.
+Put TLS in front of it, or keep it on loopback.
+
+### Triage
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `401` everywhere, `/healthz` fine | `PROGNOS_API_TOKEN` set, caller is not sending it | Add the `Authorization` header |
+| `401` everywhere and the token is unset | Trailing space or quote in `.env` | `PROGNOS_API_TOKEN` must be a bare value |
+| `429` under normal load | One client, 120 requests in 60s | Raise `--rate-limit`, or find the caller |
+| `429` from a proxy you control | Everything arrives from one peer address | Set `trust_forwarded_for` |
+
 ## Reproducing a number
 
 Every figure in the README comes from a committed script. If one does not match:

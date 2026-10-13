@@ -338,6 +338,72 @@ inference mounts it. Without it the service stays unready, which is the right
 behaviour: no calibrator means no interval, and an interval-free prediction service is
 worse than one that refuses traffic.
 
+## The fleet view, and a cost panel that does not recompute anything
+
+`StreamPipeline.summary()` has carried the docstring "for the dashboard and the status
+endpoint" since the day it was written. Nothing read it. That is now closed, and the
+route below is populated by the stream itself rather than by a fixture.
+
+```bash
+uv run prognos stream --config configs/base.yaml --engines 4 --serve --port 8090
+curl -s http://127.0.0.1:8090/fleet | jq '.fleet'
+```
+
+```
+DS01-005/unit001  cycle 23  rul 71.4  interval [51.5, 91.4]  width 39.9  nominal
+```
+
+Three decisions worth stating, because each looks like a detail:
+
+**The roster is what the stream has seen.** A manifest listing 29 engines would show 29
+rows on an idle dashboard, which is a lie. Engines appear as they send data.
+
+**Engine identity is `subdataset/unit`, and the unit is the engine's own.** The first
+version of this passed the window-source *group index*, which rendered `DS01-005/unit000`
+— group 0 is DS01 unit 1. Caught by running it and reading the output, which is the only
+way this class of mistake surfaces.
+
+**Rows are overwritten, not appended.** One row per engine, sorted worst-first
+(degraded, then alerting, then nominal) so the engine nobody is watching is at the top.
+A view with a row per reading is a log file wearing a table's clothes.
+
+The same view is published as `prognos_fleet_rul_cycles`, `prognos_fleet_interval_width`
+and `prognos_fleet_engines{status}`, which is how Grafana sees it — Prometheus cannot
+read a JSON route.
+
+### The cost panel reads the committed result
+
+`GET /cost` serves `results/phase4_policy.json` rather than recomputing anything:
+
+```
+threshold_point_10   1.06/engine   28 planned,  0 failures
+threshold_lower_10   1.07/engine   42 planned,  0 failures
+threshold_point_30   1.07/engine   42 planned,  0 failures
+run_to_failure      24.05/engine   0 planned, 23 failures   (ratio 25, horizon 2000)
+```
+
+The cost model travels with the numbers. A cost figure without the ratio it was measured
+under is not arguable, and the sweep that shows planning only pays above a ratio is part
+of the panel rather than something a reader has to already know.
+
+### Authentication and rate limiting
+
+Both were gaps I flagged when the compose stack first came up, and both were real: the
+only abuse control was a request size ceiling.
+
+A bearer token from the environment, compared in constant time, and a sliding-window rate
+limit per client keyed on the socket peer. `X-Forwarded-For` is ignored unless
+explicitly trusted, because trusting it from an arbitrary caller lets anyone mint a fresh
+allowance per request. Refusal bodies carry no detail — a 401 that names the header it
+wants is a specification for whoever is guessing. `/healthz` is never authenticated,
+because an orchestrator's probe has no credential and a 401 there restarts the process
+forever over a missing secret.
+
+Off when the variable is unset, so a local run needs no credential. That is only safe
+because every published port stays on `127.0.0.1`, and `docs/runbook.md` says what to do
+before that changes. A token is a shared secret: it tells you the caller was holding the
+right string, not who they were. It is not TLS and it is not per-user identity.
+
 ## Fault injection, and a detector I could not make trustworthy
 
 `docs/design.md` §12 sets the Phase 5 exit criterion: *every injected fault produces a

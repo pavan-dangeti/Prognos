@@ -264,3 +264,44 @@ def span(registry: MetricsRegistry, name: str, **labels: str) -> Iterator[None]:
             value=duration,
             labels={"span": name, **labels},
         )
+
+
+def record_fleet_metrics(registry: MetricsRegistry, rows: list[dict[str, Any]]) -> None:
+    """Publish the fleet view as scrapeable gauges.
+
+    This is what makes the fleet legible in the compose stack. Prometheus cannot read a
+    JSON route, and a dashboard assembled by hand is not one an operator is watching at
+    three in the morning.
+
+    Labels are `engine` and `status` only, both low-cardinality by construction: one
+    series per engine and three status values. An alert reason would not be safe here,
+    which is why it lives in the route and the logs instead.
+    """
+    for row in rows:
+        engine = str(row.get("engine", row.get("unit")))
+        labels = {"engine": engine, "status": str(row.get("status", "nominal"))}
+        registry.gauge(
+            "fleet_rul_cycles",
+            "Latest predicted remaining useful life, in cycles.",
+            float(row.get("rul", 0.0)),
+            labels,
+        )
+        registry.gauge(
+            "fleet_interval_width",
+            "Width of the predicted interval, in cycles.",
+            float(row.get("width", 0.0)),
+            labels,
+        )
+        registry.gauge(
+            "fleet_last_cycle",
+            "Last cycle seen from this engine.",
+            float(row.get("cycle", 0.0)),
+            labels,
+        )
+    for status in ("nominal", "alerting", "degraded"):
+        registry.gauge(
+            "fleet_engines",
+            "Engines in the fleet, by status.",
+            float(sum(1 for r in rows if r.get("status") == status)),
+            {"status": status},
+        )

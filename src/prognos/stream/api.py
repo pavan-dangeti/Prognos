@@ -24,10 +24,12 @@ from .alerting import AlertingService
 from .coverage import CoverageMonitor
 from .events import MAX_BATCH_ROWS, Reading, StreamStats, TelemetryBatch, validate_batch
 from .faults import DEGRADED_STATES, InjectedFault, channel_of
+from .fleet import POLICY_RESULT, FleetView, build_cost_panel
 from .inference import RulPredictor
 from .observability import (
     MetricsRegistry,
     record_coverage_metrics,
+    record_fleet_metrics,
     record_stream_metrics,
 )
 from .service import ServiceState
@@ -220,6 +222,8 @@ def build_dashboard_state(
     monitor: CoverageMonitor | None = None,
     metrics: MetricsRegistry | None = None,
     logger: logging.Logger | None = None,
+    fleet: FleetView | None = None,
+    policy_result: Path | str | None = None,
 ) -> ServiceState:
     """The dashboard service: the fleet summary an operator reads.
 
@@ -231,6 +235,7 @@ def build_dashboard_state(
     registry = metrics or MetricsRegistry()
     coverage = monitor or CoverageMonitor()
     injectors: dict[int, InjectedFault] = {}
+    view = fleet or FleetView()
 
     def fault_control(payload: dict[str, Any]) -> dict[str, Any]:
         """Arm or disarm a named fault on an engine."""
@@ -255,6 +260,31 @@ def build_dashboard_state(
         """Every degraded state this service knows about, by name."""
         return {"states": list(DEGRADED_STATES), "instruments": [channel_of(c) for c in range(4)]}
 
+    def fleet_payload() -> dict[str, Any]:
+        """Engines the stream has actually heard from, worst first.
+
+        Engines that have sent nothing are absent rather than shown as unknown, so an
+        idle dashboard is visibly idle instead of looking like a roster of silent
+        engines.
+        """
+        rows = view.rows()
+        by_status: dict[str, int] = {}
+        for row in rows:
+            by_status[row["status"]] = by_status.get(row["status"], 0) + 1
+        record_fleet_metrics(registry, rows)
+        return {
+            "fleet": rows,
+            "n_engines": len(rows),
+            "by_status": by_status,
+        }
+
+    def cost_payload() -> dict[str, Any]:
+        """The committed policy comparison, plus the cost model it was measured under.
+
+        A cost figure without its cost model is not arguable, so both travel together.
+        """
+        return build_cost_panel(policy_result or POLICY_RESULT)
+
     def coverage_payload() -> dict[str, Any]:
         """The live verdict, published as a GET so it carries no side effect."""
         record_coverage_metrics(registry, coverage.verdict())
@@ -264,7 +294,12 @@ def build_dashboard_state(
         name="dashboard",
         metrics=registry,
         ready=lambda: (True, {"coverage": coverage.verdict().status}),
-        list_route={"coverage": coverage_payload, "degraded": degraded},
+        list_route={
+            "coverage": coverage_payload,
+            "degraded": degraded,
+            "fleet": fleet_payload,
+            "cost": cost_payload,
+        },
         routes={"POST /inject": fault_control},
         logger=logger,
     )
