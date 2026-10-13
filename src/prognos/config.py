@@ -56,6 +56,45 @@ class SplitConfig(BaseModel):
     test_fraction: float = Field(default=0.34, gt=0.0, lt=0.6)
 
 
+class UncertaintyConfig(BaseModel):
+    """Conformal interval settings.
+
+    `target_coverage` is the SLO the intervals are calibrated to. The live SLO in
+    §4.4 holds coverage within five percentage points of it.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    target_coverage: float = Field(default=0.9, gt=0.0, lt=1.0)
+    # Held out of the fit within each fold, by engine. Enough for a stable conformal
+    # quantile at 90% coverage and still leaving enough engines to fit on.
+    calibration_fraction: float = Field(default=0.3, gt=0.0, lt=0.5)
+
+
+class CostConfig(BaseModel):
+    """Maintenance cost assumptions.
+
+    Costs are normalised so a planned visit is 1.0, because absolute scale cancels
+    out of every policy comparison: all policies fly the same fleet over the same
+    horizon, so only the ratio between terms changes the answer. `failure_cost_ratio`
+    is swept rather than fixed, which is what makes the conclusion survive being
+    wrong about the exact number.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    planned_maintenance_cost: float = Field(default=1.0, gt=0.0)
+    failure_cost_ratio: float = Field(default=25.0, gt=0.0)
+    # Ground time is charged at the same rate to planned and unplanned work, so the
+    # only asymmetry between them is the ratio above.
+    downtime_cost_per_cycle: float = Field(default=0.05, ge=0.0)
+    maintenance_window_cycles: int = Field(default=2, ge=1)
+    horizon: int = Field(default=2000, ge=1)
+    thresholds: tuple[float, ...] = (10.0, 20.0, 30.0, 40.0)
+    fixed_intervals: tuple[int, ...] = (50, 75, 100, 125)
+    ratio_sweep: tuple[float, ...] = (1.0, 5.0, 10.0, 25.0, 50.0, 100.0)
+
+
 class Config(BaseModel):
     """Top-level configuration."""
 
@@ -64,6 +103,8 @@ class Config(BaseModel):
     data: DataConfig = DataConfig()
     window: WindowConfig = WindowConfig()
     split: SplitConfig = SplitConfig()
+    uncertainty: UncertaintyConfig = UncertaintyConfig()
+    cost: CostConfig = CostConfig()
 
 
 def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:

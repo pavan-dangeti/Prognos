@@ -50,6 +50,27 @@ def mae(y_true: npt.NDArray[np.float64], y_pred: npt.NDArray[np.float64]) -> flo
     return float(np.mean(np.abs(true - pred)))
 
 
+def coverage_rate(_y_true: npt.NDArray[np.float64], covered: npt.NDArray[np.float64]) -> float:
+    """Mean of a 0/1 indicator, registered as a bootstrap statistic.
+
+    Registered so interval coverage can be resampled by engine like every other
+    reported metric. Coverage is a rate over windows, so the resampling has to happen
+    at the engine level to be meaningful: resampling windows would let one heavily
+    sampled engine dominate the interval.
+
+    The indicator is the **second** argument because the shared bootstrap signature
+    is `statistic(y_true, y_pred)`. Naming the first parameter `y_true` and reading
+    it would silently average the wrong array, which is exactly what happened: it
+    produced a "95% confidence interval" of [18.0, 20.7] around an empirical coverage
+    of 0.926. So the first parameter is underscored and unused, and callers pass the
+    indicator twice.
+    """
+    flag = np.asarray(covered, dtype=np.float64)
+    if flag.size == 0:
+        raise ValueError("cannot score an empty prediction set")
+    return float(np.mean(flag))
+
+
 def nasa_score(
     y_true: npt.NDArray[np.float64],
     y_pred: npt.NDArray[np.float64],
@@ -169,7 +190,9 @@ def grouped_bootstrap_ci(
     is the independent unit of observation, so it is what gets resampled. See
     docs/adr/0003.
     """
-    func = {"rmse": rmse, "mae": mae, "nasa_score": nasa_score}[statistic]
+    func = {"rmse": rmse, "mae": mae, "nasa_score": nasa_score, "coverage": coverage_rate}[
+        statistic
+    ]
     true = np.asarray(y_true, dtype=np.float64)
     pred = np.asarray(y_pred, dtype=np.float64)
     group_ids = np.unique(groups)

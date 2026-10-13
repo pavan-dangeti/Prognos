@@ -17,3 +17,24 @@ split:
   n_splits: 5
   seed: 20241009
   test_fraction: 0.34
+
+uncertainty:
+  # SLO the conformal intervals are calibrated to. Live coverage is held within
+  # five points of this by the monitoring in the streaming phase.
+  target_coverage: 0.9
+  # Held out of the fit within each fold, by engine.
+  calibration_fraction: 0.3
+
+cost:
+  # Planned maintenance is normalised to 1.0. Absolute scale cancels out of every
+  # policy comparison, so only the ratio between terms changes the answer.
+  planned_maintenance_cost: 1.0
+  failure_cost_ratio: 25.0
+  downtime_cost_per_cycle: 0.05
+  maintenance_window_cycles: 2
+  horizon: 2000
+  thresholds: [10, 20, 30, 40]
+  fixed_intervals: [50, 75, 100, 125]
+  # Swept rather than fixed. A policy that only wins at one guessed ratio is not a
+  # result, so the headline is the curve.
+  ratio_sweep: [1, 5, 10, 25, 50, 100]

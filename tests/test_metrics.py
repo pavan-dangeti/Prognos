@@ -291,3 +291,46 @@ class TestConfidenceIntervals:
             grouped_bootstrap_ci(
                 rng.uniform(0, 10, 10), rng.uniform(0, 10, 10), np.zeros(10, dtype=int), "nope"
             )
+
+
+class TestCoverageRate:
+    """Coverage is a bootstrap statistic, and its signature is a trap.
+
+    `grouped_bootstrap_ci` calls the statistic as `func(y_true, y_pred)`, and
+    coverage is a mean over the first argument alone. Passing anything else as the
+    second argument silently averages the wrong thing: it produced a "95% confidence
+    interval" of [18.0, 20.7] around an empirical coverage of 0.926, which is the
+    kind of number that survives a review because it looks like a number.
+    """
+
+    def test_averages_the_indicator(self) -> None:
+        from prognos.metrics import coverage_rate
+
+        indicator = np.array([1.0, 0.0, 1.0, 1.0])
+        assert coverage_rate(np.zeros(4), indicator) == pytest.approx(0.75)
+
+    def test_first_argument_does_not_affect_the_result(self) -> None:
+        """The first argument is the ignored half of the shared bootstrap signature."""
+        from prognos.metrics import coverage_rate
+
+        indicator = np.array([1.0, 0.0, 1.0])
+        assert coverage_rate(np.zeros(3), indicator) == coverage_rate(
+            np.array([99.0, -99.0, 99.0]), indicator
+        )
+
+    def test_bootstrap_interval_brackets_the_observed_coverage(self) -> None:
+        """The interval must contain the point estimate it is an interval for."""
+        from prognos.metrics import grouped_bootstrap_ci
+
+        rng = np.random.default_rng(0)
+        groups = rng.integers(0, 12, 4000)
+        truth = rng.normal(100.0, 15.0, 4000)
+        lower = truth - 10.0
+        upper = truth + 10.0
+        covered = ((truth >= lower) & (truth <= upper)).astype(np.float64)
+        observed, low, high = grouped_bootstrap_ci(
+            covered, covered, groups, statistic="coverage", n_resamples=200, seed=1
+        )
+        assert observed == pytest.approx(1.0)
+        assert low <= observed <= high
+        assert low == pytest.approx(1.0)
