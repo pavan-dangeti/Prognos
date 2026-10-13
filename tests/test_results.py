@@ -16,6 +16,7 @@ import pytest
 
 RESULTS = Path("results/phase2_baselines.json")
 SEQUENCE_RESULTS = Path("results/phase3_sequence.json")
+POLICY_RESULTS = Path("results/phase4_policy.json")
 README = Path("README.md")
 
 # Models whose RMSE is quoted in the README results table.
@@ -260,3 +261,175 @@ class TestReadmeMatchesResults:
         text = README.read_text()
         assert "prognos evaluate" in text, "README must show how to reproduce the numbers"
         assert "results/" in text, "README must link the raw output"
+
+
+class TestPolicyResults:
+    """Phase 4: conformal intervals and the cost comparison.
+
+    The guards here are about the result being interpretable rather than about it
+    looking good. Both of the failure modes below produced a file that read as a
+    successful experiment while measuring nothing.
+    """
+
+    @pytest.fixture(scope="class")
+    def report(self) -> dict[str, object]:
+        """The phase 4 result file."""
+        return load(POLICY_RESULTS)
+
+    def test_records_versions_and_date(self, report: dict[str, object]) -> None:
+        """Provenance, same as every other result file."""
+        assert report["versions"]["torch"]
+        assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", report["generated_at"])
+
+    def test_final_test_group_stays_closed(self, report: dict[str, object]) -> None:
+        """Phase 4 opened no held-out engine."""
+        assert report["final_test_group"]["status"] == "closed"
+        assert report["final_test_group"]["engines"]
+
+    @pytest.mark.parametrize("method", ["split", "cqr"])
+    def test_coverage_is_a_probability(self, report: dict[str, object], method: str) -> None:
+        """Coverage outside [0, 1] means the interval and the truth do not line up."""
+        entry = report["intervals"][method]
+        assert 0.0 <= entry["empirical_coverage"] <= 1.0
+        low, high = entry["coverage_ci"]
+        assert 0.0 <= low <= entry["empirical_coverage"] <= high <= 1.0, (
+            f"{method}: coverage {entry['empirical_coverage']:.3f} is not bracketed "
+            f"by its own confidence interval [{low:.3f}, {high:.3f}]"
+        )
+
+    @pytest.mark.parametrize("method", ["split", "cqr"])
+    def test_intervals_are_not_degenerate(self, report: dict[str, object], method: str) -> None:
+        """A zero-width interval that hits the coverage target is a fake result."""
+        assert report["intervals"][method]["mean_width"] > 0.0
+
+    def test_meets_the_coverage_slo(self, report: dict[str, object]) -> None:
+        """R6: coverage within five points of the target."""
+        target = report["config"]["uncertainty"]["target_coverage"]
+        for method in ("split", "cqr"):
+            entry = report["intervals"][method]
+            assert abs(entry["empirical_coverage"] - target) <= 0.05, (
+                f"{method} coverage {entry['empirical_coverage']:.3f} is more than "
+                f"5 points from the {target:.0%} SLO"
+            )
+
+    def test_calibration_engines_are_disjoint_from_evaluation(
+        self, report: dict[str, object]
+    ) -> None:
+        """Conformal coverage is a lie if calibration engines were fitted on.
+
+        The result file records all three engine sets so this is checkable from the
+        artifact rather than trusted from the code. An engine appearing in two of
+        fit, calibration and evaluation is the failure that makes a coverage number
+        optimistic, and it is invisible in the coverage itself.
+        """
+        for method in ("split", "cqr"):
+            folds = report["intervals"][method]["folds"]
+            assert len(folds) >= 2, f"{method}: needs at least two folds to mean anything"
+            for fold in folds:
+                fit = set(fold["fit_engines"])
+                calibration = set(fold["calibration_engines"])
+                evaluation = set(fold["eval_engines"])
+                assert fit, f"{method}/{fold['name']}: no fitting engines recorded"
+                assert calibration, f"{method}/{fold['name']}: no calibration engines"
+                assert evaluation, f"{method}/{fold['name']}: no evaluation engines"
+                assert not fit & calibration, (
+                    f"{method}/{fold['name']}: engines both fitted and calibrated: "
+                    f"{sorted(fit & calibration)}"
+                )
+                assert not fit & evaluation, (
+                    f"{method}/{fold['name']}: engines both fitted and evaluated: "
+                    f"{sorted(fit & evaluation)}"
+                )
+                assert not calibration & evaluation, (
+                    f"{method}/{fold['name']}: calibration engines were scored: "
+                    f"{sorted(calibration & evaluation)}"
+                )
+
+    def test_some_policy_can_fail(self, report: dict[str, object]) -> None:
+        """Run-to-failure must actually incur failures.
+
+        This is the guard that catches the bug that produced an entire Phase 4 run in
+        which every policy recorded zero failures and run-to-failure appeared free.
+        Episodes were built from window indices rather than cycle numbers, so every
+        engine looked roughly a hundred times longer than it was and the horizon
+        ended before anything could break.
+        """
+        policies = {row["policy"]: row for row in report["decision"]["policies"]}
+        assert policies["run_to_failure"]["n_failures"] > 0, (
+            "run-to-failure recorded no failures, so no policy in this file can be "
+            "cheaper than doing nothing and the whole comparison is vacuous"
+        )
+
+    def test_the_horizon_outlasts_the_shortest_engine(self, report: dict[str, object]) -> None:
+        """A horizon shorter than the shortest engine life makes the comparison void."""
+        horizon = report["decision"]["horizon"]
+        assert horizon >= report["decision"]["episode_lives"]["min"], (
+            f"horizon {horizon} is shorter than the shortest engine "
+            f"({report['decision']['episode_lives']['min']}), so nothing can fail"
+        )
+
+    def test_run_to_failure_is_the_most_expensive_policy(self, report: dict[str, object]) -> None:
+        """Waiting for engines to break is the worst available strategy.
+
+        Under every cost model here an in-flight removal costs more than a planned
+        visit, so a policy that prevents failures should always win. If this fails,
+        the cost model is not encoding the asymmetry the whole comparison assumes.
+        """
+        rows = report["decision"]["policies"]
+        worst = max(rows, key=lambda row: row["total_cost"])
+        assert worst["policy"] == "run_to_failure", (
+            f"run-to-failure costs {policies_cost(rows, 'run_to_failure'):.1f} but "
+            f"{worst['policy']} costs {worst['total_cost']:.1f}"
+        )
+
+    def test_the_ratio_sweep_covers_more_than_one_ratio(self, report: dict[str, object]) -> None:
+        """R7: a policy that only wins under one cost assumption is not a result."""
+        sweeps = report["decision"]["ratio_sweeps"]
+        assert sweeps, "no ratio sweep in the result file"
+        ratios = [row["failure_cost_ratio"] for row in sweeps[0]["rows"]]
+        assert len(ratios) >= 3, "a sweep needs at least three ratios to be a sweep"
+
+    def test_savings_grow_with_the_failure_ratio(self, report: dict[str, object]) -> None:
+        """The advantage of planning must grow with the cost of failing.
+
+        If the advantage were flat in the ratio, the ratio would not be what drives
+        the policy and the curve would be noise rather than a result.
+        """
+        for sweep in report["decision"]["ratio_sweeps"]:
+            savings = [row["savings_vs_run_to_failure"] for row in sweep["rows"]]
+            assert savings == sorted(savings), (
+                f"threshold {sweep['threshold']}: savings are not monotonic in the "
+                f"failure ratio: {savings}"
+            )
+
+    def test_policy_cost_is_stable_across_the_ratio_sweep(self, report: dict[str, object]) -> None:
+        """The sweep's own cost column must not move with the ratio.
+
+        Every failure-free row costs the same regardless of the ratio, because the
+        ratio only prices failures and these policies have none. A row that moved
+        would mean the baseline and the policy are being compared at different
+        assumptions.
+        """
+        for sweep in report["decision"]["ratio_sweeps"]:
+            costs = {round(row["total_cost"], 6) for row in sweep["rows"]}
+            assert len(costs) == 1, (
+                f"threshold {sweep['threshold']}: cost varies with the failure ratio "
+                f"({sorted(costs)}) for a policy that records no failures"
+            )
+
+    def test_cost_model_is_recorded_with_every_result(self, report: dict[str, object]) -> None:
+        """A cost number without its assumptions is not a result."""
+        model = report["decision"]["cost_model"]
+        for key in (
+            "planned_maintenance_cost",
+            "failure_cost_ratio",
+            "downtime_cost_per_cycle",
+            "maintenance_window_cycles",
+        ):
+            assert key in model
+        assert "normalised" in str(model["units"])
+
+
+def policies_cost(rows: list[dict[str, object]], name: str) -> float:
+    """Total cost of one named policy, for failure messages."""
+    return float(next(row["total_cost"] for row in rows if row["policy"] == name))

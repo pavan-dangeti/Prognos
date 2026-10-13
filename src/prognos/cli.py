@@ -7,7 +7,7 @@ import json
 import platform
 import sys
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, TypedDict, cast
 
 from .config import load_config
 from .convert import convert_subdataset, sha256_file, write_manifest
@@ -190,6 +190,132 @@ def cmd_evaluate(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_policy(args: argparse.Namespace) -> int:
+    """Calibrate conformal intervals and cost every maintenance policy on them."""
+    from .decision import CostModel
+    from .evaluate import build_folds
+    from .policy_eval import (
+        build_episodes,
+        evaluate_fold,
+        evaluate_policies,
+        report_phase4,
+        summarise,
+    )
+
+    config = load_config(Path(args.config))
+    cache_dir = None if args.no_cache else config.data.parquet_dir.parent / "cache"
+
+    print("loading windows", flush=True)
+    data = load_windows(
+        config.data.parquet_dir,
+        config.window,
+        config.data.subdatasets,
+        cache_dir=cache_dir,
+        rebuild=args.rebuild_cache,
+    )
+    folds = build_folds(
+        data,
+        n_splits=config.split.n_splits,
+        test_fraction=config.split.test_fraction,
+        seed=config.split.seed,
+    )
+    target = config.uncertainty.target_coverage
+    print(f"calibrating to {target:.0%} coverage, final test group held closed", flush=True)
+
+    calibrated = []
+    for fold in folds:
+        result = evaluate_fold(data, fold, config.split.seed, target)
+        calibrated.append(result)
+        print(
+            f"  {fold.split.name}: split width={result.split_width:.2f} "
+            f"cqr width={result.cqr_width:.2f} "
+            f"on {len(result.calibration_engines)} calibration engines",
+            flush=True,
+        )
+
+    intervals = {
+        method: summarise(calibrated, method, target, config.split.seed)
+        for method in ("split", "cqr")
+    }
+    for method, entry in intervals.items():
+        print(
+            f"  {method}: coverage={entry['empirical_coverage']:.3f} "
+            f"width={entry['mean_width']:.2f}",
+            flush=True,
+        )
+
+    cost = config.cost
+    model = CostModel(
+        planned_maintenance_cost=cost.planned_maintenance_cost,
+        failure_cost_ratio=cost.failure_cost_ratio,
+        downtime_cost_per_cycle=cost.downtime_cost_per_cycle,
+        maintenance_window_cycles=cost.maintenance_window_cycles,
+    )
+    episodes = build_episodes(calibrated)
+    print(
+        f"costing {len(episodes)} engine episodes over a {cost.horizon}-cycle horizon", flush=True
+    )
+    decision = evaluate_policies(
+        episodes,
+        model,
+        horizon=cost.horizon,
+        thresholds=list(cost.thresholds),
+        fixed_intervals=list(cost.fixed_intervals),
+        ratios=list(cost.ratio_sweep),
+        seed=config.split.seed,
+    )
+
+    report = report_phase4(
+        intervals=intervals,
+        decision=decision,
+        config={
+            "window": config.window.model_dump(),
+            "split": config.split.model_dump(),
+            "uncertainty": config.uncertainty.model_dump(),
+            "cost": config.cost.model_dump(),
+            "subdatasets": list(config.data.subdatasets),
+        },
+        data=data,
+        folds=folds,
+        hardware=hardware_description(),
+    )
+
+    out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True, default=float) + "\n")
+    print(f"wrote {out_path}", flush=True)
+
+    print("\npolicies by cost, cheapest first:")
+    for row in _policy_rows_sorted(decision):
+        print(
+            f"  {row['policy']:28s} cost={row['total_cost']:9.1f} "
+            f"planned={row['n_planned']:3d} failures={row['n_failures']:3d}"
+        )
+    return 0
+
+
+class PolicyRow(TypedDict):
+    """One policy's costing row, with the fields the CLI prints."""
+
+    policy: str
+    total_cost: float
+    cost_per_engine: float
+    n_planned: int
+    n_failures: int
+    n_engines: int
+    savings_vs_run_to_failure: float
+
+
+def _policy_rows_sorted(decision: dict[str, Any]) -> list[PolicyRow]:
+    """The policy rows, cheapest first.
+
+    Typed rather than reached into as `dict[str, object]` so the print statement
+    gets real field types instead of a cast at every access.
+    """
+    rows: list[PolicyRow] = list(decision["policies"])
+    return sorted(rows, key=lambda row: row["total_cost"])
+
+
 def main(argv: list[str] | None = None) -> int:
     """Parse arguments and dispatch."""
     parser = argparse.ArgumentParser(prog="prognos", description="Prognos pipeline")
@@ -223,6 +349,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     evaluate.add_argument("--verbose", action="store_true", help="print per-epoch training")
     evaluate.set_defaults(func=cmd_evaluate)
+
+    policy = sub.add_parser(
+        "policy", help="calibrated prediction intervals and the maintenance policy"
+    )
+    policy.add_argument("--config", default="configs/base.yaml")
+    policy.add_argument("--out", default="results/phase4_policy.json")
+    policy.add_argument("--bootstrap", type=int, default=500)
+    policy.add_argument("--no-cache", action="store_true")
+    policy.add_argument("--rebuild-cache", action="store_true")
+    policy.set_defaults(func=cmd_policy)
 
     args = parser.parse_args(argv)
     result: int = args.func(args)

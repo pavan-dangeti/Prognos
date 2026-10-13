@@ -1,0 +1,1012 @@
+{
+  "config": {
+    "cost": {
+      "downtime_cost_per_cycle": 0.05,
+      "failure_cost_ratio": 25.0,
+      "fixed_intervals": [
+        50,
+        75,
+        100,
+        125
+      ],
+      "horizon": 2000,
+      "maintenance_window_cycles": 2,
+      "planned_maintenance_cost": 1.0,
+      "ratio_sweep": [
+        1.0,
+        5.0,
+        10.0,
+        25.0,
+        50.0,
+        100.0
+      ],
+      "thresholds": [
+        10.0,
+        20.0,
+        30.0,
+        40.0
+      ]
+    },
+    "split": {
+      "n_splits": 5,
+      "seed": 20241009,
+      "test_fraction": 0.34
+    },
+    "subdatasets": [
+      "DS01-005",
+      "DS02-006",
+      "DS06"
+    ],
+    "uncertainty": {
+      "calibration_fraction": 0.3,
+      "target_coverage": 0.9
+    },
+    "window": {
+      "downsample": 10,
+      "length": 50,
+      "rul_cap": 125,
+      "stride": 10
+    }
+  },
+  "data": {
+    "engines": [
+      "DS01-005/unit001",
+      "DS01-005/unit002",
+      "DS01-005/unit003",
+      "DS01-005/unit004",
+      "DS01-005/unit005",
+      "DS01-005/unit006",
+      "DS01-005/unit007",
+      "DS01-005/unit008",
+      "DS01-005/unit009",
+      "DS01-005/unit010",
+      "DS02-006/unit002",
+      "DS02-006/unit005",
+      "DS02-006/unit010",
+      "DS02-006/unit011",
+      "DS02-006/unit014",
+      "DS02-006/unit015",
+      "DS02-006/unit016",
+      "DS02-006/unit018",
+      "DS02-006/unit020",
+      "DS06/unit001",
+      "DS06/unit002",
+      "DS06/unit003",
+      "DS06/unit004",
+      "DS06/unit005",
+      "DS06/unit006",
+      "DS06/unit007",
+      "DS06/unit008",
+      "DS06/unit009",
+      "DS06/unit010"
+    ],
+    "max_cycle": 100,
+    "n_engines": 29,
+    "n_windows": 199095,
+    "rul_cap": 99,
+    "source_splits": [
+      "dev",
+      "test"
+    ],
+    "subdatasets": [
+      "DS01-005",
+      "DS02-006",
+      "DS06"
+    ]
+  },
+  "decision": {
+    "cost_model": {
+      "downtime_cost_per_cycle": 0.05,
+      "failure_cost_ratio": 25.0,
+      "maintenance_window_cycles": 2,
+      "planned_maintenance_cost": 1.0,
+      "planned_visit_cost": 1.1,
+      "units": "arbitrary, planned maintenance normalised to 1.0",
+      "unplanned_failure_cost": 25.1
+    },
+    "episode_lives": {
+      "max": 101,
+      "median": 81,
+      "min": 64
+    },
+    "horizon": 2000,
+    "n_episodes": 19,
+    "policies": [
+      {
+        "cost_per_engine": 24.054166666666674,
+        "n_engines": 24,
+        "n_failures": 23,
+        "n_planned": 0,
+        "policy": "run_to_failure",
+        "savings_vs_run_to_failure": 0.0,
+        "total_cost": 577.3000000000002
+      },
+      {
+        "cost_per_engine": 1.1000000000000008,
+        "n_engines": 40,
+        "n_failures": 0,
+        "n_planned": 40,
+        "policy": "fixed_interval_50",
+        "savings_vs_run_to_failure": 533.3000000000002,
+        "total_cost": 44.00000000000003
+      },
+      {
+        "cost_per_engine": 4.935483870967738,
+        "n_engines": 31,
+        "n_failures": 5,
+        "n_planned": 25,
+        "policy": "fixed_interval_75",
+        "savings_vs_run_to_failure": 424.3000000000003,
+        "total_cost": 152.9999999999999
+      },
+      {
+        "cost_per_engine": 12.127027027027037,
+        "n_engines": 37,
+        "n_failures": 17,
+        "n_planned": 20,
+        "policy": "fixed_interval_100",
+        "savings_vs_run_to_failure": 128.59999999999985,
+        "total_cost": 448.70000000000033
+      },
+      {
+        "cost_per_engine": 13.100000000000007,
+        "n_engines": 32,
+        "n_failures": 16,
+        "n_planned": 16,
+        "policy": "fixed_interval_125",
+        "savings_vs_run_to_failure": 158.09999999999997,
+        "total_cost": 419.2000000000002
+      },
+      {
+        "cost_per_engine": 1.0744186046511635,
+        "n_engines": 43,
+        "n_failures": 0,
+        "n_planned": 42,
+        "policy": "threshold_lower_10",
+        "savings_vs_run_to_failure": 531.1000000000001,
+        "total_cost": 46.20000000000003
+      },
+      {
+        "cost_per_engine": 1.062068965517242,
+        "n_engines": 29,
+        "n_failures": 0,
+        "n_planned": 28,
+        "policy": "threshold_point_10",
+        "savings_vs_run_to_failure": 546.5000000000001,
+        "total_cost": 30.800000000000015
+      },
+      {
+        "cost_per_engine": 1.0792452830188688,
+        "n_engines": 53,
+        "n_failures": 0,
+        "n_planned": 52,
+        "policy": "threshold_lower_20",
+        "savings_vs_run_to_failure": 520.1000000000001,
+        "total_cost": 57.200000000000045
+      },
+      {
+        "cost_per_engine": 1.1000000000000005,
+        "n_engines": 35,
+        "n_failures": 0,
+        "n_planned": 35,
+        "policy": "threshold_point_20",
+        "savings_vs_run_to_failure": 538.8000000000002,
+        "total_cost": 38.50000000000002
+      },
+      {
+        "cost_per_engine": 1.0855263157894732,
+        "n_engines": 76,
+        "n_failures": 0,
+        "n_planned": 75,
+        "policy": "threshold_lower_30",
+        "savings_vs_run_to_failure": 494.80000000000024,
+        "total_cost": 82.49999999999996
+      },
+      {
+        "cost_per_engine": 1.0744186046511635,
+        "n_engines": 43,
+        "n_failures": 0,
+        "n_planned": 42,
+        "policy": "threshold_point_30",
+        "savings_vs_run_to_failure": 531.1000000000001,
+        "total_cost": 46.20000000000003
+      },
+      {
+        "cost_per_engine": 1.0896226415094319,
+        "n_engines": 106,
+        "n_failures": 0,
+        "n_planned": 105,
+        "policy": "threshold_lower_40",
+        "savings_vs_run_to_failure": 461.8000000000004,
+        "total_cost": 115.49999999999979
+      },
+      {
+        "cost_per_engine": 1.0792452830188688,
+        "n_engines": 53,
+        "n_failures": 0,
+        "n_planned": 52,
+        "policy": "threshold_point_40",
+        "savings_vs_run_to_failure": 520.1000000000001,
+        "total_cost": 57.200000000000045
+      }
+    ],
+    "ratio_sweeps": [
+      {
+        "rows": [
+          {
+            "cost_per_engine": 1.0744186046511635,
+            "failure_cost_ratio": 1.0,
+            "n_engines": 43,
+            "n_failures": 0,
+            "n_planned": 42,
+            "policy": "threshold_lower_10",
+            "run_to_failure_cost": 25.300000000000008,
+            "savings_vs_run_to_failure": -20.900000000000023,
+            "total_cost": 46.20000000000003
+          },
+          {
+            "cost_per_engine": 1.0744186046511635,
+            "failure_cost_ratio": 5.0,
+            "n_engines": 43,
+            "n_failures": 0,
+            "n_planned": 42,
+            "policy": "threshold_lower_10",
+            "run_to_failure_cost": 117.29999999999995,
+            "savings_vs_run_to_failure": 71.09999999999992,
+            "total_cost": 46.20000000000003
+          },
+          {
+            "cost_per_engine": 1.0744186046511635,
+            "failure_cost_ratio": 10.0,
+            "n_engines": 43,
+            "n_failures": 0,
+            "n_planned": 42,
+            "policy": "threshold_lower_10",
+            "run_to_failure_cost": 232.29999999999993,
+            "savings_vs_run_to_failure": 186.0999999999999,
+            "total_cost": 46.20000000000003
+          },
+          {
+            "cost_per_engine": 1.0744186046511635,
+            "failure_cost_ratio": 25.0,
+            "n_engines": 43,
+            "n_failures": 0,
+            "n_planned": 42,
+            "policy": "threshold_lower_10",
+            "run_to_failure_cost": 577.3000000000002,
+            "savings_vs_run_to_failure": 531.1000000000001,
+            "total_cost": 46.20000000000003
+          },
+          {
+            "cost_per_engine": 1.0744186046511635,
+            "failure_cost_ratio": 50.0,
+            "n_engines": 43,
+            "n_failures": 0,
+            "n_planned": 42,
+            "policy": "threshold_lower_10",
+            "run_to_failure_cost": 1152.3000000000002,
+            "savings_vs_run_to_failure": 1106.1000000000001,
+            "total_cost": 46.20000000000003
+          },
+          {
+            "cost_per_engine": 1.0744186046511635,
+            "failure_cost_ratio": 100.0,
+            "n_engines": 43,
+            "n_failures": 0,
+            "n_planned": 42,
+            "policy": "threshold_lower_10",
+            "run_to_failure_cost": 2302.2999999999993,
+            "savings_vs_run_to_failure": 2256.0999999999995,
+            "total_cost": 46.20000000000003
+          }
+        ],
+        "threshold": 10.0
+      },
+      {
+        "rows": [
+          {
+            "cost_per_engine": 1.0792452830188688,
+            "failure_cost_ratio": 1.0,
+            "n_engines": 53,
+            "n_failures": 0,
+            "n_planned": 52,
+            "policy": "threshold_lower_20",
+            "run_to_failure_cost": 25.300000000000008,
+            "savings_vs_run_to_failure": -31.900000000000038,
+            "total_cost": 57.200000000000045
+          },
+          {
+            "cost_per_engine": 1.0792452830188688,
+            "failure_cost_ratio": 5.0,
+            "n_engines": 53,
+            "n_failures": 0,
+            "n_planned": 52,
+            "policy": "threshold_lower_20",
+            "run_to_failure_cost": 117.29999999999995,
+            "savings_vs_run_to_failure": 60.09999999999991,
+            "total_cost": 57.200000000000045
+          },
+          {
+            "cost_per_engine": 1.0792452830188688,
+            "failure_cost_ratio": 10.0,
+            "n_engines": 53,
+            "n_failures": 0,
+            "n_planned": 52,
+            "policy": "threshold_lower_20",
+            "run_to_failure_cost": 232.29999999999993,
+            "savings_vs_run_to_failure": 175.09999999999988,
+            "total_cost": 57.200000000000045
+          },
+          {
+            "cost_per_engine": 1.0792452830188688,
+            "failure_cost_ratio": 25.0,
+            "n_engines": 53,
+            "n_failures": 0,
+            "n_planned": 52,
+            "policy": "threshold_lower_20",
+            "run_to_failure_cost": 577.3000000000002,
+            "savings_vs_run_to_failure": 520.1000000000001,
+            "total_cost": 57.200000000000045
+          },
+          {
+            "cost_per_engine": 1.0792452830188688,
+            "failure_cost_ratio": 50.0,
+            "n_engines": 53,
+            "n_failures": 0,
+            "n_planned": 52,
+            "policy": "threshold_lower_20",
+            "run_to_failure_cost": 1152.3000000000002,
+            "savings_vs_run_to_failure": 1095.1000000000001,
+            "total_cost": 57.200000000000045
+          },
+          {
+            "cost_per_engine": 1.0792452830188688,
+            "failure_cost_ratio": 100.0,
+            "n_engines": 53,
+            "n_failures": 0,
+            "n_planned": 52,
+            "policy": "threshold_lower_20",
+            "run_to_failure_cost": 2302.2999999999993,
+            "savings_vs_run_to_failure": 2245.0999999999995,
+            "total_cost": 57.200000000000045
+          }
+        ],
+        "threshold": 20.0
+      },
+      {
+        "rows": [
+          {
+            "cost_per_engine": 1.0855263157894732,
+            "failure_cost_ratio": 1.0,
+            "n_engines": 76,
+            "n_failures": 0,
+            "n_planned": 75,
+            "policy": "threshold_lower_30",
+            "run_to_failure_cost": 25.300000000000008,
+            "savings_vs_run_to_failure": -57.199999999999946,
+            "total_cost": 82.49999999999996
+          },
+          {
+            "cost_per_engine": 1.0855263157894732,
+            "failure_cost_ratio": 5.0,
+            "n_engines": 76,
+            "n_failures": 0,
+            "n_planned": 75,
+            "policy": "threshold_lower_30",
+            "run_to_failure_cost": 117.29999999999995,
+            "savings_vs_run_to_failure": 34.8,
+            "total_cost": 82.49999999999996
+          },
+          {
+            "cost_per_engine": 1.0855263157894732,
+            "failure_cost_ratio": 10.0,
+            "n_engines": 76,
+            "n_failures": 0,
+            "n_planned": 75,
+            "policy": "threshold_lower_30",
+            "run_to_failure_cost": 232.29999999999993,
+            "savings_vs_run_to_failure": 149.79999999999995,
+            "total_cost": 82.49999999999996
+          },
+          {
+            "cost_per_engine": 1.0855263157894732,
+            "failure_cost_ratio": 25.0,
+            "n_engines": 76,
+            "n_failures": 0,
+            "n_planned": 75,
+            "policy": "threshold_lower_30",
+            "run_to_failure_cost": 577.3000000000002,
+            "savings_vs_run_to_failure": 494.80000000000024,
+            "total_cost": 82.49999999999996
+          },
+          {
+            "cost_per_engine": 1.0855263157894732,
+            "failure_cost_ratio": 50.0,
+            "n_engines": 76,
+            "n_failures": 0,
+            "n_planned": 75,
+            "policy": "threshold_lower_30",
+            "run_to_failure_cost": 1152.3000000000002,
+            "savings_vs_run_to_failure": 1069.8000000000002,
+            "total_cost": 82.49999999999996
+          },
+          {
+            "cost_per_engine": 1.0855263157894732,
+            "failure_cost_ratio": 100.0,
+            "n_engines": 76,
+            "n_failures": 0,
+            "n_planned": 75,
+            "policy": "threshold_lower_30",
+            "run_to_failure_cost": 2302.2999999999993,
+            "savings_vs_run_to_failure": 2219.7999999999993,
+            "total_cost": 82.49999999999996
+          }
+        ],
+        "threshold": 30.0
+      },
+      {
+        "rows": [
+          {
+            "cost_per_engine": 1.0896226415094319,
+            "failure_cost_ratio": 1.0,
+            "n_engines": 106,
+            "n_failures": 0,
+            "n_planned": 105,
+            "policy": "threshold_lower_40",
+            "run_to_failure_cost": 25.300000000000008,
+            "savings_vs_run_to_failure": -90.19999999999978,
+            "total_cost": 115.49999999999979
+          },
+          {
+            "cost_per_engine": 1.0896226415094319,
+            "failure_cost_ratio": 5.0,
+            "n_engines": 106,
+            "n_failures": 0,
+            "n_planned": 105,
+            "policy": "threshold_lower_40",
+            "run_to_failure_cost": 117.29999999999995,
+            "savings_vs_run_to_failure": 1.8000000000001677,
+            "total_cost": 115.49999999999979
+          },
+          {
+            "cost_per_engine": 1.0896226415094319,
+            "failure_cost_ratio": 10.0,
+            "n_engines": 106,
+            "n_failures": 0,
+            "n_planned": 105,
+            "policy": "threshold_lower_40",
+            "run_to_failure_cost": 232.29999999999993,
+            "savings_vs_run_to_failure": 116.80000000000014,
+            "total_cost": 115.49999999999979
+          },
+          {
+            "cost_per_engine": 1.0896226415094319,
+            "failure_cost_ratio": 25.0,
+            "n_engines": 106,
+            "n_failures": 0,
+            "n_planned": 105,
+            "policy": "threshold_lower_40",
+            "run_to_failure_cost": 577.3000000000002,
+            "savings_vs_run_to_failure": 461.8000000000004,
+            "total_cost": 115.49999999999979
+          },
+          {
+            "cost_per_engine": 1.0896226415094319,
+            "failure_cost_ratio": 50.0,
+            "n_engines": 106,
+            "n_failures": 0,
+            "n_planned": 105,
+            "policy": "threshold_lower_40",
+            "run_to_failure_cost": 1152.3000000000002,
+            "savings_vs_run_to_failure": 1036.8000000000004,
+            "total_cost": 115.49999999999979
+          },
+          {
+            "cost_per_engine": 1.0896226415094319,
+            "failure_cost_ratio": 100.0,
+            "n_engines": 106,
+            "n_failures": 0,
+            "n_planned": 105,
+            "policy": "threshold_lower_40",
+            "run_to_failure_cost": 2302.2999999999993,
+            "savings_vs_run_to_failure": 2186.7999999999993,
+            "total_cost": 115.49999999999979
+          }
+        ],
+        "threshold": 40.0
+      }
+    ]
+  },
+  "final_test_group": {
+    "engines": [
+      3,
+      7,
+      11,
+      13,
+      18,
+      21,
+      22,
+      23,
+      24,
+      26
+    ],
+    "note": "Not opened in Phase 4. These results are cross-validated only.",
+    "status": "closed"
+  },
+  "generated_at": "2026-10-13",
+  "hardware": "Darwin arm64 / arm / Python 3.12.13",
+  "intervals": {
+    "cqr": {
+      "by_stage": {
+        "early": {
+          "coverage": 0.9124225217805904,
+          "mean_width": 46.60708844121755,
+          "n": 46142
+        },
+        "late": {
+          "coverage": 0.9616955967229416,
+          "mean_width": 33.40748382914981,
+          "n": 46261
+        },
+        "mid": {
+          "coverage": 0.9119392201081602,
+          "mean_width": 45.55629183930611,
+          "n": 45673
+        }
+      },
+      "calibration_engines": [
+        0,
+        1,
+        2,
+        4,
+        5,
+        6,
+        8,
+        9,
+        10,
+        14,
+        15,
+        16,
+        17,
+        19,
+        20,
+        25,
+        28
+      ],
+      "calibration_widths": [
+        17.930931091308594,
+        17.897171020507812,
+        17.896923065185547,
+        11.34821891784668,
+        17.87053680419922
+      ],
+      "coverage_ci": [
+        0.8132118403747229,
+        1.0
+      ],
+      "coverage_within_target": true,
+      "empirical_coverage": 0.9287711115617486,
+      "eval_engines": [
+        0,
+        1,
+        2,
+        4,
+        5,
+        6,
+        8,
+        9,
+        10,
+        12,
+        14,
+        15,
+        16,
+        17,
+        19,
+        20,
+        25,
+        27,
+        28
+      ],
+      "fit_engines": [
+        9,
+        10,
+        12,
+        14,
+        15,
+        16,
+        19,
+        20,
+        27
+      ],
+      "folds": [
+        {
+          "calibration_engines": [
+            0,
+            1,
+            2,
+            4,
+            6,
+            8,
+            14,
+            15,
+            17,
+            25
+          ],
+          "eval_engines": [
+            5,
+            19,
+            27,
+            28
+          ],
+          "fit_engines": [
+            9,
+            10,
+            12,
+            16,
+            20
+          ],
+          "name": "fold0"
+        },
+        {
+          "calibration_engines": [
+            0,
+            1,
+            2,
+            4,
+            5,
+            8,
+            16,
+            17,
+            25,
+            28
+          ],
+          "eval_engines": [
+            6,
+            10,
+            14,
+            20
+          ],
+          "fit_engines": [
+            9,
+            12,
+            15,
+            19,
+            27
+          ],
+          "name": "fold1"
+        },
+        {
+          "calibration_engines": [
+            0,
+            2,
+            4,
+            5,
+            6,
+            9,
+            16,
+            17,
+            20,
+            28
+          ],
+          "eval_engines": [
+            1,
+            8,
+            15,
+            25
+          ],
+          "fit_engines": [
+            10,
+            12,
+            14,
+            19,
+            27
+          ],
+          "name": "fold2"
+        },
+        {
+          "calibration_engines": [
+            1,
+            4,
+            5,
+            6,
+            8,
+            10,
+            17,
+            19,
+            25,
+            28
+          ],
+          "eval_engines": [
+            0,
+            2,
+            9,
+            16
+          ],
+          "fit_engines": [
+            12,
+            14,
+            15,
+            20,
+            27
+          ],
+          "name": "fold3"
+        },
+        {
+          "calibration_engines": [
+            0,
+            1,
+            2,
+            5,
+            6,
+            8,
+            15,
+            16,
+            20,
+            25,
+            28
+          ],
+          "eval_engines": [
+            4,
+            12,
+            17
+          ],
+          "fit_engines": [
+            9,
+            10,
+            14,
+            19,
+            27
+          ],
+          "name": "fold4"
+        }
+      ],
+      "mean_width": 41.8371071109504,
+      "method": "cqr",
+      "n_eval_engines": 19,
+      "n_eval_rows": 138076,
+      "point_rmse": 9.996465343760178,
+      "target_coverage": 0.9
+    },
+    "split": {
+      "by_stage": {
+        "early": {
+          "coverage": 0.9084348316067791,
+          "mean_width": 41.218344057083215,
+          "n": 46142
+        },
+        "late": {
+          "coverage": 0.9605499232614946,
+          "mean_width": 31.76046131733827,
+          "n": 46261
+        },
+        "mid": {
+          "coverage": 0.9084141615396405,
+          "mean_width": 41.07201558895845,
+          "n": 45673
+        }
+      },
+      "calibration_engines": [
+        0,
+        1,
+        2,
+        4,
+        5,
+        6,
+        8,
+        9,
+        10,
+        14,
+        15,
+        16,
+        17,
+        19,
+        20,
+        25,
+        28
+      ],
+      "calibration_widths": [
+        20.25267791748047,
+        22.246912002563477,
+        22.44927215576172,
+        16.60578155517578,
+        22.3570613861084
+      ],
+      "coverage_ci": [
+        0.8110714152836133,
+        0.9981389736010582
+      ],
+      "coverage_within_target": true,
+      "empirical_coverage": 0.9258886410382687,
+      "eval_engines": [
+        0,
+        1,
+        2,
+        4,
+        5,
+        6,
+        8,
+        9,
+        10,
+        12,
+        14,
+        15,
+        16,
+        17,
+        19,
+        20,
+        25,
+        27,
+        28
+      ],
+      "fit_engines": [
+        9,
+        10,
+        12,
+        14,
+        15,
+        16,
+        19,
+        20,
+        27
+      ],
+      "folds": [
+        {
+          "calibration_engines": [
+            0,
+            1,
+            2,
+            4,
+            6,
+            8,
+            14,
+            15,
+            17,
+            25
+          ],
+          "eval_engines": [
+            5,
+            19,
+            27,
+            28
+          ],
+          "fit_engines": [
+            9,
+            10,
+            12,
+            16,
+            20
+          ],
+          "name": "fold0"
+        },
+        {
+          "calibration_engines": [
+            0,
+            1,
+            2,
+            4,
+            5,
+            8,
+            16,
+            17,
+            25,
+            28
+          ],
+          "eval_engines": [
+            6,
+            10,
+            14,
+            20
+          ],
+          "fit_engines": [
+            9,
+            12,
+            15,
+            19,
+            27
+          ],
+          "name": "fold1"
+        },
+        {
+          "calibration_engines": [
+            0,
+            2,
+            4,
+            5,
+            6,
+            9,
+            16,
+            17,
+            20,
+            28
+          ],
+          "eval_engines": [
+            1,
+            8,
+            15,
+            25
+          ],
+          "fit_engines": [
+            10,
+            12,
+            14,
+            19,
+            27
+          ],
+          "name": "fold2"
+        },
+        {
+          "calibration_engines": [
+            1,
+            4,
+            5,
+            6,
+            8,
+            10,
+            17,
+            19,
+            25,
+            28
+          ],
+          "eval_engines": [
+            0,
+            2,
+            9,
+            16
+          ],
+          "fit_engines": [
+            12,
+            14,
+            15,
+            20,
+            27
+          ],
+          "name": "fold3"
+        },
+        {
+          "calibration_engines": [
+            0,
+            1,
+            2,
+            5,
+            6,
+            8,
+            15,
+            16,
+            20,
+            25,
+            28
+          ],
+          "eval_engines": [
+            4,
+            12,
+            17
+          ],
+          "fit_engines": [
+            9,
+            10,
+            14,
+            19,
+            27
+          ],
+          "name": "fold4"
+        }
+      ],
+      "mean_width": 38.00117109764056,
+      "method": "split",
+      "n_eval_engines": 19,
+      "n_eval_rows": 138076,
+      "point_rmse": 9.996465343760178,
+      "target_coverage": 0.9
+    }
+  },
+  "versions": {
+    "h5py": "3.16.0",
+    "lightgbm": "4.6.0",
+    "numpy": "2.4.1",
+    "pandas": "3.0.1",
+    "pyarrow": "26.0.0",
+    "python": "3.12.13",
+    "scikit-learn": "1.8.0",
+    "torch": "2.10.0"
+  }
+}
