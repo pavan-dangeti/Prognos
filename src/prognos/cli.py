@@ -7,6 +7,7 @@ import json
 import platform
 import sys
 from pathlib import Path
+from typing import Any, cast
 
 from .config import load_config
 from .convert import convert_subdataset, sha256_file, write_manifest
@@ -96,12 +97,35 @@ def cmd_evaluate(args: argparse.Namespace) -> int:
     test_units = folds[0].split.test_units
     print(f"  final test group held closed: {test_units}", flush=True)
 
-    models = dict(build_models())
+    models: dict[str, Any] = dict(build_models())
     if not args.baselines_only:
         models["lightgbm"] = LightGbmModel(seed=config.split.seed)
 
+    # Sequence models are refitted per fold from scratch. Torch's optimiser state
+    # and any adapter validation split belong to one fit, so reusing an object across
+    # folds would leak the previous fold's training into the next.
+    sequence_models: dict[str, Any] = {}
+    if args.sequence:
+        from .sequence import HarnessAdapter, TrainConfig, _BaseSequenceModel, build_sequence_models
+
+        train_config = TrainConfig(
+            epochs=args.epochs,
+            seed=config.split.seed,
+            late_weight=args.late_weight,
+            verbose=args.verbose,
+        )
+        sequence_models = {
+            name: HarnessAdapter(model=cast("_BaseSequenceModel", model), seed=config.split.seed)
+            for name, model in build_sequence_models(train_config).items()
+        }
+        for name, model in sequence_models.items():
+            print(
+                f"  {name}: {model.model.count_parameters():,} parameters on {model.model.device}"
+            )
+
     summaries: dict[str, object] = {}
-    for name, model in models.items():
+    model_reports: dict[str, object] = {}
+    for name, model in {**models, **sequence_models}.items():
         print(f"evaluating {name}", flush=True)
         results = []
         for fold in folds:
@@ -128,6 +152,11 @@ def cmd_evaluate(args: argparse.Namespace) -> int:
             target_coverage=args.coverage,
             engine_labels=data.group_labels,
         )
+        # A sequence model's own fit report, so the training side is auditable
+        # alongside the metrics.
+        inner = getattr(model, "model", model)
+        if hasattr(inner, "report"):
+            model_reports[name] = inner.report()
         print(
             f"  mean rmse={summaries[name]['rmse']['mean']:.2f} "  # type: ignore[index]
             f"mean score={summaries[name]['nasa_score']['mean']:.1f}",  # type: ignore[index]
@@ -145,6 +174,7 @@ def cmd_evaluate(args: argparse.Namespace) -> int:
         folds=folds,
         models=summaries,
         hardware=hardware_description(),
+        model_reports=model_reports,
     )
 
     out_path = Path(args.out)
@@ -181,6 +211,17 @@ def main(argv: list[str] | None = None) -> int:
     evaluate.add_argument("--no-cache", action="store_true")
     evaluate.add_argument("--rebuild-cache", action="store_true")
     evaluate.add_argument("--baselines-only", action="store_true")
+    evaluate.add_argument(
+        "--sequence", action="store_true", help="also evaluate the CNN, LSTM and Transformer"
+    )
+    evaluate.add_argument("--epochs", type=int, default=30)
+    evaluate.add_argument(
+        "--late-weight",
+        type=float,
+        default=1.0,
+        help="weight on late predictions in the training loss; 1.0 is plain MSE",
+    )
+    evaluate.add_argument("--verbose", action="store_true", help="print per-epoch training")
     evaluate.set_defaults(func=cmd_evaluate)
 
     args = parser.parse_args(argv)

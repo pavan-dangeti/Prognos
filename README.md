@@ -8,53 +8,85 @@ Built on NASA N-CMAPSS. Research demonstration — see
 [Limitations](docs/design.md#9-limitations) before drawing any operational
 conclusion from it.
 
-Status: Phase 2 (baselines and evaluation harness).
+Status: Phase 3 (sequence models).
 
 ## Results
 
 5-fold grouped cross-validation, 29 engines from DS01, DS02 and DS06, 199,095
 windows. Intervals are 95% bootstrap resampling **by engine**, not by window. The
-final test group of 10 engines was held closed throughout.
+final test group of 10 engines was held closed throughout, for every model.
 
-| model | rmse | nasa_score | rmse 95% CI | how measured |
-| --- | --- | --- | --- | --- |
-| `lightgbm` | 8.15 | 30,027 | 4.23–12.07 | grouped CV, window statistics + cycle context |
-| `linear_cycle` | 8.90 | 34,950 | 4.62–13.18 | grouped CV, RUL ~ cycle number, no sensors |
-| `mean` | 23.76 | 283,059 | 22.08–25.44 | grouped CV, training-set mean RUL |
-| `trend` | 25.87 | 557,375 | 25.09–26.65 | grouped CV, per-channel trend to threshold |
+| model | rmse | nasa_score | rmse 95% CI | params | how measured |
+| --- | --- | --- | --- | --- | --- |
+| `cnn` | 7.40 | 24,343 | 4.61–10.20 | 113,665 | grouped CV, 1D CNN over the window |
+| `transformer` | 7.43 | 24,396 | 5.39–9.47 | 68,417 | grouped CV, 2-layer encoder |
+| `lightgbm` | 8.15 | 30,027 | 4.23–12.07 | — | grouped CV, window statistics + cycle context |
+| `linear_cycle` | 8.90 | 34,950 | 4.62–13.18 | — | grouped CV, RUL ~ cycle number, **no sensors** |
+| `lstm` | 13.00 | 65,732 | 10.58–15.41 | 55,105 | grouped CV, 2-layer LSTM |
+| `mean` | 23.76 | 283,059 | 22.08–25.44 | — | grouped CV, training-set mean RUL |
+| `trend` | 25.87 | 557,375 | 25.09–26.65 | — | grouped CV, per-channel trend to threshold |
 
-Reproduce from a converted dataset:
+Reproduce:
 
 ```bash
 uv run prognos convert --config configs/base.yaml
-uv run prognos evaluate --config configs/base.yaml --out results/phase2_baselines.json
+uv run prognos evaluate --config configs/base.yaml --out results/phase3_sequence.json --sequence --epochs 30
 ```
 
-Raw output: [`results/phase2_baselines.json`](results/phase2_baselines.json).
-`tests/test_results.py` fails CI if the figures above drift from that file.
+Raw output: [`results/phase3_sequence.json`](results/phase3_sequence.json).
+`tests/test_results.py` fails CI if any figure in this table drifts from a committed
+result file.
 
-`nasa_score` is the asymmetric scoring function from Saxena et al. (2008); lower is
-better and late predictions cost more than early ones. It is a sum over
-predictions, so it is not comparable across datasets of different size.
+Hardware for every number: Apple M5, 16 GB, macOS, Python 3.12.13, torch 2.10.0 on
+MPS. The full seven-model run takes about 55 minutes, dominated by the Transformer.
+~45 s of that is materialising 199,095 windows.
 
-### What the numbers say
+### Does sensor data actually help?
 
-`lightgbm` at 8.15 RMSE is the bar a sequence model has to beat, and the interval
-is wide: 4.23 to 12.07 across folds. At 29 engines, that interval is the honest
-state of the evidence, not a formality.
+This is the question Phase 3 exists to answer, and `linear_cycle` is the control for
+it. That model uses **no sensor data at all** — just cycle number — and reaches 8.90
+RMSE. A sequence model that cannot beat it has not shown that sensor channels
+contribute anything beyond knowing the engine's age.
 
-`linear_cycle` at 8.90 uses **no sensor data at all** — just cycle number. It lands
-within 0.75 cycles of the gradient boosting model, which says most of the
-predictable signal in this window is how old the engine is, not how its sensors
-have moved. That is the most useful thing Phase 2 produced, and it sets the bar
-that matters: a 1D CNN or LSTM has to beat 8.90, not beat 23.76.
+The CNN at 7.40 does beat it, by 1.5 cycles. So do the life-stage numbers, which are
+more informative than the headline:
 
-`trend` at 25.87 is worse than the mean floor. The degradation-trend approach fails
-here for a specific reason: with a 50-sample window at downsample 10, a channel's
-slope is estimated from 500 seconds of a single flight, and extrapolating that to a
-threshold crossing is dominated by noise. Its life-stage breakdown shows where —
-RMSE 19.5 early, 37.7 late. The method is sound; the window is too short to support
-it. Phase 3's longer windows are the natural test of that.
+| model | early | mid | late |
+| --- | --- | --- | --- |
+| `transformer` | 9.38 | 7.80 | **3.76** |
+| `cnn` | 9.30 | 7.64 | **4.16** |
+| `lightgbm` | 9.04 | 8.71 | 6.37 |
+| `linear_cycle` | 8.93 | 8.77 | 8.84 |
+
+`linear_cycle` is flat across life stages, which is exactly what a model that only
+knows the engine's age should be. The sequence models are worse early — where there
+is little to detect yet — and roughly **half** as good late, where degradation is
+visible and where maintenance decisions are actually made. That asymmetry is the
+evidence that the sensors are carrying degradation information, and it is the part
+that matters operationally.
+
+Honest caveat: the CNN/Transformer confidence intervals overlap the `linear_cycle`
+interval. At 29 engines, 1.5 cycles of separation is suggestive, not conclusive. The
+life-stage split is the stronger evidence because it is a within-model comparison
+against a model that cannot improve by learning the sensors.
+
+### The two results worth arguing about
+
+**The LSTM failed.** 13.00 RMSE, clearly worse than the cycle-only floor. Its
+life-stage pattern is the diagnosis: 14.06 early, 7.63 mid, 15.02 late. The middle
+is the best of any model in the table; the ends are the worst. It is reading the
+trajectory only where the trajectory is locally informative and falling back
+toward the mean elsewhere. The architectural suspect is the readout — it uses only
+the final hidden state, discarding the intermediate states, while both the CNN and
+the Transformer pool over the whole window. Pooling is the obvious fix and it has
+**not** been applied, because validating it on these folds would be tuning on the set
+being reported. It belongs in a run with a different seed and a fresh fold assignment.
+
+**The degradation-trend baseline got worse, as predicted.** Phase 2 recorded RMSE
+37.73 in late life and attributed it to the window being too short to estimate a
+channel's slope. That prediction held: it is 37.73 again here, unchanged, because
+nothing about the window changed. The method is sound; the input does not support it
+at downsample 10 and length 50.
 
 ## Documentation
 

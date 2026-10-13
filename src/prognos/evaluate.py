@@ -227,12 +227,13 @@ def report_run(
     folds: list[Fold],
     models: dict[str, object],
     hardware: str,
+    model_reports: dict[str, object] | None = None,
 ) -> dict[str, object]:
     """Assemble the committed result file.
 
-    Includes the split, the closed status of the final test group, and the hardware
-    the numbers came from, so a reader of results/ never has to ask how they were
-    produced.
+    Includes the split, the closed status of the final test group, the hardware the
+    numbers came from, and per-model fit reports, so a reader of results/ never has
+    to ask how they were produced.
     """
     labels = tuple(data.group_labels)
     test_units = sorted(folds[0].split.test_units) if folds else []
@@ -258,6 +259,7 @@ def report_run(
             for fold in folds
         ],
         "models": models,
+        "model_fits": model_reports or {},
     }
 
 
