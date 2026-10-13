@@ -14,7 +14,11 @@ services:
       context: .
       dockerfile: docker/Dockerfile
       target: runtime
-    command: ["prognos", "stream", "--config", "/app/configs/base.yaml"]
+    # --host 0.0.0.0 inside the container is required: a process bound to the
+    # container's own loopback is unreachable through the published port. The security
+    # boundary is the host-side mapping below, which stays on 127.0.0.1, so the port is
+    # still not published off the machine. Two different boundaries, two settings.
+    command: ["prognos", "serve", "--component", "ingestion", "--port", "8081", "--host", "0.0.0.0"]
     environment:
       PROGNOS_SERVICE: ingestion
       PROGNOS_PORT: "8081"
@@ -39,7 +43,7 @@ services:
       context: .
       dockerfile: docker/Dockerfile
       target: runtime
-    command: ["prognos", "stream", "--config", "/app/configs/base.yaml"]
+    command: ["prognos", "serve", "--component", "inference", "--port", "8082", "--host", "0.0.0.0", "--model-dir", "/app/artifacts/model"]
     environment:
       PROGNOS_SERVICE: inference
       PROGNOS_PORT: "8082"
@@ -47,11 +51,38 @@ services:
       - "127.0.0.1:8082:8082"
     volumes:
       - ./configs:/app/configs:ro
+      # The trained model plus its calibrator. Without this the service stays unready,
+      # which is the correct behaviour: no calibrator means no interval, and an
+      # interval-free prediction service is worse than one that refuses traffic.
+      - ./artifacts:/app/artifacts:ro
     depends_on:
       ingestion:
         condition: service_healthy
+    # Deliberately /healthz, not /readyz. Readiness returns 503 until a calibrated
+    # model is mounted, and that is not a fault in the process: pointing the container
+    # healthcheck at readiness would report the service unhealthy forever for a
+    # condition that is fixed by supplying an artifact, not by restarting anything.
+    # Readiness is what gates traffic, which is a different job.
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8082/readyz', timeout=3).status==200 else 1)"]
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8082/healthz', timeout=3).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  alerting:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: runtime
+    command: ["prognos", "serve", "--component", "alerting", "--port", "8083", "--host", "0.0.0.0"]
+    environment:
+      PROGNOS_SERVICE: alerting
+      PROGNOS_PORT: "8083"
+    ports:
+      - "127.0.0.1:8083:8083"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8083/readyz', timeout=3).status==200 else 1)"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -62,15 +93,15 @@ services:
       context: .
       dockerfile: docker/Dockerfile
       target: runtime
-    command: ["prognos", "stream", "--config", "/app/configs/base.yaml"]
+    command: ["prognos", "serve", "--component", "dashboard", "--port", "8084", "--host", "0.0.0.0"]
     environment:
       PROGNOS_SERVICE: dashboard
-      PROGNOS_PORT: "8083"
+      PROGNOS_PORT: "8084"
     ports:
-      - "127.0.0.1:8083:8083"
-    depends_on: [inference]
+      - "127.0.0.1:8084:8084"
+    depends_on: [inference, alerting]
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8083/healthz', timeout=3).status==200 else 1)"]
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8084/healthz', timeout=3).status==200 else 1)"]
       interval: 30s
       timeout: 5s
       retries: 3

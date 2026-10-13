@@ -290,11 +290,52 @@ Shipping it for a demo that does not need it is not justified. The architecture 
 not prevent shipping it later — it is a different payload in the same slot — and the
 trade-off is recorded here rather than buried.
 
-### One image, six services
+### One image, six services, and actually running
 
 Six images would mean six builds and six vulnerability scans for the same code. The
 compose file runs all six components from one image with different commands. Grafana
-and Prometheus are pinned by digest, as the base image is.
+and Prometheus are pinned by real digests, as the base image is.
+
+```bash
+uv run prognos stream --config configs/base.yaml   # trains and writes artifacts/model
+docker compose up -d --build
+docker compose ps        # six services healthy
+```
+
+Verified running, not just validating: six containers healthy, 5/5 Prometheus scrape
+targets up, `prognos_service_up` scraped from all four services, the Grafana dashboard
+provisioned with 7 panels, and ingestion counters moving on real POSTs.
+
+**Bringing it up found four things no test found.** The compose file had
+`prognos stream` as the long-running command for all three services, and that is the
+replay CLI — it writes a file and exits. Every service would have died instantly and
+every healthcheck would have failed. `service.py` existed and was never wired to a CLI
+entry point.
+
+Then, in order:
+
+1. **Nothing served HTTP at all.** No `prognos serve` command existed.
+2. **Every port was unreachable.** Services bound to `127.0.0.1` *inside* the
+   container, so the host's port forward reached nothing. A container-internal bind must
+   be `0.0.0.0`; the security boundary is the host-side mapping, which stays on
+   127.0.0.1. Two different boundaries, two different settings.
+3. **Inference reported unhealthy forever.** Its healthcheck hit `/readyz`, which
+   correctly returns 503 with no model mounted. That is not a fault in the process, and
+   pointing a liveness probe at readiness conflates the two probes deliberately kept
+   apart.
+4. **Every metric went nowhere.** `ingest()` resolved `metrics or MetricsRegistry()`
+   *inside* the handler, so each request wrote to a fresh throwaway registry. The
+   service answered 200, the response said `accepted: 1`, and `/metrics` served only
+   the liveness series. A counter written to a registry nobody scrapes is
+   indistinguishable from a counter that never fired.
+
+Four bugs, zero of which any existing test could see. They were all only visible by
+running the thing, which is the argument for running it.
+
+`prognos stream` now also writes `artifacts/model` — the model and its calibrator — and
+inference mounts it. Without it the service stays unready, which is the right
+behaviour: no calibrator means no interval, and an interval-free prediction service is
+worse than one that refuses traffic.
 
 ## Documentation
 

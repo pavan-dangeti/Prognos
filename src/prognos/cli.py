@@ -352,6 +352,7 @@ def cmd_stream(args: argparse.Namespace) -> int:
         config,
         seed=config.split.seed,
         calibration_fraction=args.calibration_fraction,
+        model_dir=Path(args.model_dir),
     )
 
     out_path = Path(args.out)
@@ -371,6 +372,40 @@ def cmd_stream(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_serve(args: argparse.Namespace) -> int:
+    """Serve one streaming component over HTTP until interrupted."""
+    import logging
+
+    from prognos.stream.api import build_component, default_port
+    from prognos.stream.observability import JsonLogFormatter
+    from prognos.stream.service import serve
+
+    handlers = [
+        logging.StreamHandler(sys.stdout),
+    ]
+    logging.basicConfig(
+        level=logging.INFO,
+        handlers=handlers,
+        format="%(message)s",
+        force=True,
+    )
+    logger = logging.getLogger(f"prognos.{args.component}")
+    for handler in handlers:
+        handler.setFormatter(JsonLogFormatter(service=args.component))
+
+    options: dict[str, Any] = {"logger": logger}
+    if args.component == "inference":
+        options["model_dir"] = Path(args.model_dir) if args.model_dir else None
+    if args.component == "alerting":
+        options["threshold"] = args.alert_threshold
+        options["hysteresis"] = args.alert_hysteresis
+
+    state = build_component(args.component, **options)
+    port = args.port or default_port(args.component)
+    serve(state, host=args.host, port=port)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Parse arguments and dispatch."""
     parser = argparse.ArgumentParser(prog="prognos", description="Prognos pipeline")
@@ -379,6 +414,8 @@ def main(argv: list[str] | None = None) -> int:
     convert = sub.add_parser("convert", help="HDF5 to Parquet")
     convert.add_argument("--config", default="configs/base.yaml")
     convert.set_defaults(func=cmd_convert)
+
+    from prognos.stream.api import COMPONENTS
 
     manifest = sub.add_parser("manifest", help="show the data manifest")
     manifest.add_argument("--config", default="configs/base.yaml")
@@ -425,9 +462,23 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="fraction of engines held out to calibrate; drives interval width",
     )
+    stream.add_argument(
+        "--model-dir",
+        default="artifacts/model",
+        help="where the fitted model and its calibrator are written for inference to load",
+    )
     stream.add_argument("--no-cache", action="store_true")
     stream.add_argument("--rebuild-cache", action="store_true")
     stream.set_defaults(func=cmd_stream)
+
+    serve_cmd = sub.add_parser("serve", help="serve one streaming component over HTTP")
+    serve_cmd.add_argument("--component", required=True, choices=list(COMPONENTS))
+    serve_cmd.add_argument("--host", default="127.0.0.1")
+    serve_cmd.add_argument("--port", type=int, default=0)
+    serve_cmd.add_argument("--model-dir", default="artifacts/model")
+    serve_cmd.add_argument("--alert-threshold", type=float, default=20.0)
+    serve_cmd.add_argument("--alert-hysteresis", type=float, default=5.0)
+    serve_cmd.set_defaults(func=cmd_serve)
 
     args = parser.parse_args(argv)
     result: int = args.func(args)

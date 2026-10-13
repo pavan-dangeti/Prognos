@@ -85,6 +85,7 @@ def replay_pipeline(
     config: Config,
     seed: int,
     calibration_fraction: float | None = None,
+    model_dir: Path | None = None,
     logger: logging.Logger | None = None,
 ) -> ReplayOutcome:
     """Train the serving predictor, then replay each engine through the pipeline.
@@ -140,6 +141,10 @@ def replay_pipeline(
         target_coverage=config.uncertainty.target_coverage,
         seed=seed,
     )
+
+    if model_dir is not None:
+        predictor.save(model_dir)
+        print(f"wrote model artifact to {model_dir}", flush=True)
 
     pipeline_config = PipelineConfig(
         window_length=config.window.length,
