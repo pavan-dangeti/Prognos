@@ -25,7 +25,7 @@ import json
 import logging
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Protocol
+from typing import Any, Protocol
 
 from prognos.stream.observability import MetricsRegistry, RequestContext, log_event
 
@@ -33,14 +33,20 @@ from prognos.stream.observability import MetricsRegistry, RequestContext, log_ev
 class ReadinessCheck(Protocol):
     """Something a service can be asked about before it is sent traffic."""
 
-    def __call__(self) -> tuple[bool, dict[str, object]]:
+    def __call__(self) -> tuple[bool, dict[str, Any]]:
         """Return whether the service is ready, and the detail to report."""
         ...
 
 
 @dataclass(slots=True)
 class ServiceState:
-    """The mutable state one service exposes over HTTP."""
+    """The mutable state one service exposes over HTTP.
+
+    `routes` maps `"METHOD /path"` to a handler taking the parsed JSON body and
+    returning a JSON-serialisable dict. `list_route` covers GET-only paths that return
+    state, kept separate so a GET can never be mistaken for something with a side
+    effect.
+    """
 
     name: str
     version: str = "0.1.0"
@@ -48,12 +54,28 @@ class ServiceState:
     metrics: MetricsRegistry = field(default_factory=MetricsRegistry)
     status: dict[str, object] = field(default_factory=dict)
     logger: logging.Logger | None = None
+    routes: dict[str, Any] = field(default_factory=dict)
+    list_route: dict[str, Any] = field(default_factory=dict)
 
-    def readiness(self) -> tuple[bool, dict[str, object]]:
+    def __post_init__(self) -> None:
+        """Publish a liveness series, so a scrape is never a blank page.
+
+        An exporter with no series returns an empty body, which a scraper and a human
+        both read as "nothing to report". Publishing `service_up` from the start makes
+        "nothing has happened yet" distinguishable from "this process is dead".
+        """
+        self.metrics.gauge("service_up", "1 while the service is serving", value=1.0)
+
+    def readiness(self) -> tuple[bool, dict[str, Any]]:
         """Run the readiness check, defaulting to ready when none is registered."""
         if self.ready is None:
             return True, {}
         return self.ready()
+
+
+#: Largest request body accepted. Sized well above a legitimate telemetry batch and
+#: small enough that one caller cannot make the process allocate without limit.
+MAX_REQUEST_BYTES = 64 * 1024 * 1024
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -107,6 +129,8 @@ class _Handler(BaseHTTPRequestHandler):
                     self.state.metrics.render().encode(),
                     "text/plain; version=0.0.4",
                 )
+            elif route.lstrip("/") in self.state.list_route:
+                self._respond(200, self.state.list_route[route.lstrip("/")]())
             elif route == "/":
                 self._respond(
                     200,
@@ -119,6 +143,48 @@ class _Handler(BaseHTTPRequestHandler):
                 )
             else:
                 self._respond(404, {"error": "not found", "path": route})
+
+    def do_POST(self) -> None:
+        """Dispatch a POST to its component's handler, or refuse it.
+
+        An `HttpError` carries the status its author intended. Anything else is a bug,
+        and a bug must not become a 500 with a stack trace in the body: that hands any
+        caller the container's file layout.
+        """
+        from prognos.stream.api import HttpError
+
+        request_id = self.headers.get("X-Request-Id") or None
+        with RequestContext(request_id or ""):
+            route = self.path.split("?", 1)[0].rstrip("/") or "/"
+            key = f"POST {route}"
+            handler = self.state.routes.get(key)
+            if handler is None:
+                self._respond(404, {"error": "not found", "path": route})
+                return
+            try:
+                payload = self._read_body()
+                self._respond(200, handler(payload))
+            except HttpError as error:
+                self._respond(error.status, {"error": error.message})
+            except Exception:  # deliberately broad: see the comment above
+                self.log_error("unhandled error in %s", key)
+                self._respond(500, {"error": "internal error"})
+
+    def _read_body(self) -> dict[str, Any]:
+        """Parse the request body as JSON, with a size ceiling."""
+        length = int(self.headers.get("Content-Length") or 0)
+        if length > MAX_REQUEST_BYTES:
+            from prognos.stream.api import HttpError
+
+            raise HttpError(413, f"request body exceeds the {MAX_REQUEST_BYTES} byte limit")
+        raw = self.rfile.read(length) if length else b"{}"
+        try:
+            parsed = json.loads(raw.decode())
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            from prognos.stream.api import HttpError
+
+            raise HttpError(400, "body must be valid JSON") from None
+        return parsed if isinstance(parsed, dict) else {"payload": parsed}
 
 
 def build_server(
