@@ -41,6 +41,16 @@ Hardware for every number: Apple M5, 16 GB, macOS, Python 3.12.13, torch 2.10.0 
 MPS. The full seven-model run takes about 55 minutes, dominated by the Transformer.
 ~45 s of that is materialising 199,095 windows.
 
+Every committed result file records the machine, the library versions and the date it
+was produced in, so a number can be traced to the software that made it. That field
+was added after an experiment on a different torch build silently overwrote a result
+file — nothing in the file distinguished the two runs, which is exactly the kind of
+gap that makes a result unfalsifiable.
+
+The run is deterministic: re-running both commands on the same machine reproduces
+every figure in the table to the last printed digit, sequence models included. CNN
+7.40, Transformer 7.43, LSTM 13.00, LightGBM 8.15.
+
 ### Does sensor data actually help?
 
 This is the question Phase 3 exists to answer, and `linear_cycle` is the control for

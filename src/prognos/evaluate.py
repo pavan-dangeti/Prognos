@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from datetime import date
 
 import numpy as np
 import numpy.typing as npt
@@ -221,6 +222,26 @@ def aggregate_folds(
     }
 
 
+def library_versions() -> dict[str, str]:
+    """The library versions these numbers were produced on.
+
+    A RMSE without the library versions behind it is not reproducible. This is not
+    decoration: torch and LightGBM both change numerics between releases, and a
+    result file that cannot say which versions produced it cannot be checked against
+    a re-run.
+    """
+    import importlib.metadata as metadata
+    import platform
+
+    versions = {"python": platform.python_version()}
+    for package in ("torch", "numpy", "pandas", "lightgbm", "scikit-learn", "pyarrow", "h5py"):
+        try:
+            versions[package] = metadata.version(package)
+        except metadata.PackageNotFoundError:  # pragma: no cover - environment dependent
+            versions[package] = "not installed"
+    return versions
+
+
 def report_run(
     config: dict[str, object],
     data: WindowSource,
@@ -240,6 +261,8 @@ def report_run(
     return {
         "config": config,
         "hardware": hardware,
+        "versions": library_versions(),
+        "generated_at": date.today().isoformat(),
         "data": data.summary(),
         "final_test_group": {
             "engines": _engine_names(test_units, labels),

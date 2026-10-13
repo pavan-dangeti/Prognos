@@ -224,6 +224,7 @@
       ]
     }
   ],
+  "generated_at": "2026-10-13",
   "hardware": "Darwin arm64 / arm / Python 3.12.13",
   "model_fits": {
     "cnn": {
@@ -755,5 +756,15 @@
       },
       "target_coverage": 0.9
     }
+  },
+  "versions": {
+    "h5py": "3.16.0",
+    "lightgbm": "4.6.0",
+    "numpy": "2.4.1",
+    "pandas": "3.0.1",
+    "pyarrow": "26.0.0",
+    "python": "3.12.13",
+    "scikit-learn": "1.8.0",
+    "torch": "2.10.0"
   }
 }
