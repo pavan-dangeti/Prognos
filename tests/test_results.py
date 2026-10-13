@@ -45,6 +45,24 @@ class SharedResultProperties:
         assert report["config"]["window"]["length"] > 0
         assert report["config"]["split"]["seed"] is not None
 
+    def test_records_library_versions_and_a_date(self, report: dict[str, object]) -> None:
+        """The result must say which libraries produced it.
+
+        torch and LightGBM both change numerics between releases, so a result file
+        that cannot name the versions it came from cannot be checked against a re-run.
+        This exists because it bit: an experiment on a different torch build overwrote
+        a committed result file, and nothing in the file distinguished the two runs.
+        """
+        versions = report["versions"]
+        assert versions["torch"], "torch version must be recorded"
+        for package in ("numpy", "pandas", "lightgbm", "python"):
+            assert versions[package], f"{package} version must be recorded"
+
+        generated = report["generated_at"]
+        assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", generated), (
+            f"generated_at must be an ISO date, got {generated!r}"
+        )
+
     def test_final_test_group_is_marked_closed(self, report: dict[str, object]) -> None:
         """The report must state the test set was not opened."""
         assert report["final_test_group"]["status"] == "closed"
