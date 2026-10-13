@@ -34,6 +34,22 @@ dev = [
     "types-pyyaml==6.0.12.20250915",
 ]
 
+# The default Linux torch wheel is CUDA-enabled and drags in ~3 GB of nvidia-*
+# packages. This project never runs on a GPU: training is on a laptop CPU/MPS and
+# the deployed image is CPU-only. On a GitHub runner the CUDA payload exhausts the
+# disk and the image build dies part-way through extraction, so Linux resolves torch
+# from the CPU index instead. macOS is left on PyPI so local development keeps the
+# stock MPS-capable wheel.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", marker = "sys_platform == 'linux'" },
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
