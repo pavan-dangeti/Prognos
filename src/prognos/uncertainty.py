@@ -176,13 +176,14 @@ def cqr_scores(
 class _CalibratorBase:
     """Shared plumbing: the target rate, the conformal width, and the clipping rule."""
 
-    __slots__ = ("_target_coverage", "_width")
+    __slots__ = ("_calibration", "_target_coverage", "_width")
 
     def __init__(self, target_coverage: float) -> None:
         if not 0.0 < target_coverage < 1.0:
             raise ValueError(f"target coverage must be in (0, 1), got {target_coverage}")
         self._target_coverage = float(target_coverage)
         self._width: float | None = None
+        self._calibration: npt.NDArray[np.float64] | None = None
 
     @property
     def target_coverage(self) -> float:
@@ -198,6 +199,7 @@ class _CalibratorBase:
 
     def _finish(self, scores: npt.NDArray[np.float64]) -> None:
         """Store the conformal quantile of the given scores."""
+        self._calibration = np.asarray(scores, dtype=np.float64)
         self._width = conformal_quantile(scores, self._target_coverage)
 
 
@@ -213,12 +215,27 @@ class SplitConformalCalibrator(_CalibratorBase):
     __slots__ = ()
 
     def calibrate(self, residuals: npt.NDArray[np.float64]) -> SplitConformalCalibrator:
-        """Fit the half-width from held-out residuals. Returns self for chaining."""
+        """Fit the half-width from held-out residuals. Returns self for chaining.
+
+        The residuals are kept, not just their quantile. The conformal quantile
+        depends on the sample size as well as the values, so a serialised width cannot
+        be turned back into a calibrated predictor — and a predictor reconstructed
+        from the width alone comes back with an infinite interval, which presents as
+        a working model carrying no uncertainty.
+        """
         values = np.asarray(residuals, dtype=np.float64)
         if values.size == 0:
             raise ValueError("cannot calibrate on an empty residual set")
+        self._calibration = values
         self._finish(np.abs(values))
         return self
+
+    @property
+    def calibration_residuals(self) -> npt.NDArray[np.float64]:
+        """The residuals this calibrator was fitted on, for serialisation."""
+        if self._calibration is None:
+            raise ValueError("calibrator has not been calibrated")
+        return self._calibration
 
     def bounds(
         self, point: npt.NDArray[np.float64]

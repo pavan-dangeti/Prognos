@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+  external_labels:
+    stack: prognos
+
+scrape_configs:
+  - job_name: prognos
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["ingestion:8081", "inference:8082", "dashboard:8083"]
+        labels:
+          component: streaming
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
