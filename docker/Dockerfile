@@ -23,6 +23,11 @@ RUN uv sync --frozen --no-install-project --all-groups
 COPY src ./src
 RUN uv sync --frozen --all-groups
 
+# The committed result files, so the cost panel works in a deployed image.
+# `GET /cost` reads `results/phase4_policy.json`; without this the route raises in the
+# container and returns nothing. Found by running the stack, not by reading it.
+COPY results ./results
+
 # Strip pip from the virtualenv. uv resolves and installs dependencies, so nothing
 # at runtime needs pip — but pip bundles its own vendored copies of setuptools,
 # urllib3 and msgpack, and the image scanner reports those vendored copies as
@@ -58,6 +63,7 @@ RUN rm -rf /usr/local/lib/python3.12/site-packages/pip* \
 
 COPY --from=builder /opt/venv /opt/venv
 COPY --from=builder /app/src /app/src
+COPY --from=builder /app/results /app/results
 # pyproject.toml carries the pytest configuration, including the custom markers.
 # Without it, `pytest -m smoke` runs everything and warns about unknown marks.
 COPY pyproject.toml /app/pyproject.toml

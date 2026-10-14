@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+# the token Prometheus scrapes with; created by the operator, never committed
+ops/prometheus-token.txt
 
 # local data (N-CMAPSS is 14.6 GB and redistributed from NASA, never committed)
 data/

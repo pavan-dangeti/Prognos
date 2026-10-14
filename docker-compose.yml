@@ -121,6 +121,11 @@ services:
       - --storage.tsdb.retention.time=15d
     volumes:
       - ./ops/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # Mounted read-only and created by the operator, not committed. The token file is
+      # gitignored; `docs/runbook.md` has the one-line command that makes it. A missing
+      # file fails the mount loudly, which is better than Prometheus silently scraping
+      # nothing and every target reading DOWN.
+      - ./ops/prometheus-token.txt:/etc/prometheus/token:ro
     ports:
       - "127.0.0.1:9090:9090"
     restart: unless-stopped
