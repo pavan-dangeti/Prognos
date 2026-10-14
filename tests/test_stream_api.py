@@ -609,3 +609,111 @@ class TestLogFieldCoercion:
         }
         assert labels, "no reject labels were published"
         assert all(len(label) < 40 for label in labels)
+
+
+def _get(url: str) -> tuple[int, str]:
+    """GET without raising on 4xx or 5xx, so the status can be asserted directly."""
+    import urllib.error
+    import urllib.request
+
+    try:
+        with urllib.request.urlopen(url, timeout=10) as response:
+            return response.status, response.read().decode()
+    except urllib.error.HTTPError as error:
+        return error.code, error.read().decode()
+
+
+class TestAFailingRouteRepliesInsteadOfDropping:
+    """A route that raises must still answer.
+
+    Found by running the stack: `/cost` raised inside the container because the image
+    did not carry `results/`, and the GET handler had no guard — so the connection was
+    closed with no status line at all. `curl` reported HTTP 000. An operator sees a
+    network error, not a server error, and goes looking at their own machine.
+
+    `do_POST` already had this guard. The asymmetry was the bug.
+    """
+
+    def _serve(self, state: object) -> str:
+        import threading
+
+        from prognos.stream.service import build_server
+
+        httpd = build_server(state, host="127.0.0.1", port=0)
+        threading.Thread(target=httpd.serve_forever, daemon=True).start()
+        return f"http://127.0.0.1:{httpd.server_address[1]}"
+
+    def test_a_raising_get_route_returns_500(self) -> None:
+        import logging
+
+        from prognos.stream.api import build_component
+        from prognos.stream.observability import MetricsRegistry
+
+        def explode() -> dict:
+            raise RuntimeError("the result file is missing")
+
+        state = build_component(
+            "dashboard", metrics=MetricsRegistry(), logger=logging.getLogger("t")
+        )
+        state.list_route["boom"] = explode
+        base = self._serve(state)
+        status, _ = _get(f"{base}/boom")
+        assert status == 500, f"a raising route answered {status}, not 500"
+
+    def test_the_500_body_leaks_no_internal_detail(self) -> None:
+        """The exception text can carry the container's file layout."""
+        import logging
+
+        from prognos.stream.api import build_component
+        from prognos.stream.observability import MetricsRegistry
+
+        def explode() -> dict:
+            raise RuntimeError("/opt/venv/lib/python3.12/site-packages/secret.py is missing")
+
+        state = build_component(
+            "dashboard", metrics=MetricsRegistry(), logger=logging.getLogger("t")
+        )
+        state.list_route["boom"] = explode
+        base = self._serve(state)
+        status, body = _get(f"{base}/boom")
+        assert status == 500
+        assert "site-packages" not in body
+        assert "secret" not in body
+        assert "internal error" in body
+
+    def test_one_failing_route_does_not_break_the_others(self) -> None:
+        import logging
+
+        from prognos.stream.api import build_component
+        from prognos.stream.observability import MetricsRegistry
+
+        def explode() -> dict:
+            raise RuntimeError("boom")
+
+        state = build_component(
+            "dashboard", metrics=MetricsRegistry(), logger=logging.getLogger("t")
+        )
+        state.list_route["boom"] = explode
+        base = self._serve(state)
+        assert _get(f"{base}/boom")[0] == 500
+        assert _get(f"{base}/healthz")[0] == 200
+        assert _get(f"{base}/")[0] == 200
+
+    def test_an_http_error_still_keeps_its_own_status(self) -> None:
+        """The guard must not flatten a deliberate 404 into a 500."""
+        import logging
+
+        from prognos.stream.api import HttpError, build_component
+        from prognos.stream.observability import MetricsRegistry
+
+        def refuse() -> dict:
+            raise HttpError(404, "no such policy")
+
+        state = build_component(
+            "dashboard", metrics=MetricsRegistry(), logger=logging.getLogger("t")
+        )
+        state.list_route["nope"] = refuse
+        base = self._serve(state)
+        status, body = _get(f"{base}/nope")
+        assert status == 404
+        assert "no such policy" in body

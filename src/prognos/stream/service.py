@@ -154,43 +154,64 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         """Route the health, readiness, metrics and status endpoints."""
+        from prognos.stream.api import HttpError
+
         request_id = self.headers.get("X-Request-Id") or None
         with RequestContext(request_id or ""):
-            route = self.path.split("?", 1)[0].rstrip("/") or "/"
-            if not self._authorise(route):
-                return
-            if route == "/healthz":
-                self._respond(200, {"status": "ok", "service": self.state.name})
-            elif route == "/readyz":
-                ready, detail = self.state.readiness()
-                self._respond(
-                    200 if ready else 503,
-                    {
-                        "status": "ready" if ready else "not_ready",
-                        "service": self.state.name,
-                        **detail,
-                    },
-                )
-            elif route == "/metrics":
-                self._send(
-                    200,
-                    self.state.metrics.render().encode(),
-                    "text/plain; version=0.0.4",
-                )
-            elif route.lstrip("/") in self.state.list_route:
-                self._respond(200, self.state.list_route[route.lstrip("/")]())
-            elif route == "/":
-                self._respond(
-                    200,
-                    {
-                        "service": self.state.name,
-                        "version": self.state.version,
-                        "status": self.state.status,
-                        "endpoints": ["/healthz", "/readyz", "/metrics"],
-                    },
-                )
-            else:
-                self._respond(404, {"error": "not found", "path": route})
+            try:
+                self._get_route(request_id)
+            except HttpError as error:
+                self._respond(error.status, {"error": error.message})
+            except Exception:  # deliberately broad, same as do_POST; see _read_body
+                # Without this a route that raises closes the connection with no status
+                # line, and the caller sees a network error rather than a server error.
+                # Found by running the stack: `/cost` raised because the image carried no
+                # `results/`, and curl reported HTTP 000.
+                self.log_error("unhandled error in GET %s", self.path)
+                self._respond(500, {"error": "internal error"})
+
+    def _get_route(self, request_id: str | None) -> None:
+        """Dispatch one GET.
+
+        Split out of `do_GET` only so the failure guard wraps the whole dispatch. An
+        `HttpError` raised by a route keeps the status its author intended rather than
+        being flattened to a 500 by that guard.
+        """
+        route = self.path.split("?", 1)[0].rstrip("/") or "/"
+        if not self._authorise(route):
+            return
+        if route == "/healthz":
+            self._respond(200, {"status": "ok", "service": self.state.name})
+        elif route == "/readyz":
+            ready, detail = self.state.readiness()
+            self._respond(
+                200 if ready else 503,
+                {
+                    "status": "ready" if ready else "not_ready",
+                    "service": self.state.name,
+                    **detail,
+                },
+            )
+        elif route == "/metrics":
+            self._send(
+                200,
+                self.state.metrics.render().encode(),
+                "text/plain; version=0.0.4",
+            )
+        elif route.lstrip("/") in self.state.list_route:
+            self._respond(200, self.state.list_route[route.lstrip("/")]())
+        elif route == "/":
+            self._respond(
+                200,
+                {
+                    "service": self.state.name,
+                    "version": self.state.version,
+                    "status": self.state.status,
+                    "endpoints": ["/healthz", "/readyz", "/metrics"],
+                },
+            )
+        else:
+            self._respond(404, {"error": "not found", "path": route})
 
     def do_POST(self) -> None:
         """Dispatch a POST to its component's handler, or refuse it.

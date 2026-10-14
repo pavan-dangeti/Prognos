@@ -7,6 +7,15 @@ global:
 scrape_configs:
   - job_name: prognos
     metrics_path: /metrics
+    # The scrape carries the same token the HTTP surface checks, because once
+    # `PROGNOS_API_TOKEN` is set every route needs it including this one. Found by
+    # enabling the token and watching all four targets go DOWN with 401.
+    #
+    # A file rather than an inline token: an inline one would put the secret in a
+    # committed config, and `bearer_token_file` is the only form Prometheus supports.
+    # docker-compose.yml mounts `./ops/prometheus-token.txt` read-only. The file is
+    # gitignored and `docs/runbook.md` says how to create it.
+    bearer_token_file: /etc/prometheus/token
     static_configs:
       # Ports match the `--port` each service is started with in docker-compose.yml.
       # Scraping a port nothing listens on reads as a permanent DOWN target, which

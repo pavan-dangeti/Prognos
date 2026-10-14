@@ -1,0 +1,34 @@
+# The build context is the whole directory unless this excludes it. Without this file
+# a local `data/` (1.5 GB of Parquet), `artifacts/` and the caches are shipped to the
+# daemon on every build — slow, and it puts gitignored local data inside an image that
+# gets scanned and pushed. Excluded rather than ignored: nothing in the image's build
+# path reads any of it.
+data/
+datasets/
+artifacts/
+cache/
+results/../cache
+.venv/
+.git/
+.github/
+docs/
+ops/
+mlruns/
+mlartifacts/
+models/
+*.log
+*.h5
+*.hdf5
+*.parquet
+.env
+.env.*
+!.env.example
+**/__pycache__/
+**/*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+coverage.xml
+htmlcov/

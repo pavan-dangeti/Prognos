@@ -97,10 +97,18 @@ reverse proxy is added, or the host is reachable from somewhere else.
 Set a token before any of that happens:
 
 ```bash
-echo "PROGNOS_API_TOKEN=$(python3 -c 'import secrets;print(secrets.token_urlsafe(32))')" >> .env
+TOKEN=$(python3 -c 'import secrets;print(secrets.token_urlsafe(32))')
+echo "PROGNOS_API_TOKEN=$TOKEN" >> .env
+printf '%s' "$TOKEN" > ops/prometheus-token.txt   # gitignored; read by Prometheus
 docker compose up -d
-curl -H "Authorization: Bearer $PROGNOS_API_TOKEN" http://127.0.0.1:8084/fleet
+curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8084/fleet
 ```
+
+**The token file is not optional.** `ops/prometheus.yml` scrapes with
+`bearer_token_file: /etc/prometheus/token`, so once the token is set every route needs
+it *including* `/metrics`. Skipping the file leaves all four prognos targets DOWN with
+401, which reads as an outage rather than a configuration mistake. That is exactly what
+happened the first time this was enabled.
 
 `PROGNOS_API_TOKEN` is read from the environment only. It is never a build argument, a
 file in the image, or a constant in the source. An empty value is treated as unset, not
@@ -131,6 +139,8 @@ Put TLS in front of it, or keep it on loopback.
 | `401` everywhere and the token is unset | Trailing space or quote in `.env` | `PROGNOS_API_TOKEN` must be a bare value |
 | `429` under normal load | One client, 120 requests in 60s | Raise `--rate-limit`, or find the caller |
 | `429` from a proxy you control | Everything arrives from one peer address | Set `trust_forwarded_for` |
+| Every prognos target DOWN, 401 | Prometheus has no `ops/prometheus-token.txt` | Write the token to it and `docker compose restart prometheus` |
+| Prometheus will not start after setting the token | The token file is missing and the mount fails | Create the file as above; a missing mount is loud on purpose |
 
 ## Reproducing a number
 

@@ -255,3 +255,36 @@ class TestSecretsNeverReachTheRepository:
         assert token_from_env({}) is None
         assert token_from_env({"PROGNOS_API_TOKEN": "abc"}) == "abc"
         assert token_from_env({"PROGNOS_API_TOKEN": ""}) is None
+
+
+class TestMetricsIsNotExempt:
+    """`/healthz` is exempt; `/metrics` deliberately is not.
+
+    The temptation is to exempt the scrape too, so Prometheus does not need a
+    credential. Enabling the token on the stack showed what that costs: every one of
+    the four prognos targets went DOWN with 401, which reads as an outage rather than a
+    configuration mistake. So `/metrics` needs the token and Prometheus is given it
+    through `bearer_token_file`.
+
+    The cost of that choice is a file the operator has to create, which is a real
+    operational step and is documented in the runbook. The cost of the alternative is a
+    dashboard that silently stops working.
+    """
+
+    def _service(self, token: str | None) -> _AuthedService:
+        return _AuthedService(token=token)
+
+    def test_metrics_needs_the_token_when_one_is_set(self) -> None:
+        service = self._service("t")
+        try:
+            assert _get(f"{service.base}/metrics")[0] == 401
+            assert _get(f"{service.base}/metrics", {"Authorization": "Bearer t"})[0] == 200
+        finally:
+            service.close()
+
+    def test_metrics_is_open_when_no_token_is_set(self) -> None:
+        service = self._service(None)
+        try:
+            assert _get(f"{service.base}/metrics")[0] == 200
+        finally:
+            service.close()

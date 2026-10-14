@@ -399,6 +399,13 @@ wants is a specification for whoever is guessing. `/healthz` is never authentica
 because an orchestrator's probe has no credential and a 401 there restarts the process
 forever over a missing secret.
 
+`/healthz` is exempt so orchestrator probes keep working; `/metrics` deliberately is
+**not**, which means Prometheus scrapes with `bearer_token_file` and
+`ops/prometheus-token.txt` must exist once a token is set. Exempting the scrape would be
+tidier and is what I tried first — all four prognos targets went DOWN with 401, which
+reads as an outage rather than a configuration mistake. So the token file is a required
+step and the runbook has the command.
+
 Off when the variable is unset, so a local run needs no credential. That is only safe
 because every published port stays on `127.0.0.1`, and `docs/runbook.md` says what to do
 before that changes. A token is a shared secret: it tells you the caller was holding the
