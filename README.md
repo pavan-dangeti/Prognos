@@ -478,6 +478,7 @@ the only way to check a degraded state is observable end to end is to provoke on
 ## Documentation
 
 - [Runbook](docs/runbook.md) — triage by verdict, ingestion failures, calibration
+- [Deploying to Oracle Always Free A1](docs/deploy-oci.md) — the demo host
 - [Design document](docs/design.md)
 - [Architecture decision records](docs/adr/)
 - [Data setup](docs/data.md)
