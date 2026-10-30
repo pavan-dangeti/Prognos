@@ -57,3 +57,6 @@ requirements.txt
 # committed result files (regenerate with `prognos evaluate`)
 !results/*.json
 artifacts/
+
+# Browser automation output
+.playwright-mcp/

@@ -60,6 +60,9 @@ class ServiceState:
     #: Bearer-token check and rate limit, both optional. Left unset by default so a
     #: local run needs no credential; the compose file keeps every published port on
     #: loopback for the same reason. See docs/runbook.md before exposing either.
+    #: Static HTML pages by path, served without the bearer check because they carry
+    #: no data: the page reads every number through the JSON routes, which keep it.
+    pages: dict[str, str] = field(default_factory=dict)
     authorizer: Any = None
     rate_limiter: Any = None
     trust_forwarded_for: bool = False
@@ -107,7 +110,7 @@ class _Handler(BaseHTTPRequestHandler):
         credential to send, and a probe returning 401 would restart the process forever
         over a missing secret.
         """
-        if route == "/healthz":
+        if route == "/healthz" or route.lstrip("/") in self.state.pages:
             return True
         authorizer = self.state.authorizer
         limiter = self.state.rate_limiter
@@ -139,7 +142,13 @@ class _Handler(BaseHTTPRequestHandler):
                 return forwarded.split(",")[0].strip()
         return peer
 
-    def _send(self, status: int, encoded: bytes, content_type: str) -> None:
+    def _send(
+        self,
+        status: int,
+        encoded: bytes,
+        content_type: str,
+        extra_headers: dict[str, str] | None = None,
+    ) -> None:
         """Send an already-encoded body with an accurate Content-Length.
 
         The metrics endpoint is not JSON, so it cannot go through `_respond`: a
@@ -149,6 +158,8 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(encoded)))
+        for name, value in (extra_headers or {}).items():
+            self.send_header(name, value)
         self.end_headers()
         self.wfile.write(encoded)
 
@@ -197,6 +208,19 @@ class _Handler(BaseHTTPRequestHandler):
                 200,
                 self.state.metrics.render().encode(),
                 "text/plain; version=0.0.4",
+            )
+        elif route.lstrip("/") in self.state.pages:
+            from prognos.stream.ui import CONTENT_SECURITY_POLICY
+
+            self._send(
+                200,
+                self.state.pages[route.lstrip("/")].encode(),
+                "text/html; charset=utf-8",
+                {
+                    "Content-Security-Policy": CONTENT_SECURITY_POLICY,
+                    "X-Content-Type-Options": "nosniff",
+                    "Referrer-Policy": "no-referrer",
+                },
             )
         elif route.lstrip("/") in self.state.list_route:
             self._respond(200, self.state.list_route[route.lstrip("/")]())

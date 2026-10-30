@@ -17,12 +17,13 @@ paths, library versions and internals to any caller that can reach the port.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 from .alerting import AlertingService
 from .coverage import CoverageMonitor
-from .events import MAX_BATCH_ROWS, Reading, StreamStats, TelemetryBatch, validate_batch
+from .events import MAX_BATCH_ROWS, N_CHANNELS, Reading, StreamStats, TelemetryBatch, validate_batch
 from .faults import DEGRADED_STATES, InjectedFault, channel_of
 from .fleet import POLICY_RESULT, FleetView, build_cost_panel
 from .inference import RulPredictor
@@ -33,6 +34,7 @@ from .observability import (
     record_stream_metrics,
 )
 from .service import ServiceState
+from .ui import PAGE
 
 # The four services that run as their own process.
 #
@@ -224,6 +226,7 @@ def build_dashboard_state(
     logger: logging.Logger | None = None,
     fleet: FleetView | None = None,
     policy_result: Path | str | None = None,
+    on_inject: Callable[[int, InjectedFault | None], None] | None = None,
 ) -> ServiceState:
     """The dashboard service: the fleet summary an operator reads.
 
@@ -231,6 +234,10 @@ def build_dashboard_state(
     exposed as a control rather than left in a test fixture, because the only way to
     check that a degraded state is observable end to end is to provoke one against a
     running system.
+
+    `on_inject` is where an armed fault goes. A dashboard watching a live replay hands
+    it to the pipeline, so the fault reaches the rows the detector and the model see;
+    without it the control only records what was asked for.
     """
     registry = metrics or MetricsRegistry()
     coverage = monitor or CoverageMonitor()
@@ -240,8 +247,18 @@ def build_dashboard_state(
     def fault_control(payload: dict[str, Any]) -> dict[str, Any]:
         """Arm or disarm a named fault on an engine."""
         kind = payload.get("fault")
+        try:
+            engine = int(payload.get("engine", 1))
+        except (TypeError, ValueError):
+            raise HttpError(400, "engine must be an integer") from None
         if kind in (None, "none"):
-            return {"armed": {}, "available": list(DEGRADED_STATES)}
+            injectors.pop(engine, None)
+            if on_inject is not None:
+                on_inject(engine, None)
+            return {
+                "armed": {str(k): v.kind for k, v in injectors.items()},
+                "available": list(DEGRADED_STATES),
+            }
         if kind not in DEGRADED_STATES:
             raise HttpError(400, f"unknown fault {kind!r}")
         try:
@@ -253,12 +270,17 @@ def build_dashboard_state(
             )
         except (TypeError, ValueError) as error:
             raise HttpError(400, f"malformed fault: {error}") from None
-        injectors[int(payload.get("engine", 1))] = fault
+        injectors[engine] = fault
+        if on_inject is not None:
+            on_inject(engine, fault)
         return {"armed": {str(k): v.kind for k, v in injectors.items()}}
 
     def degraded() -> dict[str, Any]:
         """Every degraded state this service knows about, by name."""
-        return {"states": list(DEGRADED_STATES), "instruments": [channel_of(c) for c in range(4)]}
+        return {
+            "states": list(DEGRADED_STATES),
+            "instruments": [channel_of(c) for c in range(N_CHANNELS)],
+        }
 
     def fleet_payload() -> dict[str, Any]:
         """Engines the stream has actually heard from, worst first.
@@ -301,6 +323,7 @@ def build_dashboard_state(
             "cost": cost_payload,
         },
         routes={"POST /inject": fault_control},
+        pages={"ui": PAGE},
         logger=logger,
     )
 

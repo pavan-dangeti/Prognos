@@ -517,6 +517,19 @@ class TestFaultsAreObservableThroughTheService:
         assert status == 200
         assert body["armed"] == {}
 
+    def test_an_armed_fault_is_handed_to_the_live_stream(self) -> None:
+        """Without the hand-off the control recorded a fault nothing ever applied."""
+        from prognos.stream.api import build_dashboard_state
+
+        received: list[tuple[int, object]] = []
+        state = build_dashboard_state(on_inject=lambda unit, fault: received.append((unit, fault)))
+        handler = state.routes["POST /inject"]
+        handler({"engine": 4, "fault": "sensor_stuck", "channel": 3})
+        handler({"engine": 4, "fault": "none"})
+        assert [unit for unit, _ in received] == [4, 4]
+        assert getattr(received[0][1], "kind", None) == "sensor_stuck"
+        assert received[1][1] is None
+
     def test_an_unknown_fault_is_a_400(self, service) -> None:
         """A typo in a dashboard control must fail, not silently inject nothing."""
         base = service("dashboard")
