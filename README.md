@@ -1,17 +1,190 @@
 # Prognos
 
-Remaining useful life prediction for turbofan engines: RUL with calibrated
-prediction intervals, a cost-based maintenance policy, and a streaming pipeline
-that replays held-out engines as a live fleet.
+A turbofan engine's sensors drift as it wears, long before it fails, but a single
+remaining-life estimate gives a maintenance planner no idea how far to trust it.
+Prognos predicts each engine's remaining useful life with a calibrated 90% interval
+from NASA N-CMAPSS sensor data, turns that interval into maintenance decisions priced
+against simple policies, and runs it all on a live replayed fleet that names its own
+sensor faults instead of predicting through them.
 
-Built on NASA N-CMAPSS. Research demonstration — see
-[Limitations](docs/design.md#9-limitations) before drawing any operational
-conclusion from it.
+![The fleet dashboard: engines sorted worst first with interval bands, a sensor fault injected on one engine and named as low confidence, then cleared](docs/media/demo.gif)
 
-Status: Phase 5 complete, including the fault-injection criterion Phase 5 was
-originally missing.
+[Watch the 2-minute demo (MP4)](docs/media/demo.mp4). Live hosted demo: not yet
+deployed. Research demonstration on simulated engines; read the
+[Limitations](#limitations) before drawing any operational conclusion.
 
-## Results
+## Results at a glance
+
+Every figure comes from a committed result file, produced by the command next to it,
+on an Apple M5 with 16 GB (macOS, Python 3.12.13). `tests/test_results.py` and
+`tests/test_bench.py` fail CI if a quoted figure drifts from its file.
+
+| Question | Result | Baseline | How it was measured | Reproduce |
+| --- | --- | --- | --- | --- |
+| How accurate is the RUL point estimate? | CNN 7.40 cycles RMSE (95% CI 4.61–10.20) | 8.90 from cycle number alone, no sensors; 23.76 predicting the mean | 5-fold CV grouped by engine, 29 engines, 10-engine test group never opened | `prognos evaluate --sequence` → [`phase3_sequence.json`](results/phase3_sequence.json) |
+| Do sensors help where it matters, late in life? | Transformer 3.76 RMSE in late life | 8.84 from cycle number alone | Same folds, error split by life stage | same |
+| Do the intervals hold? | 0.926 offline, 0.991 live, target 0.90 | — | Split conformal, calibrated on engines held out of the fit | `prognos policy`, `prognos stream` |
+| What does it save? | 30.8 total cost for the best policy | 577.3 run-to-failure, 44.0 best fixed interval | 19 engines, 2,000 cycles, failure 25× a planned visit, ratio swept 1–100 | `prognos policy` → [`phase4_policy.json`](results/phase4_policy.json) |
+| How fast is the live path? | p99 5.16–9.49 ms per updated prediction; at least 43,141 readings/s | — | Real engines interleaved at fleets of 10, 100 and 1,000, 5 rounds | `prognos bench` → [`phase6_streaming_bench.json`](results/phase6_streaming_bench.json) |
+| Are sensor faults named? | 4 of 4 injected faults named | Control run must name nothing: **fails** | Each fault injected alone into a clean engine | `prognos stream --faults` → [`phase5_faults.json`](results/phase5_faults.json) |
+
+Two results go against the design document and are reported as they came out:
+acting on the interval's lower bound costs **more** than acting on the point estimate
+on this data, and the drift detector fires on healthy engines. Both are explained
+below.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    subgraph offline["Offline (laptop)"]
+        H5[N-CMAPSS HDF5] -->|prognos convert| PQ[Parquet per engine<br/>health parameters never read]
+        PQ --> WIN[Windows, split by engine]
+        WIN -->|prognos evaluate| CV[Grouped CV:<br/>baselines, CNN, LSTM, Transformer]
+        WIN -->|prognos policy| CAL[Conformal calibration<br/>+ cost simulation]
+        CAL --> ART[(model + calibrator)]
+    end
+
+    subgraph live["Live replay (prognos stream)"]
+        SIM[Replay of held-out engines<br/>at accelerated time] --> ING[Validation:<br/>size, range, finiteness]
+        ING --> FD[Fault detector<br/>one row per cycle]
+        ING --> OW[Online window<br/>identical to offline]
+        OW --> INF[LightGBM + 90% interval]
+        ART --> INF
+        INF --> AL[Alerting on the lower bound]
+        INF --> COV[Live coverage monitor]
+        FD --> FV[Fleet view]
+        AL --> FV
+        INF --> FV
+    end
+
+    FV --> UI[Dashboard /ui<br/>fault injection]
+    UI -->|POST /inject| SIM
+    COV --> PROM[Prometheus] --> GRAF[Grafana]
+    FV --> PROM
+```
+
+Design: [`docs/design.md`](docs/design.md), with decisions in [`docs/adr/`](docs/adr/).
+
+## Run it locally
+
+Needs [uv](https://docs.astral.sh/uv/) and about 2.5 GB of N-CMAPSS HDF5; where to
+get it and its terms of use are in [`docs/data.md`](docs/data.md).
+
+```bash
+uv sync --locked
+uv run prognos convert --config configs/base.yaml          # HDF5 -> Parquet, ~1 min
+uv run prognos evaluate --config configs/base.yaml --out results/phase3_sequence.json --sequence --epochs 30
+uv run prognos policy --config configs/base.yaml           # intervals and costs, ~5 min
+
+# The live dashboard: trains the serving model, then replays the fleet.
+uv run prognos stream --config configs/base.yaml --serve --pace 10000 --out /tmp/replay.json
+open http://127.0.0.1:8090/ui
+
+# Latency and throughput, after `prognos stream` has written artifacts/model.
+uv run prognos bench
+
+# The six-service stack with Prometheus and Grafana; see docs/runbook.md.
+docker compose up -d --build
+```
+
+The test suite needs no NASA data: `uv run pytest -m smoke` runs the whole pipeline on
+a synthetic subset, which is what CI does.
+
+## Streaming latency and throughput
+
+```bash
+uv run prognos bench    # fleets of 10, 100 and 1,000 engines, 5 interleaved rounds
+```
+
+Latency is from a sensor reading handed to the pipeline to the updated prediction it
+returns: fault detection, the online window, features, LightGBM, the conformal
+interval, alerting and the fleet view. It is timed only for readings that complete a
+window, which is about one in a hundred. Throughput is readings per second through one
+Python process. N-CMAPSS records at 1 Hz, so readings per second is also the number of
+engines one process keeps up with in real time. Fleets are built from the 19
+cross-validation engines, interleaved one reading per engine in turn, so every engine
+keeps its own window and detector live at once.
+
+| fleet size | readings/s, median (min–max of 5) | predictions/s | p50 ms | p95 ms | p99 ms | worst p99 ms |
+| --- | --- | --- | --- | --- | --- | --- |
+| 10 | 51,075 (43,141–161,353) | 443 | 1.50 | 3.13 | 5.16 | 10.88 |
+| 100 | 82,241 (51,099–165,102) | 700 | 0.67 | 1.57 | 8.55 | 8.55 |
+| 1,000 | 51,037 (50,162–165,015) | 434 | 1.10 | 4.17 | 9.49 | 9.49 |
+
+The inference service over loopback HTTP, one window per request: p50 3.44 ms, p95
+3.94 ms, p99 8.93 ms over 2,000 requests. That hop is not in the figures above.
+
+Hardware: Apple M5 (10 cores, one used), 16 GB, macOS 26, Python 3.12.13, LightGBM
+4.6.0. Raw runs: [`results/phase6_streaming_bench.json`](results/phase6_streaming_bench.json).
+
+**Fleet size does not change the cost per reading between 10 and 1,000 engines.**
+The variation in the table is not a scaling effect. Rounds fall into two clusters,
+about 50,000 and about 160,000 readings a second, and which cluster a round lands in
+depends on when it ran, not on its size: round 2 was fast at every size, rounds 4 and
+5 slow at every size. That is consistent with macOS moving an unpinned process
+between performance and efficiency cores, which I cannot control on this machine. So
+the figure to rely on is the slowest round, 43,141 readings a second, and the sizes
+are interleaved so the drift cannot pose as a trend.
+
+**Measuring this found the detector being fed the wrong data.** As Phase 5 shipped
+it, the live path handed the fault detector every raw reading, about 11,000 per
+cycle, although the detector is designed to judge an engine cycle to cycle and the
+fault results were measured that way. It was by far the largest cost in the pipeline.
+It now sees the first reading of each cycle, and the live fleet coverage is unchanged
+by the fix.
+
+## Limitations
+
+What this project is not:
+
+- **No physics-based degradation model.** Everything here is learned from sensor
+  data, and nothing claims a physics model is unnecessary. A hybrid would likely be
+  more robust to operating regimes the training engines never saw.
+- **No real aircraft data.** Every engine is simulated by NASA's C-MAPSS model under
+  realistic flight profiles. No aircraft flew them, and no result transfers to a real
+  fleet without being re-measured on one.
+- **No safety or airworthiness claim.** This is a research demonstration. It must not
+  be used to decide whether an engine or an aircraft is safe to operate.
+
+What the evidence does not support:
+
+- **Small data.** 29 engines in total, 19 in cross-validation. The confidence
+  intervals on model comparisons are wide; the CNN and Transformer intervals overlap
+  the no-sensor baseline's, and the life-stage split is the stronger evidence.
+- **Three of nine sub-datasets.** DS01, DS02 and DS06. Claims about failure-mode
+  generality rest on DS06 alone.
+- **The cost model is an assumption set,** not airline economics. Planned maintenance
+  is normalised to 1 and failure is swept from 1× to 100×; planning loses at 1× and
+  wins from 5× up.
+- **Intervals are wide and only marginally valid.** Mean width 38 cycles on a scale
+  capped at 125. Conformal prediction guarantees coverage on average over
+  exchangeable data, not per engine, per life stage, or under a shift in operating
+  conditions. Live coverage over-covers at 0.991, outside the 0.90 ± 0.05 band on the
+  safe side.
+- **The lower-bound policy is not the cheapest here.** The point estimate already
+  prevents every failure on these engines, so the lower bound buys insurance nothing
+  needed.
+
+What the system does not yet do:
+
+- **The drift detector has false positives.** It fires on healthy channels (`Nf`,
+  `Nc`, `T48`) of a healthy engine, so every fault scenario reports `sensor_drift`
+  alongside the fault actually injected. Its false-alarm rate across all engines has
+  not been measured yet.
+- **Engine identity is incomplete in the live path.** Alerting and fault state are
+  keyed by unit number, which restarts in every sub-dataset. When DS02 unit 2 follows
+  DS01 unit 2 in a replay, it first "resolves" the alert DS01 unit 2 left open, and the
+  fleet view can show one engine's alert on the other's row.
+- **Not yet built:** an inference-service outage test, an operating-condition shift
+  test, MLflow tracking and a model registry, a model card, OpenTelemetry tracing, and
+  a hosted demo.
+- **Latency is measured on a laptop against a replay,** at accelerated time, not on an
+  aircraft datalink, and the HTTP figure is loopback only.
+- **Maintenance is assumed schedulable at any threshold.** Real maintenance has
+  calendar, hangar and crew constraints this simulation does not model.
+
+## Detailed results
 
 5-fold grouped cross-validation, 29 engines from DS01, DS02 and DS06, 199,095
 windows. Intervals are 95% bootstrap resampling **by engine**, not by window. The
@@ -224,8 +397,11 @@ uv run prognos stream --config configs/base.yaml --out results/phase5_streaming.
 docker compose up -d        # ingestion, inference, dashboard, Prometheus, Grafana
 ```
 
-~6 minutes for all 19 cross-validation engines. 100,000 scored predictions, 91
-maintenance alerts. The 10-engine final test group is still closed.
+All 19 cross-validation engines: 100,000 scored predictions, 98 maintenance alerts. The
+10-engine final test group is still closed. The file was regenerated for the release on
+the current code; an earlier revision recorded 91 alerts. Coverage is identical to the
+last digit. The 7 extra alerts are all on engines whose unit number repeats an earlier
+engine's, the identity limitation listed under [Limitations](#limitations).
 
 ### The online window reproduces the offline builder exactly
 
@@ -424,13 +600,16 @@ uv run prognos stream --config configs/base.yaml --faults --out results/phase5_f
 
 Five faults injected into a clean stream, one real engine, sampled one row per cycle:
 
-| injected | detected | |
+| injected | everything detected | expected fault named |
 | --- | --- | --- |
-| none (control) | `sensor_drift` | **failed** |
-| `sensor_dropout` ch 7 | `sensor_dropout` | ok |
-| `sensor_stuck` ch 3 | `sensor_stuck` | ok |
-| `sensor_drift` ch 11 | `sensor_drift` | ok |
-| `value_out_of_range` ch 2 | `sensor_stuck`, `value_out_of_range` | ok |
+| none (control) | `sensor_drift` | **failed**: nothing should fire |
+| `sensor_dropout` ch 7 | `sensor_drift`, `sensor_dropout` | yes |
+| `sensor_stuck` ch 3 | `sensor_drift`, `sensor_stuck` | yes |
+| `sensor_drift` ch 11 | `sensor_drift` | yes |
+| `value_out_of_range` ch 2 | `sensor_drift`, `sensor_stuck`, `value_out_of_range` | yes |
+
+`sensor_drift` appears in every row, including the control, because it fires on healthy
+channels of this engine. Each expected fault is named; none is named alone.
 
 **The control run fails, and that is the finding.** On a *healthy* engine, three
 channels — `Nf`, `Nc`, `T48` — move about 20 units between adjacent windows as ordinary

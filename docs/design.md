@@ -4,8 +4,20 @@ Remaining Useful Life (RUL) prediction for turbofan engines, with calibrated
 prediction intervals, a cost-based maintenance policy, and a streaming pipeline
 that replays held-out engines as a live fleet.
 
-Status: Phase 0 (design). No code beyond this document and the ADRs it
-references exists yet.
+Status: Phases 0–5 are built and merged; Phase 6 (launch) is in progress. This
+document was written in Phase 0 and is kept as the design of record. Where the build
+departed from it, §14 says how and why, and the README carries the measured results.
+
+| Section | Built | Not built yet |
+| --- | --- | --- |
+| §4.2 Data pipeline | Conversion, manifest, windowing, engine splits, leakage test | — |
+| §4.3 Models | Mean, linear-cycle, trend, LightGBM, CNN, LSTM, Transformer | — |
+| §4.4 Uncertainty | Split conformal and CQR, offline and live coverage | — |
+| §4.5 Decision layer | Lower-bound and point policies, run-to-failure, fixed interval, ratio sweep | — |
+| §4.6 Streaming | Replay, online window, inference, alerting, fleet view, cost panel, auth | Hosted demo |
+| §4.7 Sensor faults | Dropout, stuck, drift, out-of-range, cycle regression, silence | Operating-condition shift; drift detector false positives (README, Limitations) |
+| §4.8 Monitoring | Prometheus metrics, Grafana dashboard, structured logs | OpenTelemetry tracing (spans are in-process today) |
+| §4.9 MLOps | YAML configs, data checksums, training CLI, CI smoke run | MLflow tracking and registry, model card |
 
 ---
 
