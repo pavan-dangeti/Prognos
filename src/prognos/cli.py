@@ -373,6 +373,7 @@ def cmd_stream(args: argparse.Namespace) -> int:
                 config,
                 seed=config.split.seed,
                 calibration_fraction=args.calibration_fraction,
+                pace=args.pace,
                 model_dir=Path(args.model_dir),
                 on_pipeline=lambda p: holder.update(pipeline=p),
             )
@@ -432,8 +433,14 @@ def _serve_until_done(
 
     def state() -> Any:  # noqa: ANN401
         """The live pipeline's fleet, with the same auth the other services use."""
+        pipeline = holder["pipeline"]
         built = build_component(
-            "dashboard", metrics=MetricsRegistry(), logger=logger, fleet=holder["pipeline"].fleet
+            "dashboard",
+            metrics=MetricsRegistry(),
+            logger=logger,
+            fleet=pipeline.fleet,
+            monitor=pipeline.coverage_monitor,
+            on_inject=pipeline.arm_fault,
         )
         built.authorizer = Authorizer(token=token_from_env())
         built.rate_limiter = RateLimiter(limit=args.rate_limit, window_seconds=args.rate_window)
@@ -527,6 +534,63 @@ def _run_fault_scenarios(data: WindowSource, config: Config, args: argparse.Name
             f"  {scenario['fault']:20s} detected={scenario['detected']} "
             f"{'ok' if scenario['passed'] else 'MISSED'}"
         )
+    return 0
+
+
+def cmd_bench(args: argparse.Namespace) -> int:
+    """Measure streaming latency and throughput at several fleet sizes."""
+    from prognos.bench import benchmark
+    from prognos.evaluate import build_folds, library_versions
+    from prognos.stream.pipeline import PipelineConfig
+
+    config = load_config(Path(args.config))
+    cache_dir = None if args.no_cache else config.data.parquet_dir.parent / "cache"
+    data = load_windows(
+        config.data.parquet_dir, config.window, config.data.subdatasets, cache_dir=cache_dir
+    )
+    folds = build_folds(
+        data,
+        n_splits=config.split.n_splits,
+        test_fraction=config.split.test_fraction,
+        seed=config.split.seed,
+    )
+    cv_units = sorted({int(u) for f in folds for u in f.split.val_units})
+    labels = [data.group_labels[u] for u in cv_units]
+    pipeline_config = PipelineConfig(
+        window_length=config.window.length,
+        window_stride=config.window.stride,
+        downsample=config.window.downsample,
+        rul_cap=config.window.rul_cap or 125,
+        alert_threshold=config.cost.thresholds[0] if config.cost.thresholds else 20.0,
+        target_coverage=config.uncertainty.target_coverage,
+    )
+    sizes = [int(size) for size in args.fleet_sizes.split(",")]
+    print(f"benchmarking fleets of {sizes} from {len(labels)} cross-validation engines", flush=True)
+    report = benchmark(
+        Path(args.model_dir),
+        Path(config.data.parquet_dir),
+        labels,
+        pipeline_config,
+        fleet_sizes=sizes,
+        rows_per_engine=args.rows_per_engine,
+        repeats=args.repeats,
+        http_requests=args.http_requests,
+    )
+    report.update(
+        {
+            "command": " ".join(["prognos", *sys.argv[1:]]),
+            "versions": library_versions(),
+            "generated_at": date.today().isoformat(),
+            "final_test_group": {
+                "engines": sorted(folds[0].split.test_units),
+                "status": "closed",
+            },
+        }
+    )
+    out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    print(f"wrote {out_path}", flush=True)
     return 0
 
 
@@ -650,6 +714,12 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="serve the dashboard from the replay's own pipeline, so the fleet view is live",
     )
+    stream.add_argument(
+        "--pace",
+        type=float,
+        default=None,
+        help="cap the replay at this many readings per second, for watching the dashboard",
+    )
     stream.add_argument("--host", default="127.0.0.1")
     stream.add_argument("--port", type=int, default=8090)
     stream.add_argument("--rate-limit", type=int, default=600)
@@ -657,6 +727,17 @@ def main(argv: list[str] | None = None) -> int:
     stream.add_argument("--no-cache", action="store_true")
     stream.add_argument("--rebuild-cache", action="store_true")
     stream.set_defaults(func=cmd_stream)
+
+    bench = sub.add_parser("bench", help="measure streaming latency and throughput")
+    bench.add_argument("--config", default="configs/base.yaml")
+    bench.add_argument("--out", default="results/phase6_streaming_bench.json")
+    bench.add_argument("--model-dir", default="artifacts/model")
+    bench.add_argument("--fleet-sizes", default="10,100,1000")
+    bench.add_argument("--rows-per-engine", type=int, default=3000)
+    bench.add_argument("--repeats", type=int, default=5)
+    bench.add_argument("--http-requests", type=int, default=2000)
+    bench.add_argument("--no-cache", action="store_true")
+    bench.set_defaults(func=cmd_bench)
 
     serve_cmd = sub.add_parser("serve", help="serve one streaming component over HTTP")
     serve_cmd.add_argument("--component", required=True, choices=list(COMPONENTS))
