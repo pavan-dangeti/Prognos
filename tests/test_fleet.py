@@ -89,10 +89,12 @@ class TestFleetView:
     def test_alerts_attach_to_the_matching_engine(self) -> None:
         view = FleetView()
         view.record(unit=1, cycle=10, interval=Interval(5.0, 8.0, 15.0))
-        view.set_alert(1, {"state": "critical", "rul": 8.0})
+        # The shape `MaintenanceAlert.to_dict` produces. A hand-written `{"state": ...}`
+        # here once let the view read a key real alerts never carry.
+        view.set_alert(1, {"kind": "maintenance_due", "unit": 1, "cycle": 10, "lower": 5.0})
         view.record(unit=2, cycle=10, interval=Interval(5.0, 8.0, 15.0))
         rows = {r["unit"]: r for r in view.rows()}
-        assert rows[1]["alert"] == "critical"
+        assert rows[1]["alert"] == "maintenance_due"
         assert rows[2]["alert"] is None
 
     def test_degraded_states_attach_to_the_matching_engine(self) -> None:

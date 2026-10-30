@@ -353,3 +353,33 @@ class TestMatchesTheOfflineBuilder:
                 stride=10,
                 downsample=10,
             )
+
+
+def test_the_coverage_verdict_survives_a_concurrent_writer() -> None:
+    """The dashboard reads the verdict while the replay thread records into it.
+
+    Iterating the live deque raised "deque mutated during iteration", which surfaced as
+    a 500 on `/coverage` partway through a real replay.
+    """
+    import threading
+
+    from prognos.stream.coverage import CoverageMonitor, Observation
+
+    monitor = CoverageMonitor(min_samples=10, history=2000)
+    stop = threading.Event()
+
+    def write() -> None:
+        unit = 0
+        while not stop.is_set():
+            unit += 1
+            monitor.record(Observation(unit=unit % 7, truth=5.0, lower=0.0, upper=10.0, point=5.0))
+
+    writer = threading.Thread(target=write, daemon=True)
+    writer.start()
+    try:
+        for _ in range(300):
+            monitor.verdict()
+            monitor.error_by_engine()
+    finally:
+        stop.set()
+        writer.join()

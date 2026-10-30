@@ -20,6 +20,7 @@ two diverge.
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -28,7 +29,7 @@ import numpy.typing as npt
 from prognos.stream.alerting import AlertingService, MaintenanceAlert
 from prognos.stream.coverage import CoverageMonitor, CoverageVerdict, Observation
 from prognos.stream.events import StreamStats, TelemetryBatch, validate_batch
-from prognos.stream.faults import FaultDetector
+from prognos.stream.faults import FaultDetector, FaultInjector, InjectedFault
 from prognos.stream.fleet import FleetView
 from prognos.stream.inference import Prediction, RulPredictor
 from prognos.stream.observability import (
@@ -72,6 +73,17 @@ class EngineReplay:
     coverage: list[float] = field(default_factory=list)
 
 
+@dataclass(slots=True)
+class _EngineState:
+    """One engine's live stream: its window, its detector, and what it has raised."""
+
+    window: OnlineWindow
+    detector: FaultDetector | None
+    detected_cycle: int | None = None
+    last_good: npt.NDArray[np.float32] | None = None
+    alerts: list[MaintenanceAlert] = field(default_factory=list)
+
+
 class StreamPipeline:
     """Telemetry in, calibrated predictions and alerts out.
 
@@ -85,7 +97,9 @@ class StreamPipeline:
         "_config",
         "_coverage",
         "_detectors",
+        "_engines",
         "_fleet",
+        "_injectors",
         "_logger",
         "_metrics",
         "_predictor",
@@ -119,6 +133,8 @@ class StreamPipeline:
             threshold=config.alert_threshold, hysteresis=config.alert_hysteresis
         )
         self._fleet = FleetView()
+        self._engines: dict[int, _EngineState] = {}
+        self._injectors: dict[int, FaultInjector] = {}
 
     @property
     def fleet(self) -> FleetView:
@@ -128,6 +144,11 @@ class StreamPipeline:
         only thing that sees the stream. The dashboard reads it; it does not build it.
         """
         return self._fleet
+
+    @property
+    def coverage_monitor(self) -> CoverageMonitor:
+        """The live S5 monitor, for a dashboard that reports the same verdict."""
+        return self._coverage
 
     @property
     def metrics(self) -> MetricsRegistry:
@@ -140,10 +161,14 @@ class StreamPipeline:
         return self._coverage.verdict()
 
     def _detector_for(self, unit: int) -> FaultDetector | None:
-        """One detector per engine, created on first sight."""
+        """A fresh detector for an engine whose stream is starting."""
         if self._detectors is None:
             return None
-        return self._detectors.setdefault(unit, FaultDetector(unit=unit))
+        # Replaced rather than reused: a replay restarts the engine's stream, and a
+        # detector carrying the last replay's frozen baseline would judge the new one
+        # against a different engine life.
+        self._detectors[unit] = FaultDetector(unit=unit)
+        return self._detectors[unit]
 
     @property
     def degraded_states(self) -> list[dict[str, object]]:
@@ -164,6 +189,108 @@ class StreamPipeline:
         """Every engine currently under a maintenance alert."""
         return self._alerting.alerts()
 
+    def arm_fault(self, unit: int, fault: InjectedFault | None) -> None:
+        """Inject a named fault into an engine's live stream, or disarm it.
+
+        Applied to the rows as they arrive, before detection and windowing, so what the
+        dashboard shows afterwards is the pipeline's own reaction to a broken sensor
+        rather than a flag someone set.
+        """
+        self._injectors[unit] = FaultInjector(unit=unit, fault=fault)
+
+    def _engine(self, unit: int) -> _EngineState:
+        """Per-engine stream state, created on first sight."""
+        state = self._engines.get(unit)
+        if state is None:
+            config = self._config
+            state = _EngineState(
+                window=OnlineWindow(
+                    length=config.window_length,
+                    downsample=config.downsample,
+                    stride=config.window_stride,
+                ),
+                detector=self._detector_for(unit),
+            )
+            self._engines[unit] = state
+        return state
+
+    def push(
+        self,
+        unit: int,
+        cycle: int,
+        row: npt.NDArray[np.float32],
+        truth: float | None = None,
+        source: str | None = None,
+    ) -> list[Prediction]:
+        """Take one sensor reading and return any predictions it completed.
+
+        The live entry point: engines interleave freely, and each keeps its own window
+        and detector. Most readings complete no window and return an empty list.
+
+        The detector sees the first reading of each cycle, not every reading. It judges
+        engine behaviour cycle to cycle, which is the cadence `results/phase5_faults.json`
+        was measured at. Fed every raw row it judged within-cycle scatter instead, and at
+        about 11,000 rows a cycle it was the largest cost in the whole pipeline.
+        """
+        state = self._engine(unit)
+        injector = self._injectors.get(unit)
+        if injector is not None:
+            row = injector.apply(cycle, row.copy())
+        detector = state.detector
+        if detector is not None and cycle != state.detected_cycle:
+            state.detected_cycle = cycle
+            detector.observe(cycle, row)
+            self._fleet.set_degraded(unit, [s.to_dict() for s in detector.active()])
+
+        # A missing channel is held at its last good value, so the engine keeps a
+        # prediction while the detector names the dropout and the fleet view marks the
+        # engine degraded. The window refuses NaN outright, and letting that refusal
+        # escape stopped the whole replay over one dead sensor. With no good value yet
+        # there is nothing honest to hold, so the reading is skipped.
+        finite = np.isfinite(row)
+        if finite.all():
+            state.last_good = row
+        elif state.last_good is None:
+            return []
+        else:
+            row = np.where(finite, row, state.last_good).astype(np.float32)
+        window = state.window
+        window.push(cycle, row)
+
+        predictions: list[Prediction] = []
+        while window.has_window:
+            features = window.materialise()
+            interval = self._predictor.predict(
+                features[None, ...], np.asarray([cycle], dtype=np.int64)
+            )[0]
+            prediction = Prediction(
+                unit=unit,
+                cycle=cycle,
+                interval=interval,
+                model=self._predictor.model_name,
+                target_coverage=self._config.target_coverage,
+            )
+            predictions.append(prediction)
+            self._fleet.record(unit=unit, cycle=cycle, interval=interval, source=source)
+            if truth is not None:
+                self._coverage.record(
+                    Observation(
+                        unit=unit,
+                        truth=truth,
+                        lower=interval.lower,
+                        upper=interval.upper,
+                        point=interval.point,
+                    )
+                )
+            state.alerts.extend(
+                self._alerting.evaluate(
+                    unit=unit, cycle=cycle, lower=interval.lower, point=interval.point
+                )
+            )
+            open_alert = self._alerting.alerts().get(unit)
+            self._fleet.set_alert(unit, open_alert.to_dict() if open_alert is not None else None)
+        return predictions
+
     def run_engine(
         self,
         unit: int,
@@ -171,8 +298,13 @@ class StreamPipeline:
         rows: npt.NDArray[np.float32],
         truth_by_cycle: dict[int, float] | None = None,
         source: str | None = None,
+        pace: float | None = None,
     ) -> EngineReplay:
-        """Replay one engine end to end.
+        """Replay one engine end to end, from a fresh window.
+
+        `pace` caps the replay at that many readings per second. Unpaced, an engine's
+        whole life passes in seconds, which is right for a measurement and too fast for
+        anyone watching the dashboard to see a fault arrive and clear.
 
         `truth` is the RUL at each window, supplied by the replay driver from the
         dataset. It is what the coverage monitor scores against. Passing it as an
@@ -187,69 +319,36 @@ class StreamPipeline:
         The two differ — group 0 is DS01 unit 1 — and an operator reading a fleet view
         showing `unit000` would be reading an identifier that means nothing.
         """
-        config = self._config
-        window = OnlineWindow(
-            length=config.window_length, downsample=config.downsample, stride=config.window_stride
-        )
+        self._engines.pop(unit, None)
         replay = EngineReplay(unit=unit, n_windows=0, n_rows=int(cycles.size))
         cycle_array = np.asarray(cycles, dtype=np.int64)
         block = np.asarray(rows, dtype=np.float32)
-        detector = self._detector_for(unit)
 
         # Counted once per engine rather than per row. Validating row by row would add
         # a million empty batches to the counters and make the scrape useless.
         empty = TelemetryBatch(source="replay", unit=unit, rows=[])
         self._stats.record(empty, validate_batch(empty))
 
+        started = time.monotonic()
         for index in range(cycle_array.size):
+            # Checked every thousand readings: often enough to keep the rate steady, rare
+            # enough that the clock read is not the cost being paid.
+            if pace is not None and index % 1000 == 0:
+                ahead = index / pace - (time.monotonic() - started)
+                if ahead > 0:
+                    time.sleep(ahead)
             cycle = int(cycle_array[index])
-            if detector is not None:
-                detector.observe(cycle, block[index])
-                for state in detector.active():
-                    replay.faults.append(detector.raise_alert_for(state))
-            window.push(cycle, block[index])
-
-            if not window.has_window:
-                continue
-            while window.has_window:
-                features = window.materialise()
-                interval = self._predictor.predict(
-                    features[None, ...], np.asarray([cycle], dtype=np.int64)
-                )[0]
-                prediction = Prediction(
-                    unit=unit,
-                    cycle=cycle,
-                    interval=interval,
-                    model=self._predictor.model_name,
-                    target_coverage=config.target_coverage,
-                )
+            truth = truth_by_cycle.get(cycle) if truth_by_cycle is not None else None
+            for prediction in self.push(unit, cycle, block[index], truth=truth, source=source):
                 replay.predictions.append(prediction)
-                replay.coverage.append(float(interval.point))
-                self._fleet.record(unit=unit, cycle=cycle, interval=interval, source=source)
-
-                if truth_by_cycle is not None and cycle in truth_by_cycle:
-                    self._coverage.record(
-                        Observation(
-                            unit=unit,
-                            truth=float(truth_by_cycle[cycle]),
-                            lower=interval.lower,
-                            upper=interval.upper,
-                            point=interval.point,
-                        )
-                    )
-                replay.alerts.extend(
-                    self._alerting.evaluate(
-                        unit=unit, cycle=cycle, lower=interval.lower, point=interval.point
-                    )
-                )
-                open_alert = self._alerting.alerts().get(unit)
-                self._fleet.set_alert(
-                    unit, open_alert.to_dict() if open_alert is not None else None
-                )
-                if detector is not None:
-                    self._fleet.set_degraded(unit, [state.to_dict() for state in detector.active()])
+                replay.coverage.append(float(prediction.interval.point))
                 replay.n_windows += 1
 
+        state = self._engines.get(unit)
+        if state is not None:
+            replay.alerts = state.alerts
+            if state.detector is not None:
+                replay.faults = [state.detector.raise_alert_for(s) for s in state.detector.history]
         return replay
 
     def record_metrics(self) -> None:

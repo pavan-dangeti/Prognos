@@ -169,6 +169,57 @@ class TestServiceEndpoints:
 # ------------------------------------------------------------- end to end
 
 
+class TestPostFailures:
+    """A handler bug must surface as a status, never as a traceback or a dropped socket."""
+
+    @staticmethod
+    def post(url: str, body: bytes) -> _Body:
+        request = urllib.request.Request(url, data=body, method="POST")
+        try:
+            with urllib.request.urlopen(request, timeout=5) as response:
+                return _Body(response.status, response.read().decode())
+        except urllib.error.HTTPError as error:
+            return _Body(error.code, error.read().decode())
+
+    def test_a_handler_that_raises_is_a_bare_500(self, server) -> None:
+        base, state = server
+
+        def broken(_payload: dict) -> dict:
+            raise RuntimeError("/srv/app/secret/path.py exploded")
+
+        state.routes["POST /boom"] = broken
+        response = self.post(f"{base}/boom", b"{}")
+        assert response.status == 500
+        assert response.json() == {"error": "internal error"}
+
+    def test_an_unknown_post_route_is_404(self, server) -> None:
+        base, _ = server
+        assert self.post(f"{base}/nowhere", b"{}").status == 404
+
+    def test_a_body_that_is_not_json_is_400(self, server) -> None:
+        base, state = server
+        state.routes["POST /echo"] = lambda payload: payload
+        assert self.post(f"{base}/echo", b"{not json").status == 400
+
+
+def test_serve_closes_the_socket_on_interrupt(monkeypatch) -> None:
+    """Ctrl-C must release the port, or the next start fails with address in use."""
+    from prognos.stream import service
+
+    closed: list[bool] = []
+
+    class _Server:
+        def serve_forever(self) -> None:
+            raise KeyboardInterrupt
+
+        def server_close(self) -> None:
+            closed.append(True)
+
+    monkeypatch.setattr(service, "build_server", lambda *_args, **_kwargs: _Server())
+    service.serve(ServiceState(name="test"), port=0)
+    assert closed == [True]
+
+
 class TestPipelineEndToEnd:
     def test_coverage_verdict_matches_a_direct_count(self) -> None:
         """The monitor must score exactly what it reports.

@@ -94,6 +94,7 @@ def replay_pipeline(
     on_pipeline: Callable[[StreamPipeline], None] | None = None,
     model_dir: Path | None = None,
     logger: logging.Logger | None = None,
+    pace: float | None = None,
 ) -> ReplayOutcome:
     """Train the serving predictor, then replay each engine through the pipeline.
 
@@ -178,7 +179,7 @@ def replay_pipeline(
             continue
         truth = _truth_per_cycle(cycles, rul)
         replay = pipeline.run_engine(
-            key.unit, cycles, features, truth_by_cycle=truth, source=key.subdataset
+            key.unit, cycles, features, truth_by_cycle=truth, source=key.subdataset, pace=pace
         )
         per_engine.append(
             {

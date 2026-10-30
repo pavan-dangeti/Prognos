@@ -262,3 +262,77 @@ class TestFleetViewIsFedByTheStream:
         stream = pipeline()
         stream.run_engine(2, cycles, rows)
         assert stream.summary()["fleet"][0]["unit"] == 2
+
+
+class TestLiveInjection:
+    """A fault armed on a running pipeline must reach the rows the detector sees."""
+
+    def test_an_armed_fault_turns_the_engine_degraded(self) -> None:
+        from prognos.stream.faults import InjectedFault
+
+        cycles, rows = an_engine(seed=9)
+        stream = pipeline(detect_faults=True)
+        stream.arm_fault(3, InjectedFault("value_out_of_range", channel=4, from_cycle=3))
+        stream.run_engine(3, cycles, rows)
+        (row,) = stream.fleet.rows()
+        assert row["status"] == "degraded"
+        assert {s["state"] for s in row["degraded"]} == {"value_out_of_range"}
+
+    def test_disarming_lets_the_engine_recover(self) -> None:
+        from prognos.stream.faults import InjectedFault
+
+        cycles, rows = an_engine(seed=10)
+        stream = pipeline(detect_faults=True)
+        stream.arm_fault(3, InjectedFault("value_out_of_range", channel=4, from_cycle=1))
+        stream.arm_fault(3, None)
+        stream.run_engine(3, cycles, rows)
+        assert {r["status"] for r in stream.fleet.rows()} == {"nominal"}
+
+    def test_engines_interleave_without_sharing_a_window(self) -> None:
+        """`push` keeps state per engine, which is what a live fleet needs."""
+        cycles, rows = an_engine(seed=11)
+        interleaved = pipeline()
+        produced: dict[int, int] = {1: 0, 2: 0}
+        for index in range(cycles.size):
+            for unit in (1, 2):
+                produced[unit] += len(interleaved.push(unit, int(cycles[index]), rows[index]))
+        alone = pipeline().run_engine(1, cycles, rows).n_windows
+        assert produced == {1: alone, 2: alone}
+
+    def test_the_detector_sees_one_row_per_cycle(self) -> None:
+        """At thousands of rows a cycle, per-row detection judged scatter, not the engine."""
+        cycles, rows = an_engine(seed=12)
+        stream = pipeline(detect_faults=True)
+        stream.run_engine(5, cycles, rows)
+        assert stream._detectors is not None
+        assert stream._detectors[5].n_observations == len(set(cycles.tolist()))
+
+    def test_a_dropped_channel_degrades_the_engine_without_stopping_the_stream(self) -> None:
+        """NaN used to escape the window and end the replay over one dead sensor."""
+        from prognos.stream.faults import InjectedFault
+
+        cycles = np.repeat(np.arange(1, 31), ROWS_PER_CYCLE).astype(np.int64)
+        rows = np.random.default_rng(13).normal(size=(cycles.size, 18)).astype(np.float32)
+        clean = pipeline(detect_faults=True).run_engine(3, cycles, rows).n_windows
+        stream = pipeline(detect_faults=True)
+        stream.arm_fault(3, InjectedFault("sensor_dropout", channel=6, from_cycle=5))
+        replay = stream.run_engine(3, cycles, rows)
+        assert replay.n_windows == clean
+        (row,) = stream.fleet.rows()
+        assert row["status"] == "degraded"
+        assert {s["state"] for s in row["degraded"]} == {"sensor_dropout"}
+
+    def test_a_reading_with_nothing_to_hold_is_skipped(self) -> None:
+        stream = pipeline()
+        row = np.full(18, np.nan, dtype=np.float32)
+        assert stream.push(1, 1, row) == []
+
+    def test_a_paced_replay_takes_at_least_its_budget(self) -> None:
+        import time
+
+        cycles = np.repeat(np.arange(1, 4), 1000).astype(np.int64)
+        rows = np.random.default_rng(14).normal(size=(cycles.size, 18)).astype(np.float32)
+        started = time.monotonic()
+        paced = pipeline().run_engine(1, cycles, rows, pace=10_000.0)
+        assert time.monotonic() - started >= 0.2  # 3,000 readings at 10,000 a second
+        assert paced.n_windows == pipeline().run_engine(1, cycles, rows).n_windows

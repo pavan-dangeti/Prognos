@@ -120,7 +120,12 @@ class CoverageMonitor:
         the target is not a breach — over-covering is wasteful, not dangerous — so
         it is reported as `ok` with the number attached for an operator to read.
         """
-        n = len(self.observations)
+        # One snapshot, taken once. The replay thread appends while the dashboard
+        # thread reads, and iterating the live deque raised "mutated during iteration"
+        # as a 500 on /coverage. Copying a deque to a list is a single C call, so the
+        # snapshot is consistent even with the writer running.
+        observations = list(self.observations)
+        n = len(observations)
         if n < self.min_samples:
             return CoverageVerdict(
                 measured=None,
@@ -130,15 +135,15 @@ class CoverageMonitor:
                 status="insufficient_data",
             )
 
-        truths = np.asarray([o.truth for o in self.observations], dtype=np.float64)
-        lowers = np.asarray([o.lower for o in self.observations], dtype=np.float64)
-        uppers = np.asarray([o.upper for o in self.observations], dtype=np.float64)
+        truths = np.asarray([o.truth for o in observations], dtype=np.float64)
+        lowers = np.asarray([o.lower for o in observations], dtype=np.float64)
+        uppers = np.asarray([o.upper for o in observations], dtype=np.float64)
         covered = (truths >= lowers) & (truths <= uppers)
         measured = float(np.mean(covered))
 
         status = "breach" if measured < self.target - self.tolerance else "ok"
 
-        worst_unit, worst_coverage = self._worst_engine(covered)
+        worst_unit, worst_coverage = self._worst_engine(observations, covered)
         return CoverageVerdict(
             measured=measured,
             target=self.target,
@@ -149,7 +154,9 @@ class CoverageMonitor:
             worst_coverage=worst_coverage,
         )
 
-    def _worst_engine(self, covered: npt.NDArray[np.bool_]) -> tuple[int | None, float | None]:
+    def _worst_engine(
+        self, observations: list[Observation], covered: npt.NDArray[np.bool_]
+    ) -> tuple[int | None, float | None]:
         """The engine with the lowest coverage, ignoring engines with too little data.
 
         Aggregate coverage can sit at target while one engine is chronically
@@ -157,7 +164,7 @@ class CoverageMonitor:
         those are excluded rather than allowed to drag the worst-case figure to zero.
         """
         by_unit: dict[int, list[bool]] = {}
-        for observation, flag in zip(self.observations, covered, strict=True):
+        for observation, flag in zip(observations, covered, strict=True):
             by_unit.setdefault(observation.unit, []).append(bool(flag))
         eligible = {
             unit: float(np.mean(flags))
@@ -172,7 +179,7 @@ class CoverageMonitor:
     def error_by_engine(self) -> dict[int, float]:
         """Mean absolute error per engine, for context alongside the coverage verdict."""
         errors: dict[int, list[float]] = {}
-        for observation in self.observations:
+        for observation in list(self.observations):
             errors.setdefault(observation.unit, []).append(
                 abs(observation.truth - observation.point)
             )

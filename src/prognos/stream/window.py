@@ -19,6 +19,8 @@ confidence. "Not enough data yet" is a legitimate state and is represented as su
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 import numpy.typing as npt
 
@@ -86,7 +88,7 @@ class OnlineWindow:
         """Whether a window is ready right now."""
         return self._next_offset + self._length <= len(self._downsampled)
 
-    def push(self, cycle: int, values: npt.NDArray[np.float64]) -> bool:
+    def push(self, cycle: int, values: npt.NDArray[np.floating[Any]]) -> bool:
         """Add one raw row. Returns True when a window became available.
 
         The cycle is passed separately rather than tucked into a channel slot, because

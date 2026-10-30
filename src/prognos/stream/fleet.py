@@ -105,7 +105,7 @@ class FleetView:
                 merged.append(
                     {
                         **row,
-                        "alert": alert.get("state") if alert else None,
+                        "alert": alert.get("kind") if alert else None,
                         "alert_detail": alert,
                         "degraded": degraded,
                         "status": (
