@@ -287,6 +287,7 @@ class StreamPipeline:
                         lower=interval.lower,
                         upper=interval.upper,
                         point=interval.point,
+                        source=source,
                     )
                 )
             state.alerts.extend(

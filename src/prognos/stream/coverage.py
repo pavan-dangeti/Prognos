@@ -31,6 +31,8 @@ from dataclasses import dataclass, field
 import numpy as np
 import numpy.typing as npt
 
+from prognos.stream.fleet import engine_label
+
 #: Minimum scored predictions before a verdict is issued at all.
 MIN_SAMPLES = 50
 
@@ -44,6 +46,9 @@ class Observation:
     lower: float
     upper: float
     point: float
+    #: The engine's sub-dataset. Unit numbers restart in every sub-dataset, so without
+    #: it the worst engine is reported as a number that names several engines at once.
+    source: str | None = None
 
 
 @dataclass(slots=True)
@@ -55,7 +60,8 @@ class CoverageVerdict:
     tolerance: float
     n_samples: int
     status: str
-    worst_engine: int | None = None
+    #: The engine label, `DS02-006/unit002`, not a bare unit number.
+    worst_engine: str | None = None
     worst_coverage: float | None = None
 
     @property
@@ -156,16 +162,17 @@ class CoverageMonitor:
 
     def _worst_engine(
         self, observations: list[Observation], covered: npt.NDArray[np.bool_]
-    ) -> tuple[int | None, float | None]:
+    ) -> tuple[str | None, float | None]:
         """The engine with the lowest coverage, ignoring engines with too little data.
 
         Aggregate coverage can sit at target while one engine is chronically
         uncovered. A single engine's rate is meaningless below the same floor, so
         those are excluded rather than allowed to drag the worst-case figure to zero.
         """
-        by_unit: dict[int, list[bool]] = {}
+        by_unit: dict[str, list[bool]] = {}
         for observation, flag in zip(observations, covered, strict=True):
-            by_unit.setdefault(observation.unit, []).append(bool(flag))
+            label = engine_label(observation.source, observation.unit)
+            by_unit.setdefault(label, []).append(bool(flag))
         eligible = {
             unit: float(np.mean(flags))
             for unit, flags in by_unit.items()
@@ -176,11 +183,11 @@ class CoverageMonitor:
         worst = min(eligible, key=lambda unit: eligible[unit])
         return worst, eligible[worst]
 
-    def error_by_engine(self) -> dict[int, float]:
+    def error_by_engine(self) -> dict[str, float]:
         """Mean absolute error per engine, for context alongside the coverage verdict."""
-        errors: dict[int, list[float]] = {}
+        errors: dict[str, list[float]] = {}
         for observation in list(self.observations):
-            errors.setdefault(observation.unit, []).append(
+            errors.setdefault(engine_label(observation.source, observation.unit), []).append(
                 abs(observation.truth - observation.point)
             )
         return {unit: float(np.mean(values)) for unit, values in errors.items()}

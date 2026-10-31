@@ -201,7 +201,7 @@ class TestCoverageMonitor:
                 else Observation(2, 50.0, 60.0, 70.0, 45.0)
             )
         verdict = monitor.verdict()
-        assert verdict.worst_engine == 2
+        assert verdict.worst_engine == "unit002"
         assert verdict.worst_coverage == pytest.approx(0.0)
 
     def test_engines_below_the_floor_do_not_set_the_worst_case(self) -> None:
@@ -211,7 +211,7 @@ class TestCoverageMonitor:
             monitor.record(Observation(1, 50.0, 49.0, 51.0, 50.0))
         monitor.record(Observation(2, 50.0, 60.0, 70.0, 45.0))
         verdict = monitor.verdict()
-        assert verdict.worst_engine == 1
+        assert verdict.worst_engine == "unit001"
         assert verdict.worst_coverage == pytest.approx(1.0)
 
     def test_the_window_evicts_old_observations(self) -> None:
@@ -250,7 +250,7 @@ class TestCoverageMonitor:
             offset = 1.0 if index < 50 else 10.0
             monitor.record(Observation(1, 50.0, 49.0, 51.0, 50.0 - offset))
         errors = monitor.error_by_engine()
-        assert errors[1] > 0.0
+        assert errors["unit001"] > 0.0
 
     def test_verdict_is_serialisable_for_the_metrics_endpoint(self) -> None:
         monitor = CoverageMonitor(target=0.9, min_samples=50)
@@ -556,3 +556,19 @@ class TestRemainingBranches:
         )
         with pytest.raises(ValueError, match="no calibration residuals"):
             RulPredictor.load(tmp_path)
+
+
+def test_the_worst_engine_is_named_by_sub_dataset_and_unit() -> None:
+    """Two engines sharing unit 2 are scored apart and named in full.
+
+    Reported as a bare unit, the committed replay's worst engine read `6`, a number
+    that names one engine in each sub-dataset.
+    """
+    monitor = CoverageMonitor(target=0.9, min_samples=50)
+    for _ in range(60):
+        monitor.record(Observation(2, 50.0, 49.0, 51.0, 50.0, source="DS01-005"))
+        monitor.record(Observation(2, 50.0, 60.0, 70.0, 45.0, source="DS02-006"))
+    verdict = monitor.verdict()
+    assert verdict.worst_engine == "DS02-006/unit002"
+    assert verdict.worst_coverage == 0.0
+    assert set(monitor.error_by_engine()) == {"DS01-005/unit002", "DS02-006/unit002"}
