@@ -156,7 +156,7 @@ class TestStreamPipeline:
         stream = pipeline(alert_threshold=1e6)
         stream.run_engine(1, cycles_a, rows_a)
         stream.run_engine(2, cycles_b, rows_b)
-        assert set(stream.open_alerts) == {1, 2}
+        assert set(stream.open_alerts) == {(None, 1), (None, 2)}
 
     def test_the_same_engine_alerts_once(self) -> None:
         """One alert per engine, however many windows it produces."""
@@ -305,7 +305,7 @@ class TestLiveInjection:
         stream = pipeline(detect_faults=True)
         stream.run_engine(5, cycles, rows)
         assert stream._detectors is not None
-        assert stream._detectors[5].n_observations == len(set(cycles.tolist()))
+        assert stream._detectors[(None, 5)].n_observations == len(set(cycles.tolist()))
 
     def test_a_dropped_channel_degrades_the_engine_without_stopping_the_stream(self) -> None:
         """NaN used to escape the window and end the replay over one dead sensor."""
@@ -336,3 +336,55 @@ class TestLiveInjection:
         paced = pipeline().run_engine(1, cycles, rows, pace=10_000.0)
         assert time.monotonic() - started >= 0.2  # 3,000 readings at 10,000 a second
         assert paced.n_windows == pipeline().run_engine(1, cycles, rows).n_windows
+
+
+class TestEngineIdentity:
+    """Unit numbers restart in every sub-dataset, so state must be keyed by both halves.
+
+    Keyed by unit alone, DS02 unit 2 opened its life by resolving the alert DS01 unit 2
+    had left open, and the committed replay recorded seven alerts no engine raised.
+    """
+
+    @staticmethod
+    def engine_at(first_cycle: int, seed: int) -> tuple[np.ndarray, np.ndarray]:
+        cycles = np.repeat(np.arange(first_cycle, first_cycle + 4), ROWS_PER_CYCLE)
+        rows = np.random.default_rng(seed).normal(size=(cycles.size, 18)).astype(np.float32)
+        return cycles.astype(np.int64), rows
+
+    def test_an_engine_does_not_inherit_the_alert_of_another_sharing_its_unit(self) -> None:
+        # Late-life cycles predict low RUL and early ones high, with a threshold between.
+        worn_cycles, worn_rows = self.engine_at(290, seed=20)
+        fresh_cycles, fresh_rows = self.engine_at(1, seed=21)
+        stream = pipeline(alert_threshold=85.0, alert_hysteresis=5.0)
+
+        worn = stream.run_engine(2, worn_cycles, worn_rows, source="DS01-005")
+        assert [a.kind for a in worn.alerts][:1] == ["maintenance_due"], "fixture must alert"
+        fresh = stream.run_engine(2, fresh_cycles, fresh_rows, source="DS02-006")
+
+        assert fresh.alerts == [], "the second engine resolved an alert it never raised"
+        assert set(stream.open_alerts) == {("DS01-005", 2)}
+        rows = {row["engine"]: row for row in stream.fleet.rows()}
+        assert rows["DS01-005/unit002"]["status"] == "alerting"
+        assert rows["DS02-006/unit002"]["status"] == "nominal"
+
+    def test_a_fault_reaches_only_the_engine_it_was_armed_on(self) -> None:
+        from prognos.stream.faults import InjectedFault
+
+        cycles, rows = an_engine(seed=22)
+        stream = pipeline(detect_faults=True)
+        fault = InjectedFault("value_out_of_range", channel=4, from_cycle=1)
+        stream.arm_fault(2, fault, source="DS02-006")
+        stream.run_engine(2, cycles, rows, source="DS01-005")
+        stream.run_engine(2, cycles, rows, source="DS02-006")
+        status = {row["engine"]: row["status"] for row in stream.fleet.rows()}
+        assert status == {"DS01-005/unit002": "nominal", "DS02-006/unit002": "degraded"}
+
+
+def test_the_alerting_service_keeps_engines_sharing_a_unit_apart() -> None:
+    from prognos.stream.alerting import AlertingService
+
+    service = AlertingService(threshold=20.0, hysteresis=5.0)
+    service.evaluate(unit=2, cycle=90, lower=5.0, point=15.0, source="DS01-005")
+    assert service.evaluate(unit=2, cycle=1, lower=80.0, point=95.0, source="DS02-006") == []
+    assert service.open_alerts(2, source="DS01-005") == 1
+    assert service.open_alerts(2, source="DS02-006") == 0

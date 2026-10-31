@@ -320,7 +320,18 @@ class TestAlerting:
         post(f"{base}/alerts", {"unit": 4, "cycle": 1, "lower": 1.0, "point": 30.0})
         status, body = get(f"{base}/alerts")
         assert status == 200
-        assert "4" in body["open"]
+        assert "unit004" in body["open"]
+
+    def test_open_alerts_name_the_sub_dataset(self, service) -> None:
+        """Two engines sharing unit 4 are two alerts, listed under their full identity."""
+        base = service("alerting")
+        for source in ("DS01-005", "DS02-006"):
+            post(
+                f"{base}/alerts",
+                {"unit": 4, "source": source, "cycle": 1, "lower": 1.0, "point": 30.0},
+            )
+        _, body = get(f"{base}/alerts")
+        assert set(body["open"]) == {"DS01-005/unit004", "DS02-006/unit004"}
 
 
 class TestSecurityAndLimits:
@@ -508,7 +519,7 @@ class TestFaultsAreObservableThroughTheService:
             {"engine": 2, "fault": "sensor_drift", "channel": 4, "from_cycle": 50},
         )
         assert status == 200
-        assert body["armed"] == {"2": "sensor_drift"}
+        assert body["armed"] == {"unit002": "sensor_drift"}
 
     def test_arming_nothing_clears_the_controls(self, service) -> None:
         base = service("dashboard")
@@ -521,12 +532,14 @@ class TestFaultsAreObservableThroughTheService:
         """Without the hand-off the control recorded a fault nothing ever applied."""
         from prognos.stream.api import build_dashboard_state
 
-        received: list[tuple[int, object]] = []
-        state = build_dashboard_state(on_inject=lambda unit, fault: received.append((unit, fault)))
+        received: list[tuple[int, object, object]] = []
+        state = build_dashboard_state(
+            on_inject=lambda unit, fault, source: received.append((unit, fault, source))
+        )
         handler = state.routes["POST /inject"]
-        handler({"engine": 4, "fault": "sensor_stuck", "channel": 3})
-        handler({"engine": 4, "fault": "none"})
-        assert [unit for unit, _ in received] == [4, 4]
+        handler({"engine": 4, "source": "DS02-006", "fault": "sensor_stuck", "channel": 3})
+        handler({"engine": 4, "source": "DS02-006", "fault": "none"})
+        assert [(unit, source) for unit, _, source in received] == [(4, "DS02-006")] * 2
         assert getattr(received[0][1], "kind", None) == "sensor_stuck"
         assert received[1][1] is None
 

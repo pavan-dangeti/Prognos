@@ -44,6 +44,10 @@ class MaintenanceAlert:
     lower: float
     point: float
     threshold: float
+    #: The engine's sub-dataset, the other half of its identity. Unit numbers restart in
+    #: every sub-dataset, so an alert carrying only the unit can be closed by a
+    #: different engine that happens to share the number.
+    source: str | None = None
 
     def to_dict(self) -> dict[str, object]:
         """For the API, the dashboard and the alert log."""
@@ -54,6 +58,7 @@ class MaintenanceAlert:
             "lower": self.lower,
             "point": self.point,
             "threshold": self.threshold,
+            "source": self.source,
         }
 
 
@@ -63,7 +68,7 @@ class AlertingService:
 
     threshold: float
     hysteresis: float = 5.0
-    _open: dict[int, MaintenanceAlert] = field(default_factory=dict)
+    _open: dict[tuple[str | None, int], MaintenanceAlert] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Reject a configuration that cannot fire or cannot recover."""
@@ -75,9 +80,17 @@ class AlertingService:
         if self.hysteresis < 0:
             raise ValueError(f"hysteresis must be non-negative, got {self.hysteresis}")
 
-    def evaluate(self, unit: int, cycle: int, lower: float, point: float) -> list[MaintenanceAlert]:
-        """Decide what, if anything, to emit for one engine at one cycle."""
-        existing = self._open.get(unit)
+    def evaluate(
+        self, unit: int, cycle: int, lower: float, point: float, source: str | None = None
+    ) -> list[MaintenanceAlert]:
+        """Decide what, if anything, to emit for one engine at one cycle.
+
+        Keyed by `(source, unit)`. Keyed by unit alone, DS02 unit 2 opened its life by
+        resolving the alert DS01 unit 2 had left open, and every engine that shared a
+        unit number with an earlier one recorded an alert it never raised.
+        """
+        key = (source, unit)
+        existing = self._open.get(key)
         due = lower <= self.threshold
 
         if existing is None:
@@ -89,15 +102,16 @@ class AlertingService:
                     lower=lower,
                     point=point,
                     threshold=self.threshold,
+                    source=source,
                 )
-                self._open[unit] = alert
+                self._open[key] = alert
                 return [alert]
             return []
 
         # Already under alert: only a clear recovery, and only past the hysteresis
         # margin, closes it.
         if lower >= self.threshold + self.hysteresis:
-            del self._open[unit]
+            del self._open[key]
             return [
                 MaintenanceAlert(
                     kind=MAINTENANCE_RESOLVED,
@@ -106,16 +120,17 @@ class AlertingService:
                     lower=lower,
                     point=point,
                     threshold=self.threshold,
+                    source=source,
                 )
             ]
         return []
 
-    def open_alerts(self, unit: int | None = None) -> int:
+    def open_alerts(self, unit: int | None = None, source: str | None = None) -> int:
         """How many alerts are open, fleet-wide or for one engine."""
         if unit is None:
             return len(self._open)
-        return 1 if unit in self._open else 0
+        return 1 if (source, unit) in self._open else 0
 
-    def alerts(self) -> dict[int, MaintenanceAlert]:
-        """Every open alert, keyed by engine."""
+    def alerts(self) -> dict[tuple[str | None, int], MaintenanceAlert]:
+        """Every open alert, keyed by `(source, unit)`."""
         return dict(self._open)

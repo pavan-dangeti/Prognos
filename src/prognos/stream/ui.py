@@ -23,6 +23,7 @@ const headers = token ? {Authorization: "Bearer " + token} : {};
 const history = new Map();
 const lastStatus = new Map();
 const prevRul = new Map();
+const engines = new Map();
 let selected = null;
 let follow = true;
 
@@ -161,9 +162,9 @@ function draw() {
 function populateEngines(rows) {
   const select = el("inject-engine");
   const current = select.value;
-  const units = [...new Map(rows.map((r) => [r.unit, r.engine])).entries()];
-  if (select.options.length === units.length) return;
-  select.replaceChildren(...units.map(([unit, label]) => node("option", {value: unit}, label)));
+  for (const r of rows) engines.set(r.engine, {unit: r.unit, source: r.source});
+  if (select.options.length === engines.size) return;
+  select.replaceChildren(...[...engines.keys()].map((label) => node("option", {value: label}, label)));
   if (current) select.value = current;
 }
 
@@ -220,19 +221,21 @@ async function instruments() {
 }
 
 async function inject(fault) {
+  const target = engines.get(el("inject-engine").value) || {unit: 0, source: null};
   const body = {
-    engine: Number(el("inject-engine").value),
+    engine: target.unit,
+    source: target.source,
     fault,
     channel: Number(el("inject-channel").value),
     from_cycle: 0,
   };
   try {
     const result = await api("/inject", {method: "POST", body: JSON.stringify(body), headers: {"Content-Type": "application/json"}});
-    const engine = el("inject-engine").selectedOptions[0]?.textContent || String(body.engine);
+    const engine = el("inject-engine").value;
     const sensor = el("inject-channel").selectedOptions[0]?.textContent || "";
     logEvent("injected", fault === "none" ? engine + ": fault cleared" : engine + ": injected " + fault.replace("_", " ") + " on " + sensor);
     const armed = Object.keys(result.armed);
-    el("armed").textContent = armed.length ? "armed on unit " + armed.join(", ") : "nothing armed";
+    el("armed").textContent = armed.length ? "armed on " + armed.join(", ") : "nothing armed";
   } catch (error) {
     logEvent("degraded", "injection refused: " + error.message);
   }

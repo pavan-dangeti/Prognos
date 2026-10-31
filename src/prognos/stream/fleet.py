@@ -56,8 +56,10 @@ class FleetView:
         """An empty fleet."""
         self._lock = threading.Lock()
         self._rows: dict[tuple[str | None, int], dict[str, Any]] = {}
-        self._alerts: dict[int, dict[str, Any]] = {}
-        self._degraded: dict[int, list[dict[str, Any]]] = {}
+        # Keyed like the rows, by `(source, unit)`. Keyed by unit alone, one engine's
+        # alert showed on every row that shared its unit number.
+        self._alerts: dict[tuple[str | None, int], dict[str, Any]] = {}
+        self._degraded: dict[tuple[str | None, int], list[dict[str, Any]]] = {}
 
     def record(
         self,
@@ -82,26 +84,29 @@ class FleetView:
                 "width": interval.width,
             }
 
-    def set_alert(self, unit: int, alert: dict[str, Any] | None) -> None:
+    def set_alert(self, unit: int, alert: dict[str, Any] | None, source: str | None = None) -> None:
         """Attach or clear an engine's alert."""
         with self._lock:
             if alert is None:
-                self._alerts.pop(unit, None)
+                self._alerts.pop((source, unit), None)
             else:
-                self._alerts[unit] = alert
+                self._alerts[(source, unit)] = alert
 
-    def set_degraded(self, unit: int, states: list[dict[str, Any]]) -> None:
+    def set_degraded(
+        self, unit: int, states: list[dict[str, Any]], source: str | None = None
+    ) -> None:
         """Attach or clear an engine's degraded states."""
         with self._lock:
-            self._degraded[unit] = list(states)
+            self._degraded[(source, unit)] = list(states)
 
     def rows(self) -> list[dict[str, Any]]:
         """The fleet, worst first, then by unit so the view does not jump."""
         with self._lock:
             merged = []
             for row in self._rows.values():
-                alert = self._alerts.get(row["unit"])
-                degraded = self._degraded.get(row["unit"], [])
+                key = (row["source"], row["unit"])
+                alert = self._alerts.get(key)
+                degraded = self._degraded.get(key, [])
                 merged.append(
                     {
                         **row,

@@ -39,6 +39,7 @@ from .policy_eval import split_fit_and_calibration
 from .stream.alerting import MaintenanceAlert
 from .stream.coverage import CoverageVerdict
 from .stream.faults import DEGRADED_STATES, FaultDetector, FaultInjector, InjectedFault
+from .stream.fleet import engine_label
 from .stream.inference import RulPredictor
 from .stream.observability import MetricsRegistry
 from .stream.pipeline import PipelineConfig, StreamPipeline
@@ -52,7 +53,7 @@ class ReplayOutcome:
 
     report: dict[str, Any]
     verdict: CoverageVerdict
-    alerts: dict[int, MaintenanceAlert]
+    alerts: dict[tuple[str | None, int], MaintenanceAlert]
     #: The pipeline that ran, so a caller can keep reading the live fleet view after
     #: the replay. Without it the fleet view only exists inside this function, and the
     #: dashboard can only ever show an empty fleet.
@@ -240,7 +241,10 @@ def replay_pipeline(
         "engines": per_engine,
         "alerts": {
             "total": int(sum(int(entry["n_alerts"]) for entry in per_engine)),
-            "open": {str(u): a.to_dict() for u, a in pipeline.open_alerts.items()},
+            "open": {
+                engine_label(source, unit): alert.to_dict()
+                for (source, unit), alert in pipeline.open_alerts.items()
+            },
         },
         "metrics_sample": metrics.render().splitlines()[:40],
     }

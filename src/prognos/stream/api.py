@@ -25,7 +25,7 @@ from .alerting import AlertingService
 from .coverage import CoverageMonitor
 from .events import MAX_BATCH_ROWS, N_CHANNELS, Reading, StreamStats, TelemetryBatch, validate_batch
 from .faults import DEGRADED_STATES, InjectedFault, channel_of
-from .fleet import POLICY_RESULT, FleetView, build_cost_panel
+from .fleet import POLICY_RESULT, FleetView, build_cost_panel, engine_label
 from .inference import RulPredictor
 from .observability import (
     MetricsRegistry,
@@ -192,20 +192,25 @@ def build_alerting_state(
     registry = metrics or MetricsRegistry()
     alerting = AlertingService(threshold=threshold, hysteresis=hysteresis)
 
+    def open_alerts() -> dict[str, Any]:
+        return {engine_label(s, u): a.to_dict() for (s, u), a in alerting.alerts().items()}
+
     def evaluate(payload: dict[str, Any]) -> dict[str, Any]:
         try:
+            source = payload.get("source")
             emitted = alerting.evaluate(
                 unit=int(payload["unit"]),
                 cycle=int(payload["cycle"]),
                 lower=float(payload["lower"]),
                 point=float(payload["point"]),
+                source=None if source is None else str(source),
             )
         except (KeyError, TypeError, ValueError) as error:
             raise HttpError(400, f"malformed alert evaluation: {error}") from None
         registry.gauge("alerts_open", "Open maintenance alerts", value=alerting.open_alerts())
         return {
             "emitted": [alert.to_dict() for alert in emitted],
-            "open": {str(u): a.to_dict() for u, a in alerting.alerts().items()},
+            "open": open_alerts(),
         }
 
     return ServiceState(
@@ -213,9 +218,7 @@ def build_alerting_state(
         metrics=registry,
         ready=lambda: (True, {"open_alerts": alerting.open_alerts()}),
         routes={"POST /alerts": evaluate},
-        list_route={
-            "alerts": lambda: {"open": {str(u): a.to_dict() for u, a in alerting.alerts().items()}}
-        },
+        list_route={"alerts": lambda: {"open": open_alerts()}},
         logger=logger,
     )
 
@@ -226,7 +229,7 @@ def build_dashboard_state(
     logger: logging.Logger | None = None,
     fleet: FleetView | None = None,
     policy_result: Path | str | None = None,
-    on_inject: Callable[[int, InjectedFault | None], None] | None = None,
+    on_inject: Callable[[int, InjectedFault | None, str | None], None] | None = None,
 ) -> ServiceState:
     """The dashboard service: the fleet summary an operator reads.
 
@@ -241,7 +244,7 @@ def build_dashboard_state(
     """
     registry = metrics or MetricsRegistry()
     coverage = monitor or CoverageMonitor()
-    injectors: dict[int, InjectedFault] = {}
+    injectors: dict[str, InjectedFault] = {}
     view = fleet or FleetView()
 
     def fault_control(payload: dict[str, Any]) -> dict[str, Any]:
@@ -251,12 +254,17 @@ def build_dashboard_state(
             engine = int(payload.get("engine", 1))
         except (TypeError, ValueError):
             raise HttpError(400, "engine must be an integer") from None
+        # The sub-dataset names the engine as much as the unit does; without it a fault
+        # meant for DS02 unit 2 would land on whichever unit 2 is streaming.
+        raw_source = payload.get("source")
+        source = None if raw_source is None else str(raw_source)
+        label = engine_label(source, engine)
         if kind in (None, "none"):
-            injectors.pop(engine, None)
+            injectors.pop(label, None)
             if on_inject is not None:
-                on_inject(engine, None)
+                on_inject(engine, None, source)
             return {
-                "armed": {str(k): v.kind for k, v in injectors.items()},
+                "armed": {k: v.kind for k, v in injectors.items()},
                 "available": list(DEGRADED_STATES),
             }
         if kind not in DEGRADED_STATES:
@@ -270,10 +278,10 @@ def build_dashboard_state(
             )
         except (TypeError, ValueError) as error:
             raise HttpError(400, f"malformed fault: {error}") from None
-        injectors[engine] = fault
+        injectors[label] = fault
         if on_inject is not None:
-            on_inject(engine, fault)
-        return {"armed": {str(k): v.kind for k, v in injectors.items()}}
+            on_inject(engine, fault, source)
+        return {"armed": {k: v.kind for k, v in injectors.items()}}
 
     def degraded() -> dict[str, Any]:
         """Every degraded state this service knows about, by name."""

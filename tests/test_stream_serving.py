@@ -539,7 +539,7 @@ class TestRemainingBranches:
     def test_alerting_lists_open_alerts_by_engine(self) -> None:
         service = AlertingService(threshold=20.0)
         service.evaluate(unit=3, cycle=1, lower=5.0, point=40.0)
-        assert 3 in service.alerts()
+        assert (None, 3) in service.alerts()
         assert service.open_alerts() == 1
 
     def test_predictor_repr_is_readable(self, tmp_path) -> None:

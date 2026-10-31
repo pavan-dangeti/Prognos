@@ -30,7 +30,7 @@ from prognos.stream.alerting import AlertingService, MaintenanceAlert
 from prognos.stream.coverage import CoverageMonitor, CoverageVerdict, Observation
 from prognos.stream.events import StreamStats, TelemetryBatch, validate_batch
 from prognos.stream.faults import FaultDetector, FaultInjector, InjectedFault
-from prognos.stream.fleet import FleetView
+from prognos.stream.fleet import FleetView, engine_label
 from prognos.stream.inference import Prediction, RulPredictor
 from prognos.stream.observability import (
     MetricsRegistry,
@@ -125,7 +125,9 @@ class StreamPipeline:
         self._metrics = metrics or MetricsRegistry()
         self._logger = logger or logging.getLogger("prognos.pipeline")
         self._stats = StreamStats()
-        self._detectors: dict[int, FaultDetector] | None = {} if detect_faults else None
+        self._detectors: dict[tuple[str | None, int], FaultDetector] | None = (
+            {} if detect_faults else None
+        )
         self._coverage = CoverageMonitor(
             target=config.target_coverage, min_samples=config.min_coverage_samples
         )
@@ -133,8 +135,8 @@ class StreamPipeline:
             threshold=config.alert_threshold, hysteresis=config.alert_hysteresis
         )
         self._fleet = FleetView()
-        self._engines: dict[int, _EngineState] = {}
-        self._injectors: dict[int, FaultInjector] = {}
+        self._engines: dict[tuple[str | None, int], _EngineState] = {}
+        self._injectors: dict[tuple[str | None, int], FaultInjector] = {}
 
     @property
     def fleet(self) -> FleetView:
@@ -160,15 +162,15 @@ class StreamPipeline:
         """The current S5 verdict."""
         return self._coverage.verdict()
 
-    def _detector_for(self, unit: int) -> FaultDetector | None:
+    def _detector_for(self, key: tuple[str | None, int]) -> FaultDetector | None:
         """A fresh detector for an engine whose stream is starting."""
         if self._detectors is None:
             return None
         # Replaced rather than reused: a replay restarts the engine's stream, and a
         # detector carrying the last replay's frozen baseline would judge the new one
         # against a different engine life.
-        self._detectors[unit] = FaultDetector(unit=unit)
-        return self._detectors[unit]
+        self._detectors[key] = FaultDetector(unit=key[1])
+        return self._detectors[key]
 
     @property
     def degraded_states(self) -> list[dict[str, object]]:
@@ -185,22 +187,26 @@ class StreamPipeline:
         return states
 
     @property
-    def open_alerts(self) -> dict[int, MaintenanceAlert]:
+    def open_alerts(self) -> dict[tuple[str | None, int], MaintenanceAlert]:
         """Every engine currently under a maintenance alert."""
         return self._alerting.alerts()
 
-    def arm_fault(self, unit: int, fault: InjectedFault | None) -> None:
+    def arm_fault(self, unit: int, fault: InjectedFault | None, source: str | None = None) -> None:
         """Inject a named fault into an engine's live stream, or disarm it.
 
         Applied to the rows as they arrive, before detection and windowing, so what the
         dashboard shows afterwards is the pipeline's own reaction to a broken sensor
         rather than a flag someone set.
         """
-        self._injectors[unit] = FaultInjector(unit=unit, fault=fault)
+        self._injectors[(source, unit)] = FaultInjector(unit=unit, fault=fault)
 
-    def _engine(self, unit: int) -> _EngineState:
-        """Per-engine stream state, created on first sight."""
-        state = self._engines.get(unit)
+    def _engine(self, key: tuple[str | None, int]) -> _EngineState:
+        """Per-engine stream state, created on first sight.
+
+        Keyed by `(source, unit)` like everything else that holds per-engine state:
+        unit numbers restart in every sub-dataset, so the unit alone is not an engine.
+        """
+        state = self._engines.get(key)
         if state is None:
             config = self._config
             state = _EngineState(
@@ -209,9 +215,9 @@ class StreamPipeline:
                     downsample=config.downsample,
                     stride=config.window_stride,
                 ),
-                detector=self._detector_for(unit),
+                detector=self._detector_for(key),
             )
-            self._engines[unit] = state
+            self._engines[key] = state
         return state
 
     def push(
@@ -232,15 +238,16 @@ class StreamPipeline:
         was measured at. Fed every raw row it judged within-cycle scatter instead, and at
         about 11,000 rows a cycle it was the largest cost in the whole pipeline.
         """
-        state = self._engine(unit)
-        injector = self._injectors.get(unit)
+        key = (source, unit)
+        state = self._engine(key)
+        injector = self._injectors.get(key)
         if injector is not None:
             row = injector.apply(cycle, row.copy())
         detector = state.detector
         if detector is not None and cycle != state.detected_cycle:
             state.detected_cycle = cycle
             detector.observe(cycle, row)
-            self._fleet.set_degraded(unit, [s.to_dict() for s in detector.active()])
+            self._fleet.set_degraded(unit, [s.to_dict() for s in detector.active()], source=source)
 
         # A missing channel is held at its last good value, so the engine keeps a
         # prediction while the detector names the dropout and the fleet view marks the
@@ -284,11 +291,17 @@ class StreamPipeline:
                 )
             state.alerts.extend(
                 self._alerting.evaluate(
-                    unit=unit, cycle=cycle, lower=interval.lower, point=interval.point
+                    unit=unit,
+                    cycle=cycle,
+                    lower=interval.lower,
+                    point=interval.point,
+                    source=source,
                 )
             )
-            open_alert = self._alerting.alerts().get(unit)
-            self._fleet.set_alert(unit, open_alert.to_dict() if open_alert is not None else None)
+            open_alert = self._alerting.alerts().get(key)
+            self._fleet.set_alert(
+                unit, open_alert.to_dict() if open_alert is not None else None, source=source
+            )
         return predictions
 
     def run_engine(
@@ -319,7 +332,7 @@ class StreamPipeline:
         The two differ — group 0 is DS01 unit 1 — and an operator reading a fleet view
         showing `unit000` would be reading an identifier that means nothing.
         """
-        self._engines.pop(unit, None)
+        self._engines.pop((source, unit), None)
         replay = EngineReplay(unit=unit, n_windows=0, n_rows=int(cycles.size))
         cycle_array = np.asarray(cycles, dtype=np.int64)
         block = np.asarray(rows, dtype=np.float32)
@@ -344,7 +357,7 @@ class StreamPipeline:
                 replay.coverage.append(float(prediction.interval.point))
                 replay.n_windows += 1
 
-        state = self._engines.get(unit)
+        state = self._engines.get((source, unit))
         if state is not None:
             replay.alerts = state.alerts
             if state.detector is not None:
@@ -364,7 +377,8 @@ class StreamPipeline:
             "stream": self._stats.to_dict(),
             "coverage": verdict.to_dict(),
             "open_alerts": {
-                str(unit): alert.to_dict() for unit, alert in self._alerting.alerts().items()
+                engine_label(source, unit): alert.to_dict()
+                for (source, unit), alert in self._alerting.alerts().items()
             },
             "degraded_states": self.degraded_states,
             "fleet": self._fleet.rows(),
