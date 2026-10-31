@@ -58,7 +58,7 @@ jobs:
         # the benchmark. A separate gate so the data and model core keeps its higher bar.
         run: >-
           uv run coverage report
-          --include='src/prognos/stream/*,src/prognos/decision.py,src/prognos/uncertainty.py,src/prognos/policy_eval.py,src/prognos/pipeline.py,src/prognos/bench.py,src/prognos/failures.py,src/prognos/drift_study.py'
+          --include='src/prognos/stream/*,src/prognos/decision.py,src/prognos/uncertainty.py,src/prognos/policy_eval.py,src/prognos/pipeline.py,src/prognos/bench.py,src/prognos/failures.py,src/prognos/drift_study.py,src/prognos/published.py'
           --fail-under=85
 
       - name: Smoke test on a synthetic subset

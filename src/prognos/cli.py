@@ -705,6 +705,50 @@ def cmd_failures(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_compare(args: argparse.Namespace) -> int:
+    """Run the closest DS02 comparison with published results the closed group allows."""
+    from prognos.evaluate import build_folds, library_versions
+    from prognos.published import compare
+
+    config = load_config(Path(args.config))
+    data = load_windows(
+        config.data.parquet_dir,
+        config.window,
+        config.data.subdatasets,
+        cache_dir=config.data.parquet_dir.parent / "cache",
+    )
+    folds = build_folds(
+        data,
+        n_splits=config.split.n_splits,
+        test_fraction=config.split.test_fraction,
+        seed=config.split.seed,
+    )
+    closed = {data.group_labels[u].label() for u in folds[0].split.test_units}
+    report = compare(data, seed=config.split.seed, epochs=args.epochs)
+    used = {
+        f"{report['run_split']['subdataset']}/unit{u:03d}"
+        for u in report["run_split"]["train"] + report["run_split"]["test"]
+    }
+    if used & closed:
+        raise SystemExit(f"the comparison would read closed engines {sorted(used & closed)}")
+    report.update(
+        {
+            "command": " ".join(["prognos", *sys.argv[1:]]),
+            "hardware": hardware_description(),
+            "versions": library_versions(),
+            "generated_at": date.today().isoformat(),
+            "final_test_group": {"engines": sorted(closed), "status": "closed"},
+        }
+    )
+    out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    print(f"wrote {out_path}", flush=True)
+    for name, result in report["ours"].items():
+        print(f"  {name:>12}: " + ", ".join(f"{k} {v:.2f}" for k, v in result["rmse"].items()))
+    return 0
+
+
 def cmd_serve(args: argparse.Namespace) -> int:
     """Serve one streaming component over HTTP until interrupted."""
     import logging
@@ -873,6 +917,12 @@ def main(argv: list[str] | None = None) -> int:
     failures.add_argument("--out", default="results/phase6_failures.json")
     failures.add_argument("--model-dir", default="artifacts/model")
     failures.set_defaults(func=cmd_failures)
+
+    comparison = sub.add_parser("compare", help="compare with published DS02 results")
+    comparison.add_argument("--config", default="configs/base.yaml")
+    comparison.add_argument("--out", default="results/phase6_published_comparison.json")
+    comparison.add_argument("--epochs", type=int, default=30)
+    comparison.set_defaults(func=cmd_compare)
 
     serve_cmd = sub.add_parser("serve", help="serve one streaming component over HTTP")
     serve_cmd.add_argument("--component", required=True, choices=list(COMPONENTS))

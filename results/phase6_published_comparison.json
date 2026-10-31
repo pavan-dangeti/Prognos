@@ -1,0 +1,163 @@
+{
+  "command": "prognos compare",
+  "conclusion": "Not a like-for-like comparison, and the figures here must not be read as beating the published ones. The cycle-only baseline, which sees no sensor at all, scores below every published method on unit 14. A gap that a model without sensors also opens is made by the protocol, chiefly the engine-age input and two test engines, not by better modelling. A like-for-like run needs the full published split, which means opening the closed final test group.",
+  "differences": [
+    "Training engines: DS02 units 2, 10, 16 and 18, not 2, 5, 10, 16, 18 and 20. Units 5 and 20 are in this project's closed final test group.",
+    "Test engines: units 14 and 15 only; unit 11 is in the closed final test group. The published 'all' column includes unit 11 and is not comparable to anything here.",
+    "Inputs: the 4 flight descriptors and 14 measured sensors. The cited table describes 20 channels without listing them.",
+    "Windows: 50 readings, every 10th reading within one cycle, RMSE averaged over windows. The cited table does not state its sampling or what one RMSE sample is.",
+    "RUL cap: 125 cycles in training. DS02 engines live at most 89 cycles, so the cap never binds on them. The cited table does not state one.",
+    "Engine age: every model here, LightGBM and the sequence models included, is given the cycle number, and DS02 engines all live 63 to 89 cycles, so age alone predicts much of the remaining life. The cited table does not say its models receive it.",
+    "Seeds: one seed here. The cited table reports a mean over five subsamples.",
+    "Models: the Phase 3 configurations as committed, trained on these four DS02 engines for this run. They are not the cross-validated models in the README's results table, which train on all three sub-datasets."
+  ],
+  "epochs": 30,
+  "final_test_group": {
+    "engines": [
+      "DS01-005/unit004",
+      "DS01-005/unit008",
+      "DS02-006/unit005",
+      "DS02-006/unit011",
+      "DS02-006/unit020",
+      "DS06/unit003",
+      "DS06/unit004",
+      "DS06/unit005",
+      "DS06/unit006",
+      "DS06/unit008"
+    ],
+    "status": "closed"
+  },
+  "generated_at": "2026-10-31",
+  "hardware": "Darwin arm64 / arm / Python 3.12.13",
+  "n_train_windows": 33336,
+  "ours": {
+    "cnn": {
+      "n_test_windows": 5274,
+      "nasa_score": 1962.7698584792092,
+      "rmse": {
+        "14": 2.7573554251017978,
+        "14+15": 3.7660694411908286,
+        "15": 4.0248697877717765
+      }
+    },
+    "lightgbm": {
+      "n_test_windows": 5274,
+      "nasa_score": 3446.389029847143,
+      "rmse": {
+        "14": 3.777936379402106,
+        "14+15": 5.384657123780226,
+        "15": 5.788393610859591
+      }
+    },
+    "linear_cycle": {
+      "n_test_windows": 5274,
+      "nasa_score": 3716.119217699083,
+      "rmse": {
+        "14": 2.885984667040127,
+        "14+15": 5.5866667913804555,
+        "15": 6.1824129566233
+      }
+    },
+    "transformer": {
+      "n_test_windows": 5274,
+      "nasa_score": 1566.1806410018319,
+      "rmse": {
+        "14": 3.872703686471186,
+        "14+15": 3.247626457031001,
+        "15": 3.030395389286215
+      }
+    }
+  },
+  "published": [
+    {
+      "cited_as": "Wang et al.",
+      "method": "THGNN",
+      "rmse": {
+        "11": 4.63,
+        "14": 5.64,
+        "15": 4.06,
+        "all": 5.59
+      }
+    },
+    {
+      "cited_as": "Mo et al.",
+      "method": "Transformer",
+      "rmse": {
+        "11": 5.86,
+        "14": 7.69,
+        "15": 5.34,
+        "all": 6.54
+      }
+    },
+    {
+      "cited_as": "Zhao et al.",
+      "method": "2D-CNN",
+      "rmse": {
+        "11": 6.38,
+        "14": 7.2,
+        "15": 5.2,
+        "all": 6.99
+      }
+    },
+    {
+      "cited_as": "Chen et al.",
+      "method": "Hybrid",
+      "rmse": {
+        "11": 7.86,
+        "14": 8.11,
+        "15": 5.79,
+        "all": 8.06
+      }
+    },
+    {
+      "cited_as": "Huang et al.",
+      "method": "BLSTM",
+      "rmse": {
+        "11": 8.76,
+        "14": 8.51,
+        "15": 5.41,
+        "all": 8.26
+      }
+    }
+  ],
+  "published_source": "Wang et al., Temporal and Heterogeneous Graph Neural Network for Remaining Useful Life Prediction, arXiv:2405.04336v3, Table 5",
+  "published_split": {
+    "test": [
+      11,
+      14,
+      15
+    ],
+    "train": [
+      2,
+      5,
+      10,
+      16,
+      18,
+      20
+    ]
+  },
+  "run_split": {
+    "subdataset": "DS02-006",
+    "test": [
+      14,
+      15
+    ],
+    "train": [
+      2,
+      10,
+      16,
+      18
+    ]
+  },
+  "seed": 20241009,
+  "versions": {
+    "h5py": "3.16.0",
+    "lightgbm": "4.6.0",
+    "numpy": "2.4.1",
+    "pandas": "3.0.1",
+    "pyarrow": "26.0.0",
+    "python": "3.12.13",
+    "scikit-learn": "1.8.0",
+    "torch": "2.10.0"
+  }
+}
