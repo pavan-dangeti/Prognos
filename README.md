@@ -26,12 +26,16 @@ on an Apple M5 with 16 GB (macOS, Python 3.12.13). `tests/test_results.py` and
 | Do the intervals hold? | 0.926 offline, 0.991 live, target 0.90 | — | Split conformal, calibrated on engines held out of the fit | `prognos policy`, `prognos stream` |
 | What does it save? | 30.8 total cost for the best policy | 577.3 run-to-failure, 44.0 best fixed interval | 19 engines, 2,000 cycles, failure 25× a planned visit, ratio swept 1–100 | `prognos policy` → [`phase4_policy.json`](results/phase4_policy.json) |
 | How fast is the live path? | p99 5.16–9.49 ms per updated prediction; at least 43,141 readings/s | — | Real engines interleaved at fleets of 10, 100 and 1,000, 5 rounds | `prognos bench` → [`phase6_streaming_bench.json`](results/phase6_streaming_bench.json) |
-| Are sensor faults named? | 4 of 4 injected faults named | Control run must name nothing: **fails** | Each fault injected alone into a clean engine | `prognos stream --faults` → [`phase5_faults.json`](results/phase5_faults.json) |
+| Are sensor faults named? | 4 of 4 injected faults named, clean control | — | Each fault injected alone into a clean engine | `prognos stream --faults` → [`phase5_faults.json`](results/phase5_faults.json) |
+| Does drift detection stay quiet on healthy engines? | 0 of 9 held-out engines alarmed | 4 of 9 before tuning | Tuned on 10 development engines only, judged on 9 held-out | `prognos drift-study` → [`phase6_drift.json`](results/phase6_drift.json) |
+| Does the system name its own failures? | 4 of 5 provoked failures named | Clean control names nothing | Inference outage, operating shift beyond and within the fleet, silence, late data, on real engines | `prognos failures` → [`phase6_failures.json`](results/phase6_failures.json) |
 
-Two results go against the design document and are reported as they came out:
-acting on the interval's lower bound costs **more** than acting on the point estimate
-on this data, and the drift detector fires on healthy engines. Both are explained
-below.
+Three results go against what was hoped for and are reported as they came out: acting
+on the interval's lower bound costs **more** than acting on the point estimate on this
+data; the drift detector, now quiet on healthy engines, cannot see drift on 6 of 14
+sensors; and an operating-condition shift inside the fleet's experience goes unnamed.
+All three are explained below, and the published-results comparison shows why our
+lower DS02 numbers are not a win.
 
 ## Architecture
 
@@ -168,16 +172,19 @@ What the evidence does not support:
 
 What the system does not yet do:
 
-- **The drift detector has false positives.** It fires on healthy channels (`Nf`,
-  `Nc`, `T48`) of a healthy engine, so every fault scenario reports `sensor_drift`
-  alongside the fault actually injected. Its false-alarm rate across all engines has
-  not been measured yet.
-- **The coverage monitor still names engines by unit number alone.** Its
-  `worst_engine` field reports a bare unit, which is ambiguous across sub-datasets.
-  Alerting and fault state are keyed by the full `(sub-dataset, unit)` identity.
-- **Not yet built:** an inference-service outage test, an operating-condition shift
-  test, MLflow tracking and a model registry, a model card, OpenTelemetry tracing, and
-  a hosted demo.
+- **The drift detector is blind on 6 of 14 sensors.** `P15`, `P2`, `P21`, `P24`, `P50`
+  and `Wf` are never named at any step size, because a shift must also exceed the
+  fleet's typical spread. Detection of a 5× step tops out at 57%. Its false-alarm rate
+  is 0 of 9 held-out engines, measured on 9 engines.
+- **An operating shift within the fleet's experience is not named.** The envelope is the
+  fleet's, so a short-haul engine suddenly flying long-haul altitudes passes unnoticed.
+  A shift beyond the fleet is named, but once per flight outside the envelope, so one
+  event can raise several alerts.
+- **No like-for-like published comparison.** The published DS02 split needs engines in
+  the closed final test group. The run that avoids them is not comparable, for reasons
+  listed with it.
+- **Not yet built:** MLflow tracking and a model registry, a model card,
+  OpenTelemetry tracing, and a hosted demo.
 - **Latency is measured on a laptop against a replay,** at accelerated time, not on an
   aircraft datalink, and the HTTP figure is loopback only.
 - **Maintenance is assumed schedulable at any threshold.** Real maintenance has
@@ -593,58 +600,153 @@ because every published port stays on `127.0.0.1`, and `docs/runbook.md` says wh
 before that changes. A token is a shared secret: it tells you the caller was holding the
 right string, not who they were. It is not TLS and it is not per-user identity.
 
-## Fault injection, and a detector I could not make trustworthy
+## Fault injection and failure testing
 
-`docs/design.md` §12 sets the Phase 5 exit criterion: *every injected fault produces a
-named degraded state and an alert, with results committed.* The Phase 5 PR did not meet
-it — there was no fault detection at all, and I marked the phase complete anyway. This
-is the missing work.
+`docs/design.md` §12 sets the exit criterion: *every injected fault produces a named
+degraded state and an alert, with results committed.* Two suites test it: one breaks a
+sensor, the other breaks the system around the sensors.
+
+### Sensor faults
 
 ```bash
 uv run prognos stream --config configs/base.yaml --faults --out results/phase5_faults.json
 ```
 
-Five faults injected into a clean stream, one real engine, sampled one row per cycle:
+Each fault injected alone into a clean stream, one real engine, one reading per cycle:
 
 | injected | everything detected | expected fault named |
 | --- | --- | --- |
-| none (control) | `sensor_drift` | **failed**: nothing should fire |
-| `sensor_dropout` ch 7 | `sensor_drift`, `sensor_dropout` | yes |
-| `sensor_stuck` ch 3 | `sensor_drift`, `sensor_stuck` | yes |
+| none (control) | nothing | yes: clean |
+| `sensor_dropout` ch 7 | `sensor_dropout` | yes |
+| `sensor_stuck` ch 3 | `sensor_stuck` | yes |
 | `sensor_drift` ch 11 | `sensor_drift` | yes |
-| `value_out_of_range` ch 2 | `sensor_drift`, `sensor_stuck`, `value_out_of_range` | yes |
+| `value_out_of_range` ch 2 | `sensor_stuck`, `value_out_of_range` | yes |
 
-`sensor_drift` appears in every row, including the control, because it fires on healthy
-channels of this engine. Each expected fault is named; none is named alone.
+Until the drift study below, the control failed: `sensor_drift` fired on healthy `Nf`,
+`Nc` and `T48`, and appeared in every row. The control is clean now, **but this engine
+is one of the study's development engines, so its clean run is not the evidence.** The
+held-out false-alarm rate is. The out-of-range fault also reads as stuck because the
+injected value is a constant.
 
-**The control run fails, and that is the finding.** On a *healthy* engine, three
-channels — `Nf`, `Nc`, `T48` — move about 20 units between adjacent windows as ordinary
-operation. `Nf` and `Nc` are fan and core speed; they genuinely move.
+Two other detectors were wrong in ways only real data exposed. `cycle_regression` fired
+on every healthy engine, because this dataset carries thousands of rows per cycle
+number and it treated a repeat as a backwards clock. Dropout could never fire, because
+it counted cycles and a cycle holds thousands of rows.
 
-I tried three normalisations and each fixed one false-positive mode while creating
-another:
+### Tuning the drift detector on engines it is not judged on
 
-- **Against the fleet's spread.** Flags healthy channels, because these instruments
-  differ by three orders of magnitude — core speed sits near 8,700, a temperature near
-  500 — so a fleet threshold is really a threshold on whichever channels are small.
-- **Against the channel's own spread.** Flags healthy channels, because at one row per
-  cycle the series is so smooth that ordinary movement is many times its own standard
-  deviation.
-- **Both together.** Still flags them.
+```bash
+uv run prognos drift-study    # -> results/phase6_drift.json
+```
 
-So `sensor_drift` is shipped as implemented and reported as failing, with the reason
-recorded in `results/phase5_faults.json` under `known_limitations`. A test asserts the
-control run **fails**, so the artifact cannot quietly go green. Tuning until it passed
-would have produced a number that means nothing, and that is the one thing this project
-exists not to do.
+The 19 cross-validation engines are split, within each sub-dataset by a seeded draw,
+into 10 development and 9 held-out engines; the final test group is not read. Every
+engine is healthy as recorded, so any `sensor_drift` on one is a false alarm. Detection
+is a step added to one measured sensor from cycle 40, sized in multiples of that
+channel's typical cycle-to-cycle change, and counts if named within 15 cycles.
 
-Two other detectors were wrong in ways only real data exposed:
+On development engines only, a grid of threshold factor, comparison half-window and
+persistence was searched, and the setting chosen by a rule written into the code
+before the run: fewest engines with any false alarm, then most detections at 5×, then
+at 2×, then the most sensitive. The held-out engines played no part in the choice.
 
-- **`cycle_regression` fired on every healthy engine.** It treated a repeated cycle
-  number as a backwards clock. This dataset carries thousands of rows per cycle number,
-  so repetition is the normal case.
-- **Dropout could never fire.** It counted cycles, so on data where a cycle holds
-  thousands of rows the threshold was never reached.
+| engines | detector (factor, half, persistence) | engines with a false alarm | false-alarm cycles | detected at 2× | at 5× | median delay at 5×, cycles |
+| --- | --- | --- | --- | --- | --- | --- |
+| held-out | before (4, 6, 1) | 4/9 | 6/715 | 22.2% | 56.3% | 3 |
+| held-out | after (3, 10, 1) | 0/9 | 0/715 | 26.2% | 57.1% | 4 |
+| development | before (4, 6, 1) | 5/10 | 9/816 | 30.7% | 56.4% | 2 |
+| development | after (3, 10, 1) | 0/10 | 0/816 | 33.6% | 57.1% | 3 |
+
+The chosen setting gets there with a wider comparison window and a *lower* threshold
+than before, not by asking for a bigger move. Ordinary operation moves a channel for a
+cycle or two; averaging ten cycles a side lets that wash out. The cost is time: a real
+step is named one cycle later at 5× and three cycles later at 2×.
+
+**Detection stops at 57%, before and after, and that is structural.** Six of the 14
+measured sensors (`P15`, `P2`, `P21`, `P24`, `P50`, `Wf`) are never named at any step
+size. The detector also requires a shift to exceed the fleet's typical spread, a guard
+against the instruments' three-orders-of-magnitude difference in scale, and these
+small-valued channels can never reach it. Fixing that changes the detector's design,
+which this study did not search, so it is reported rather than tuned around.
+
+Drift is judged on measured sensors only. A move in the flight conditions is an
+operating-condition shift, named separately below.
+
+### System failures
+
+```bash
+uv run prognos failures    # -> results/phase6_failures.json
+```
+
+The whole pipeline over real engines with the served model, after a clean control
+through the same path:
+
+| failure | how it was provoked | named | result |
+| --- | --- | --- | --- |
+| none (control) | clean replay of DS01-005/unit001 | nothing | clean |
+| inference outage | the real HTTP inference service stopped for readings 40–60% of the engine's life, then restarted | `inference_unavailable` | 0 predictions while down, 778 windows missed, cleared and predicting again after |
+| operating shift, beyond the fleet | altitude raised from cycle 40 past the highest any training engine flew | `operating_shift` | named on each flight outside the envelope: 9 openings |
+| operating shift, within the fleet | altitude raised by half the fitted range on a short-haul engine | nothing | **failed** |
+| delayed data | one of two interleaved engines stops for 15 s of stream time, watchdog timeout 10 s | `stream_silent` | named on that engine alone after 10.0 s, cleared on resume |
+| out-of-order data | the last 200 readings of cycle 39 delivered after cycle 40 began | `cycle_regression` | all 200 dropped; 3,890 predictions against 3,892 in order |
+
+**The within-fleet shift is a real gap.** DS01-005/unit001 never climbs above 17,764 ft.
+Raised by half the fitted range it reaches 35,382 ft, which is new for this engine but
+inside the fleet's envelope (1,399 to 36,635 ft), because other engines fly long-haul.
+The envelope is the fleet's, so it cannot see an engine suddenly flying a profile the
+fleet knows and it does not. A per-engine regime check would, and it would need its own
+development and held-out tuning.
+
+**The first run found that the envelope check could not see altitude at all.** It ran
+once a cycle, on the cycle's first reading, and that reading is taken on the ground. It
+now runs on every reading.
+
+The shift moves only the flight condition; the measured sensors are left as recorded,
+because there is no simulator here to say how they would respond. The scenario tests
+that the system says the model is out of its depth, not how the engine behaves.
+
+### Comparison with published DS02 results
+
+```bash
+uv run prognos compare    # -> results/phase6_published_comparison.json
+```
+
+Published DS02 work trains on units 2, 5, 10, 16, 18 and 20 and tests on 11, 14 and 15.
+Units 5, 11 and 20 are in this project's closed final test group, so the run here uses
+the same split restricted to cross-validation engines: train on 2, 10, 16 and 18, test
+on 14 and 15, with the Phase 3 configurations as committed and nothing tuned. A guard
+refuses to run if the split would read a closed engine.
+
+| model | unit 14 RMSE | unit 15 RMSE | source |
+| --- | --- | --- | --- |
+| `linear_cycle`, no sensors | 2.89 | 6.18 | this run |
+| `lightgbm` | 3.78 | 5.79 | this run |
+| `cnn` | 2.76 | 4.02 | this run |
+| `transformer` | 3.87 | 3.03 | this run |
+| THGNN | 5.64 | 4.06 | Wang et al., arXiv:2405.04336, Table 5 |
+| Transformer | 7.69 | 5.34 | Mo et al., as cited there |
+| 2D-CNN | 7.20 | 5.20 | Zhao et al., as cited there |
+| Hybrid | 8.11 | 5.79 | Chen et al., as cited there |
+| BLSTM | 8.51 | 5.41 | Huang et al., as cited there |
+
+**This is not a like-for-like comparison, and the lower numbers here must not be read
+as better.** The cycle-only baseline, which never sees a sensor, scores 2.89 on unit
+14, below every published method. A gap that a model without sensors also opens comes
+from the protocol, not the modelling. The differences, all recorded in the result file:
+
+- **Engine age.** Every model here is given the cycle number, and the DS02 engines used
+  here all live 63 to 82 cycles, so age alone predicts much of the remaining life. The cited table
+  does not say its models receive it.
+- **Engines.** Four training engines of six and two test engines of three; the
+  published "all" column includes unit 11 and has no counterpart here.
+- **Sampling and scoring.** 50-reading windows of every 10th reading within a cycle,
+  RMSE per window, one seed. The cited table reports a mean over five subsamples and
+  does not state its sampling.
+- **RUL cap.** 125 cycles in training, which never binds on DS02 engines.
+
+A like-for-like run needs the full published split, which means opening the closed
+final test group. That is a decision for the project owner, not something this
+comparison does on its own.
 
 ### Named states, not counts
 

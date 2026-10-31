@@ -4,6 +4,43 @@ All notable changes to this project. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [semantic versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **`prognos drift-study`**: the drift detector tuned on 10 development engines and
+  judged on 9 held-out ones, by a selection rule fixed in code before the run. Held-out
+  healthy engines with a false alarm: 4 of 9 before, 0 of 9 after.
+- **`prognos failures`**: an inference outage, an operating-condition shift beyond and
+  within the fleet's experience, a stream that stops, and late data, each provoked on
+  real engines with the served model after a clean control. 4 of 5 named; the shift
+  within the fleet is not.
+- **`prognos compare`**: the published DS02 split, restricted to engines outside the
+  closed final test group, with every difference from the published protocol recorded.
+- Degraded states `inference_unavailable` and `operating_shift`; a silence watchdog;
+  `RemotePredictor` and `prognos stream --inference-url`.
+
+### Changed
+
+- Drift detector defaults are the study's choice: factor 3, half-window 10, persistence
+  1. Drift is judged on measured sensors only; a move in flight conditions is an
+  operating shift.
+- `results/phase5_faults.json` regenerated: the control is clean and no fault carries a
+  stray `sensor_drift`.
+
+### Fixed
+
+- The coverage monitor names its worst engine by sub-dataset and unit.
+- A late reading reset the detector's cycle tracking.
+- The operating-envelope check ran on each cycle's first reading, taken on the ground,
+  and could not see a shift at altitude. It runs on every reading.
+
+### Known issues
+
+- The drift detector never names drift on `P15`, `P2`, `P21`, `P24`, `P50` or `Wf`.
+- An operating shift inside the fleet's experience is not named, and one beyond it
+  alerts once per flight.
+
 ## [1.0.0] - 2026-10-31
 
 The first release: remaining-useful-life prediction with calibrated intervals, a

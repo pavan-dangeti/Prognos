@@ -51,6 +51,26 @@ Fewer than 50 scored predictions. Not a fault. The monitor refuses to judge belo
 floor because three predictions give a coin flip and declaring a breach would page
 someone about noise.
 
+## Triage by degraded state
+
+An engine marked **low confidence** on the dashboard carries one or more named states,
+each with the instrument and the reason. Every state raises an alert when it opens and
+clears on its own when the condition stops; an alert that stays open means the
+condition has not stopped.
+
+| state | what it means | first check |
+| --- | --- | --- |
+| `inference_unavailable` | The inference service did not answer. No prediction is emitted rather than a stale one. | `curl /readyz` on the inference service: 503 means no calibrated model is mounted; no answer means the process is down. Restart it; the state clears on the next answered window. |
+| `stream_silent` | An engine sent nothing for `--silence-timeout` seconds. | Is the source still sending? If ingestion's `prognos_stream_accepted_total` has stopped rising too, the silence is upstream of the pipeline. |
+| `cycle_regression` | A reading arrived from a cycle already passed and was dropped. | Occasional: a reordering upstream, harmless. Persistent: the source is replaying or its clock is wrong. |
+| `operating_shift` | A flight condition is outside the range the serving model was fitted on. The prediction is still made, and should not be trusted. | Confirm the flight really was unusual. If such flights are now normal, the model needs retraining on them; widening the envelope only hides the problem. |
+| `sensor_dropout`, `sensor_stuck`, `value_out_of_range` | One sensor stopped, froze or reported something impossible. A dropped channel is held at its last good value. | The named instrument, not the model. |
+| `sensor_drift` | A measured sensor stepped and stayed stepped. | The named instrument. Note that drift on `P15`, `P2`, `P21`, `P24`, `P50` and `Wf` is never named; see README, Limitations. |
+
+What each state looks like when provoked is recorded in `results/phase5_faults.json`
+and `results/phase6_failures.json`; rerun with `prognos stream --faults` and
+`prognos failures`.
+
 ## Ingestion
 
 ```bash

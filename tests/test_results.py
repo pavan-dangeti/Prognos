@@ -647,3 +647,67 @@ class TestFaultScenarioResults:
     def test_all_passed_agrees_with_the_scenarios(self, report: dict[str, object]) -> None:
         """Same, for the headline flag."""
         assert report["all_passed"] == all(bool(s["passed"]) for s in report["scenarios"])
+
+
+class TestPhase6bReadmeMatchesResults:
+    """The drift, failure and published-comparison figures quoted in the README.
+
+    Each expected line is rebuilt from its committed result file, so a figure that
+    drifts from the file, or a file regenerated without the README, fails here.
+    """
+
+    @staticmethod
+    def readme() -> str:
+        # Whitespace collapsed, so a figure wrapped across a line still counts as quoted.
+        return " ".join(README.read_text().split())
+
+    def test_drift_study_rows(self) -> None:
+        study = load(Path("results/phase6_drift.json"))
+        text = self.readme()
+        for side in ("held_out", "development"):
+            for when in ("before", "after"):
+                run = study[side][when]
+                alarms = run["false_alarms"]
+                rate = {d["multiple"]: d for d in run["detection"]}
+                s = run["settings"]
+                line = (
+                    f"| {side.replace('_', '-')} | {when} "
+                    f"({s['factor']:g}, {s['half']}, {s['persistence']}) "
+                    f"| {alarms['engines_alarmed']}/{alarms['engines']} "
+                    f"| {alarms['alarm_cycles']}/{alarms['cycles']} "
+                    f"| {rate[2.0]['rate']:.1%} | {rate[5.0]['rate']:.1%} "
+                    f"| {rate[5.0]['median_delay_cycles']:g} |"
+                )
+                assert line in text, f"README drift row drifted: {line}"
+        missed = study["held_out"]["after"]["detection"][-1]["missed_by_channel"]
+        for channel in missed:
+            assert f"`{channel}`" in text, f"README omits blind channel {channel}"
+
+    def test_failure_scenario_figures(self) -> None:
+        report = load(Path("results/phase6_failures.json"))
+        text = self.readme()
+        by_name = {s["scenario"]: s for s in report["scenarios"]}
+        outage = by_name["inference_outage"]
+        assert outage["predictions_during"] == 0
+        assert f"{outage['missed_predictions']} windows missed" in text
+        assert f"{by_name['operating_shift']['openings']} openings" in text
+        assert by_name["operating_shift_within_fleet"]["passed"] is False
+        assert f"after {by_name['delayed']['detected_after_seconds']:.1f} s" in text
+        order = by_name["out_of_order"]
+        assert (
+            f"all {order['late_dropped']} dropped; {order['predictions']:,} predictions "
+            f"against {order['predictions_in_order']:,} in order"
+        ) in text
+        named = sum(bool(s["passed"]) for s in report["scenarios"] if s["scenario"] != "control")
+        failures = len(report["scenarios"]) - 1
+        assert f"{named} of {failures} provoked failures named" in text
+
+    def test_published_comparison_rows(self) -> None:
+        report = load(Path("results/phase6_published_comparison.json"))
+        text = self.readme()
+        for name, result in report["ours"].items():
+            rmse = result["rmse"]
+            assert f"| {rmse['14']:.2f} | {rmse['15']:.2f} | this run |" in text, name
+        for row in report["published"]:
+            r = row["rmse"]
+            assert f"| {row['method']} | {r['14']:.2f} | {r['15']:.2f} |" in text, row["method"]
