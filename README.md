@@ -172,10 +172,9 @@ What the system does not yet do:
   `Nc`, `T48`) of a healthy engine, so every fault scenario reports `sensor_drift`
   alongside the fault actually injected. Its false-alarm rate across all engines has
   not been measured yet.
-- **Engine identity is incomplete in the live path.** Alerting and fault state are
-  keyed by unit number, which restarts in every sub-dataset. When DS02 unit 2 follows
-  DS01 unit 2 in a replay, it first "resolves" the alert DS01 unit 2 left open, and the
-  fleet view can show one engine's alert on the other's row.
+- **The coverage monitor still names engines by unit number alone.** Its
+  `worst_engine` field reports a bare unit, which is ambiguous across sub-datasets.
+  Alerting and fault state are keyed by the full `(sub-dataset, unit)` identity.
 - **Not yet built:** an inference-service outage test, an operating-condition shift
   test, MLflow tracking and a model registry, a model card, OpenTelemetry tracing, and
   a hosted demo.
@@ -397,11 +396,18 @@ uv run prognos stream --config configs/base.yaml --out results/phase5_streaming.
 docker compose up -d        # ingestion, inference, dashboard, Prometheus, Grafana
 ```
 
-All 19 cross-validation engines: 100,000 scored predictions, 98 maintenance alerts. The
-10-engine final test group is still closed. The file was regenerated for the release on
-the current code; an earlier revision recorded 91 alerts. Coverage is identical to the
-last digit. The 7 extra alerts are all on engines whose unit number repeats an earlier
-engine's, the identity limitation listed under [Limitations](#limitations).
+All 19 cross-validation engines: 100,000 scored predictions, 91 maintenance alerts. The
+10-engine final test group is still closed.
+
+**The alert count was briefly wrong.** Alerting and fault state were keyed by unit
+number, which restarts in every sub-dataset. When DS02 unit 2 followed DS01 unit 2 in
+the replay, its first prediction "resolved" the alert DS01 unit 2 had left open, and
+the fleet view could show one engine's alert on the other's row. Rerun on the code as
+it stood before the fix, the replay recorded 98 alerts, the 7 extra all on engines
+whose unit number repeats an earlier one. State is now keyed by `(sub-dataset, unit)`,
+the count is back to 91 with every engine's figure matching the original Phase 5 run,
+and coverage did not move. `tests/test_stream_pipeline.py` replays two engines sharing
+unit 2 and fails on the old keying.
 
 ### The online window reproduces the offline builder exactly
 

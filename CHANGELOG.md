@@ -44,15 +44,19 @@ dashboard and measured streaming performance.
   replay's.
 - The fleet view's `alert` column was always empty, because it read a key that alerts
   do not carry.
-- `results/phase5_streaming.json` regenerated on the current code. Coverage is
-  unchanged; the alert count differs from the earlier revision's file.
+- Alerting, fault and fleet-view state were keyed by unit number, which restarts in
+  every sub-dataset. A later engine sharing a unit number resolved the earlier
+  engine's open alert and could show it on the wrong row: 98 alerts were recorded
+  where 91 were raised. State is now keyed by `(sub-dataset, unit)`, alerts carry their
+  sub-dataset, and `POST /inject` and `POST /alerts` accept a `source`.
+- `results/phase5_streaming.json` regenerated on the fixed code: 91 alerts, every
+  engine's count matching the original Phase 5 run, coverage unchanged at 0.991.
 
 ### Known issues
 
 - The drift detector fires on healthy channels; its false-alarm rate is not yet
   measured.
-- Alerting and fault state are keyed by unit number, which repeats across
-  sub-datasets.
+- The coverage monitor's `worst_engine` names a bare unit number.
 - No hosted demo, MLflow registry, model card or OpenTelemetry tracing yet.
 
 ## Earlier phases

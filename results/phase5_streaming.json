@@ -1,104 +1,179 @@
 {
   "alerts": {
     "open": {
-      "1": {
-        "cycle": 50,
+      "DS01-005/unit001": {
+        "cycle": 54,
         "kind": "maintenance_due",
-        "lower": 8.924423217773438,
-        "point": 26.438461303710938,
+        "lower": 6.501659393310547,
+        "point": 24.015697479248047,
+        "source": "DS01-005",
         "threshold": 10.0,
         "unit": 1
       },
-      "10": {
-        "cycle": 54,
-        "kind": "maintenance_due",
-        "lower": 9.423763275146484,
-        "point": 26.937801361083984,
-        "threshold": 10.0,
-        "unit": 10
-      },
-      "14": {
-        "cycle": 54,
-        "kind": "maintenance_due",
-        "lower": 8.831096649169922,
-        "point": 26.345134735107422,
-        "threshold": 10.0,
-        "unit": 14
-      },
-      "15": {
-        "cycle": 50,
-        "kind": "maintenance_due",
-        "lower": 8.904277801513672,
-        "point": 26.418315887451172,
-        "threshold": 10.0,
-        "unit": 15
-      },
-      "16": {
-        "cycle": 48,
-        "kind": "maintenance_due",
-        "lower": 9.084863662719727,
-        "point": 26.598901748657227,
-        "threshold": 10.0,
-        "unit": 16
-      },
-      "18": {
-        "cycle": 47,
-        "kind": "maintenance_due",
-        "lower": 9.793111801147461,
-        "point": 27.30714988708496,
-        "threshold": 10.0,
-        "unit": 18
-      },
-      "2": {
+      "DS01-005/unit002": {
         "cycle": 49,
         "kind": "maintenance_due",
-        "lower": 9.776130676269531,
-        "point": 27.29016876220703,
+        "lower": 8.803260803222656,
+        "point": 26.317298889160156,
+        "source": "DS01-005",
         "threshold": 10.0,
         "unit": 2
       },
-      "3": {
+      "DS01-005/unit003": {
         "cycle": 53,
         "kind": "maintenance_due",
         "lower": 7.868951797485352,
         "point": 25.38298988342285,
+        "source": "DS01-005",
         "threshold": 10.0,
         "unit": 3
       },
-      "5": {
+      "DS01-005/unit005": {
         "cycle": 51,
         "kind": "maintenance_due",
         "lower": 9.538738250732422,
         "point": 27.052776336669922,
+        "source": "DS01-005",
         "threshold": 10.0,
         "unit": 5
       },
-      "6": {
+      "DS01-005/unit006": {
         "cycle": 51,
         "kind": "maintenance_due",
         "lower": 9.284524917602539,
         "point": 26.79856300354004,
+        "source": "DS01-005",
         "threshold": 10.0,
         "unit": 6
       },
-      "7": {
+      "DS01-005/unit007": {
+        "cycle": 55,
+        "kind": "maintenance_due",
+        "lower": 8.587413787841797,
+        "point": 26.101451873779297,
+        "source": "DS01-005",
+        "threshold": 10.0,
+        "unit": 7
+      },
+      "DS01-005/unit009": {
+        "cycle": 52,
+        "kind": "maintenance_due",
+        "lower": 8.262109756469727,
+        "point": 25.776147842407227,
+        "source": "DS01-005",
+        "threshold": 10.0,
+        "unit": 9
+      },
+      "DS01-005/unit010": {
+        "cycle": 53,
+        "kind": "maintenance_due",
+        "lower": 9.64499282836914,
+        "point": 27.15903091430664,
+        "source": "DS01-005",
+        "threshold": 10.0,
+        "unit": 10
+      },
+      "DS02-006/unit002": {
+        "cycle": 47,
+        "kind": "maintenance_due",
+        "lower": 9.687795639038086,
+        "point": 27.201833724975586,
+        "source": "DS02-006",
+        "threshold": 10.0,
+        "unit": 2
+      },
+      "DS02-006/unit010": {
+        "cycle": 48,
+        "kind": "maintenance_due",
+        "lower": 9.71612548828125,
+        "point": 27.23016357421875,
+        "source": "DS02-006",
+        "threshold": 10.0,
+        "unit": 10
+      },
+      "DS02-006/unit014": {
+        "cycle": 54,
+        "kind": "maintenance_due",
+        "lower": 8.831096649169922,
+        "point": 26.345134735107422,
+        "source": "DS02-006",
+        "threshold": 10.0,
+        "unit": 14
+      },
+      "DS02-006/unit015": {
+        "cycle": 50,
+        "kind": "maintenance_due",
+        "lower": 8.904277801513672,
+        "point": 26.418315887451172,
+        "source": "DS02-006",
+        "threshold": 10.0,
+        "unit": 15
+      },
+      "DS02-006/unit016": {
+        "cycle": 48,
+        "kind": "maintenance_due",
+        "lower": 9.084863662719727,
+        "point": 26.598901748657227,
+        "source": "DS02-006",
+        "threshold": 10.0,
+        "unit": 16
+      },
+      "DS02-006/unit018": {
+        "cycle": 47,
+        "kind": "maintenance_due",
+        "lower": 9.793111801147461,
+        "point": 27.30714988708496,
+        "source": "DS02-006",
+        "threshold": 10.0,
+        "unit": 18
+      },
+      "DS06/unit001": {
+        "cycle": 50,
+        "kind": "maintenance_due",
+        "lower": 8.924423217773438,
+        "point": 26.438461303710938,
+        "source": "DS06",
+        "threshold": 10.0,
+        "unit": 1
+      },
+      "DS06/unit002": {
+        "cycle": 49,
+        "kind": "maintenance_due",
+        "lower": 9.776130676269531,
+        "point": 27.29016876220703,
+        "source": "DS06",
+        "threshold": 10.0,
+        "unit": 2
+      },
+      "DS06/unit007": {
         "cycle": 52,
         "kind": "maintenance_due",
         "lower": 7.33692741394043,
         "point": 24.85096549987793,
+        "source": "DS06",
         "threshold": 10.0,
         "unit": 7
       },
-      "9": {
+      "DS06/unit009": {
         "cycle": 52,
         "kind": "maintenance_due",
         "lower": 8.563371658325195,
         "point": 26.077409744262695,
+        "source": "DS06",
         "threshold": 10.0,
         "unit": 9
+      },
+      "DS06/unit010": {
+        "cycle": 54,
+        "kind": "maintenance_due",
+        "lower": 9.423763275146484,
+        "point": 26.937801361083984,
+        "source": "DS06",
+        "threshold": 10.0,
+        "unit": 10
       }
     },
-    "total": 98
+    "total": 91
   },
   "calibration": {
     "engines": [
@@ -45460,7 +45535,7 @@
       "engine": "DS02-006/unit002",
       "group": 10,
       "mean_interval_width": 33.12983988670824,
-      "n_alerts": 2,
+      "n_alerts": 1,
       "n_rows": 853142,
       "n_windows": 8204
     },
@@ -45468,7 +45543,7 @@
       "engine": "DS02-006/unit010",
       "group": 12,
       "mean_interval_width": 32.63833925732413,
-      "n_alerts": 2,
+      "n_alerts": 1,
       "n_rows": 952711,
       "n_windows": 9165
     },
@@ -45508,7 +45583,7 @@
       "engine": "DS06/unit001",
       "group": 19,
       "mean_interval_width": 33.21855694809038,
-      "n_alerts": 8,
+      "n_alerts": 7,
       "n_rows": 715097,
       "n_windows": 6811
     },
@@ -45516,7 +45591,7 @@
       "engine": "DS06/unit002",
       "group": 20,
       "mean_interval_width": 33.10370563424279,
-      "n_alerts": 6,
+      "n_alerts": 5,
       "n_rows": 1153305,
       "n_windows": 11188
     },
@@ -45524,7 +45599,7 @@
       "engine": "DS06/unit007",
       "group": 25,
       "mean_interval_width": 33.056326022752614,
-      "n_alerts": 12,
+      "n_alerts": 11,
       "n_rows": 706594,
       "n_windows": 6713
     },
@@ -45532,7 +45607,7 @@
       "engine": "DS06/unit009",
       "group": 27,
       "mean_interval_width": 34.27847530929959,
-      "n_alerts": 8,
+      "n_alerts": 7,
       "n_rows": 1058183,
       "n_windows": 10280
     },
@@ -45540,7 +45615,7 @@
       "engine": "DS06/unit010",
       "group": 28,
       "mean_interval_width": 33.431134456242354,
-      "n_alerts": 4,
+      "n_alerts": 3,
       "n_rows": 369591,
       "n_windows": 3334
     }
@@ -45578,7 +45653,7 @@
     "prognos_span_calls_total{span=\"pipeline.record_metrics\"} 1.0",
     "# HELP prognos_span_duration_seconds Duration of the most recent span",
     "# TYPE prognos_span_duration_seconds gauge",
-    "prognos_span_duration_seconds{span=\"pipeline.record_metrics\"} 0.09967320800933521",
+    "prognos_span_duration_seconds{span=\"pipeline.record_metrics\"} 0.01228550000814721",
     "# HELP prognos_stream_accepted_total Rows accepted",
     "# TYPE prognos_stream_accepted_total gauge",
     "prognos_stream_accepted_total 0.0",
