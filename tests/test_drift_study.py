@@ -106,3 +106,36 @@ def test_the_report_judges_on_engines_it_did_not_tune_on() -> None:
         assert report["held_out"][side]["false_alarms"]["engines"] == len(held)
     assert report["shipped"] == {"factor": SHIPPED.factor, "half": SHIPPED.half, "persistence": 1}
     assert report["final_test_group"]["status"] == "closed"
+
+
+def test_the_whole_study_runs_on_parquet_engines(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The command's real path, on four quiet engines and a two-setting grid."""
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    from prognos import drift_study
+    from prognos.window import FEATURE_COLUMNS
+
+    monkeypatch.setattr(drift_study, "FACTORS", (3.0,))
+    monkeypatch.setattr(drift_study, "HALVES", (10,))
+    monkeypatch.setattr(drift_study, "PERSISTENCE", (1, 3))
+    engines = [GroupKey("DS01", unit) for unit in range(1, 5)]
+    (tmp_path / "DS01").mkdir()
+    for key in engines:
+        quiet = stream(seed=key.unit, n=60)
+        columns = {"cycle": quiet.cycles, "rul": np.full(quiet.cycles.size, 50.0)}
+        columns.update({name: quiet.rows[:, i] for i, name in enumerate(FEATURE_COLUMNS)})
+        pq.write_table(pa.table(columns), tmp_path / "DS01" / f"unit_{key.unit:03d}.parquet")
+
+    report = drift_study.study(tmp_path, engines, seed=3)
+    assert len(report["grid"]) == 2
+    assert report["chosen"] in [r["settings"] for r in report["grid"]]
+    assert set(report["development_engines"]).isdisjoint(report["held_out_engines"])
+    held = report["held_out"]["after"]
+    assert held["false_alarms"]["engines"] == len(report["held_out_engines"])
+    assert [d["multiple"] for d in held["detection"]] == [2.0, 5.0, 10.0]
+    # The shipped setting is not in this narrowed grid, so "before" is looked up by
+    # value from the held-out evaluation rather than the grid.
+    assert report["held_out"]["before"]["settings"] == {"factor": 4.0, "half": 6, "persistence": 1}

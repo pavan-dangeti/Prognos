@@ -271,7 +271,13 @@ def study(parquet_dir: Path, labels: list[GroupKey], seed: int) -> dict[str, Any
         "shipped": asdict(SHIPPED),
         "chosen": asdict(chosen),
         "development": {
-            "before": next(r for r in grid if DriftSettings(**r["settings"]) == SHIPPED),
+            # Evaluated directly when the grid does not contain it, so narrowing the
+            # grid cannot lose the comparison against what shipped.
+            "before": next(
+                (r for r in grid if DriftSettings(**r["settings"]) == SHIPPED),
+                None,
+            )
+            or evaluate(dev_streams, SHIPPED, scales),
             "after": next(r for r in grid if DriftSettings(**r["settings"]) == chosen),
         },
         "held_out": {
