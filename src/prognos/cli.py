@@ -513,15 +513,11 @@ def _run_fault_scenarios(data: WindowSource, config: Config, args: argparse.Name
         "control_clean": all(bool(s["passed"]) for s in scenarios if not s["injected"]),
         "known_limitations": [
             (
-                "sensor_drift does not survive the control run on healthy real data. "
-                "Sampled one row per cycle, three channels (Nf, Nc, T48) move about "
-                "20 units between adjacent windows as ordinary operation, and no "
-                "normalisation tried separates that from a genuine step: scaling by "
-                "the fleet ignores that the instruments differ by three orders of "
-                "magnitude, scaling by the channel ignores that its series is smooth "
-                "enough that ordinary movement is many times its own spread. Reported "
-                "as failing rather than tuned until the control passes, which is the "
-                "one thing that would have made the number meaningless."
+                "The control engine is one of the drift study's development engines "
+                "(results/phase6_drift.json), so its clean control is not independent "
+                "evidence that the drift detector is quiet on healthy engines; the "
+                "study's held-out false-alarm rate is. Until the study, sensor_drift "
+                "fired on this engine's Nf, Nc and T48 as ordinary operation."
             ),
             (
                 "The scenarios replay one row per cycle, not the raw row stream. The "
@@ -635,6 +631,77 @@ def cmd_drift_study(args: argparse.Namespace) -> int:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     print(f"wrote {out_path}; chosen {report['chosen']}", flush=True)
+    return 0
+
+
+def cmd_failures(args: argparse.Namespace) -> int:
+    """Provoke system failures on real engines and record what was named."""
+    import numpy as np
+
+    from prognos.evaluate import build_folds, library_versions
+    from prognos.failures import run_failure_scenarios
+    from prognos.policy_eval import split_fit_and_calibration
+    from prognos.stream.faults import operating_envelope
+    from prognos.stream.pipeline import PipelineConfig
+
+    config = load_config(Path(args.config))
+    data = load_windows(
+        config.data.parquet_dir,
+        config.window,
+        config.data.subdatasets,
+        cache_dir=config.data.parquet_dir.parent / "cache",
+    )
+    folds = build_folds(
+        data,
+        n_splits=config.split.n_splits,
+        test_fraction=config.split.test_fraction,
+        seed=config.split.seed,
+    )
+    cv_units = sorted({int(u) for f in folds for u in f.split.val_units})
+    # The envelope the live replay uses: the serving model's own fit engines.
+    groups = np.asarray(data.groups)
+    fit_mask, _calibration, _units = split_fit_and_calibration(
+        groups,
+        np.isin(groups, np.asarray(cv_units)),
+        seed=config.split.seed,
+        fraction=config.uncertainty.calibration_fraction,
+    )
+    envelope = operating_envelope(data.subset(fit_mask).windows)
+    pipeline_config = PipelineConfig(
+        window_length=config.window.length,
+        window_stride=config.window.stride,
+        downsample=config.window.downsample,
+        rul_cap=config.window.rul_cap or 125,
+        alert_threshold=config.cost.thresholds[0] if config.cost.thresholds else 20.0,
+        target_coverage=config.uncertainty.target_coverage,
+    )
+    labels = [data.group_labels[u] for u in cv_units[:2]]
+    print(f"failure scenarios on {', '.join(label.label() for label in labels)}", flush=True)
+    scenarios = run_failure_scenarios(
+        Path(args.model_dir),
+        Path(config.data.parquet_dir),
+        pipeline_config,
+        envelope,
+        [(label.subdataset, label.unit) for label in labels],
+    )
+    report: dict[str, Any] = {
+        "command": " ".join(["prognos", *sys.argv[1:]]),
+        "hardware": hardware_description(),
+        "versions": library_versions(),
+        "generated_at": date.today().isoformat(),
+        "final_test_group": {"engines": sorted(folds[0].split.test_units), "status": "closed"},
+        "engines": [label.label() for label in labels],
+        "envelope": {
+            "lower": [float(v) for v in envelope[0]],
+            "upper": [float(v) for v in envelope[1]],
+        },
+        "scenarios": scenarios,
+        "all_passed": all(bool(s["passed"]) for s in scenarios),
+    }
+    out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    print(f"wrote {out_path}; all passed: {report['all_passed']}", flush=True)
     return 0
 
 
@@ -800,6 +867,12 @@ def main(argv: list[str] | None = None) -> int:
     drift.add_argument("--config", default="configs/base.yaml")
     drift.add_argument("--out", default="results/phase6_drift.json")
     drift.set_defaults(func=cmd_drift_study)
+
+    failures = sub.add_parser("failures", help="provoke system failures on real engines")
+    failures.add_argument("--config", default="configs/base.yaml")
+    failures.add_argument("--out", default="results/phase6_failures.json")
+    failures.add_argument("--model-dir", default="artifacts/model")
+    failures.set_defaults(func=cmd_failures)
 
     serve_cmd = sub.add_parser("serve", help="serve one streaming component over HTTP")
     serve_cmd.add_argument("--component", required=True, choices=list(COMPONENTS))

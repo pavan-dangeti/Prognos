@@ -86,6 +86,43 @@ def operating_envelope(
     return (low - pad).astype(np.float32), (high + pad).astype(np.float32)
 
 
+def outside_envelope(
+    row: npt.NDArray[np.float32],
+    envelope: tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]],
+    unit: int,
+) -> DegradedState | None:
+    """An `operating_shift` if any flight condition in `row` is outside the envelope.
+
+    Not a sensor fault: the descriptors are read correctly, the engine is simply
+    somewhere the model has never seen, so its interval was calibrated on a different
+    population. Judged on every reading rather than once a cycle, because a cycle's
+    first reading is taken on the ground and a shift at altitude never reaches it.
+    """
+    lower, upper = envelope
+    values = row[: lower.size]
+    outside = np.flatnonzero(np.isfinite(values) & ((values < lower) | (values > upper)))
+    if outside.size == 0:
+        return None
+    channel = int(outside[0])
+    value = float(values[channel])
+    return DegradedState(
+        state="operating_shift",
+        engine=unit,
+        channel=channel,
+        detail=(
+            f"{channel_of(channel)} at {value:.4g}, outside the fitted range "
+            f"[{lower[channel]:.4g}, {upper[channel]:.4g}]"
+        ),
+        details={
+            "engine": unit,
+            "channel": channel,
+            "value": value,
+            "lower": float(lower[channel]),
+            "upper": float(upper[channel]),
+        },
+    )
+
+
 def channel_of(channel: int) -> str:
     """The instrument name for a channel index.
 
@@ -213,7 +250,6 @@ class FaultDetector:
         "_drift_half",
         "_drift_persistence",
         "_drift_streak",
-        "_envelope",
         "_history",
         "_last_cycle",
         "_min_cycles",
@@ -234,7 +270,6 @@ class FaultDetector:
         drift_factor: float = 3.0,
         drift_half: int = 10,
         drift_persistence: int = 1,
-        envelope: tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]] | None = None,
     ) -> None:
         """Build a detector. `min_cycles` is the evidence floor for every judgement.
 
@@ -253,7 +288,6 @@ class FaultDetector:
         self._drift_half = drift_half
         self._drift_persistence = drift_persistence
         self._drift_streak: dict[int, int] = {}
-        self._envelope = envelope
         self._rows: deque[npt.NDArray[np.float32]] = deque(maxlen=window)
         self._channel_last_seen: dict[int, int] = {}
         self._last_cycle: int | None = None
@@ -367,7 +401,6 @@ class FaultDetector:
                     details={"engine": self._unit, "channel": channel, "value": float(value)},
                 )
 
-        found.update(self._shift_states(row))
         if len(self._rows) >= self._min_cycles:
             found.update(self._stuck_states())
             found.update(self._drift_states())
@@ -376,41 +409,6 @@ class FaultDetector:
             if key not in self._open:
                 self._history.append(state)
         self._open = found
-
-    def _shift_states(
-        self, row: npt.NDArray[np.float32]
-    ) -> dict[tuple[str, int | None], DegradedState]:
-        """Flight conditions outside the envelope the serving model was fitted on.
-
-        Not a sensor fault: the descriptors are read correctly, the engine is simply
-        somewhere the model has never seen, so its interval was calibrated on a
-        different population. Judged per reading against the envelope, with no
-        evidence floor, because the first flight outside it is already unsupported.
-        """
-        states: dict[tuple[str, int | None], DegradedState] = {}
-        if self._envelope is None:
-            return states
-        lower, upper = self._envelope
-        for channel in range(lower.size):
-            value = float(row[channel])
-            if np.isfinite(value) and not lower[channel] <= value <= upper[channel]:
-                states[("operating_shift", channel)] = DegradedState(
-                    state="operating_shift",
-                    engine=self._unit,
-                    channel=channel,
-                    detail=(
-                        f"{channel_of(channel)} at {value:.4g}, outside the fitted range "
-                        f"[{lower[channel]:.4g}, {upper[channel]:.4g}]"
-                    ),
-                    details={
-                        "engine": self._unit,
-                        "channel": channel,
-                        "value": value,
-                        "lower": float(lower[channel]),
-                        "upper": float(upper[channel]),
-                    },
-                )
-        return states
 
     def _stuck_states(self) -> dict[tuple[str, int | None], DegradedState]:
         """Channels holding exactly one value across the window.
@@ -581,4 +579,5 @@ __all__ = [
     "alert_payload",
     "channel_of",
     "operating_envelope",
+    "outside_envelope",
 ]

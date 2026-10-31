@@ -79,6 +79,19 @@ class TestOperatingShift:
         (row,) = pipeline.fleet.rows()
         assert row["status"] == "nominal", "the shift must clear once flights return"
 
+    def test_a_shift_seen_only_mid_cycle_is_still_named(self) -> None:
+        """Each cycle's first reading is on the ground; the shift happens at altitude.
+
+        Checked once a cycle, on that first reading, the envelope never saw a shift
+        that real data put only in the cruise readings. Found by the failure scenarios.
+        """
+        pipeline = StreamPipeline(predictor(), CONFIG, envelope=self.envelope())
+        cycles, rows = stream()
+        firsts = np.r_[True, np.diff(cycles) != 0]
+        rows[(cycles >= 10) & ~firsts, 0] += 500.0
+        pipeline.run_engine(1, cycles, rows)
+        assert opened(pipeline, 1) == ["operating_shift"]
+
 
 class TestOutOfOrder:
     def test_a_late_reading_is_named_dropped_and_changes_no_window(self) -> None:
@@ -183,3 +196,63 @@ class TestInferenceOutage:
         state = pipeline._engines[(None, 1)]
         assert state.missed_predictions > 0
         assert state.outage is None, "the state must clear once the service answers"
+
+
+class TestScenarioHarness:
+    """The scenario functions behind `prognos failures`, on synthetic engines."""
+
+    @staticmethod
+    def engine(n_cycles: int = 60, seed: int = 3) -> tuple[str, int, np.ndarray, np.ndarray]:
+        cycles, rows = stream(n_cycles=n_cycles, seed=seed)
+        return ("DS01", seed, cycles, rows)
+
+    ENVELOPE = (np.full(4, 50.0, dtype=np.float32), np.full(4, 150.0, dtype=np.float32))
+
+    def test_the_control_names_nothing(self) -> None:
+        from prognos.failures import control
+
+        result = control(predictor(), CONFIG, self.ENVELOPE, self.engine())
+        assert result["passed"] and result["predictions"] > 0
+
+    def test_an_outage_scenario_predicts_nothing_while_down(self, tmp_path: Path) -> None:
+        from prognos.failures import inference_outage
+
+        predictor().save(tmp_path)
+        result = inference_outage(tmp_path, CONFIG, self.ENVELOPE, self.engine())
+        assert result["passed"], result
+        assert result["predictions_during"] == 0 < result["predictions_after"]
+
+    def test_a_shift_beyond_the_fleet_is_named_and_within_it_is_not(self) -> None:
+        from prognos.failures import operating_shift
+
+        # Low in the fleet's altitude range, like the short-haul engine that exposed the
+        # gap: half the range on top of it still sits inside the envelope.
+        source, unit, cycles, rows = self.engine()
+        rows[:, 0] = np.float32(70.0) + rows[:, 0] / np.float32(50.0)
+        short_haul = (source, unit, cycles, rows)
+        beyond = operating_shift(predictor(), CONFIG, self.ENVELOPE, short_haul, True)
+        within = operating_shift(predictor(), CONFIG, self.ENVELOPE, short_haul, False)
+        assert beyond["passed"] and beyond["openings"] >= 1
+        assert within["engine_max_altitude_after"] <= self.ENVELOPE[1][0]
+        assert not within["passed"]
+
+    def test_silence_is_named_on_the_engine_that_stopped(self) -> None:
+        from prognos.failures import delayed
+
+        result = delayed(
+            predictor(),
+            CONFIG,
+            self.ENVELOPE,
+            self.engine(n_cycles=500, seed=4),
+            self.engine(n_cycles=500, seed=5),
+            readings=2_000,
+        )
+        assert result["passed"], result
+        assert result["detected_after_seconds"] == pytest.approx(10.0, abs=0.2)
+
+    def test_late_readings_are_dropped_and_named(self) -> None:
+        from prognos.failures import out_of_order
+
+        result = out_of_order(predictor(), CONFIG, self.ENVELOPE, self.engine(), late=20)
+        assert result["passed"], result
+        assert result["late_dropped"] == 20

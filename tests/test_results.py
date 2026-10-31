@@ -563,10 +563,11 @@ class TestFaultScenarioResults:
     `docs/design.md` §12 requires that every injected fault produces a named degraded
     state. This is the committed evidence for that claim.
 
-    Two of these tests deliberately assert a *failure*. The drift detector does not
-    survive its control run, and the honest artifact records that rather than a
-    threshold tuned until the control went green. A test that asserted `control_clean`
-    would have been the tuning, disguised as a check.
+    Until Phase 6B two of these tests asserted a *failure*: the drift detector did not
+    survive its control run, and the artifact recorded that rather than a threshold
+    tuned until the control went green. The detector was then retuned on separate
+    development engines and judged on held-out ones (`results/phase6_drift.json`);
+    the control is clean now, and the test says why that alone is not the evidence.
     """
 
     @pytest.fixture(scope="class")
@@ -607,27 +608,29 @@ class TestFaultScenarioResults:
                         "the instrument, so nobody knows which sensor to go and look at"
                     )
 
-    def test_the_control_run_is_reported_as_failing(self, report: dict[str, object]) -> None:
-        """The drift detector over-fires on healthy data and the artifact says so.
+    def test_the_control_run_is_clean_and_its_caveat_holds(self, report: dict[str, object]) -> None:
+        """Clean since the drift study, and not mistaken for the evidence that it should be.
 
-        Asserted rather than fixed. Three normalisations were tried — fleet-relative,
-        channel-relative, and both together — and each fixed one false-positive mode
-        while creating another. Tuning until this went green would have produced a
-        number that means nothing.
+        Until Phase 6B this test asserted the control *failed*: the drift detector fired
+        on healthy channels and the artifact said so. The study in
+        `results/phase6_drift.json` retuned it on development engines and judged it on
+        held-out ones. This control engine is one of the development engines, so its
+        clean run cannot be the proof; the held-out rate is, and both are checked here.
         """
         control = self._scenario(report, "none")
-        assert control["passed"] is False, (
-            "the control run now reports clean; if the drift detector was genuinely "
-            "fixed, update this test and the known_limitations entry together, and say "
-            "in the PR what changed"
+        assert control["passed"] is True
+        assert control["detected"] == []
+        study = load(Path("results/phase6_drift.json"))
+        assert report["engine"] in study["development_engines"], (
+            "the caveat says the control engine tuned the detector; if that changed, "
+            "the caveat must change with it"
         )
-        assert "sensor_drift" in control["detected"]
+        assert study["held_out"]["after"]["false_alarms"]["engines_alarmed"] == 0
 
-    def test_the_failure_is_documented(self, report: dict[str, object]) -> None:
-        """A red row with no explanation is worse than no row."""
-        assert report["known_limitations"], "a failing control run must carry a reason"
+    def test_the_caveat_is_documented(self, report: dict[str, object]) -> None:
+        """The artifact itself must say why the clean control is not independent."""
         text = " ".join(report["known_limitations"]).lower()
-        assert "drift" in text and "control" in text
+        assert "development" in text and "held-out" in text
 
     def test_the_replay_cadence_is_recorded(self, report: dict[str, object]) -> None:
         """The scenarios sample one row per cycle, and a reader must be able to know."""

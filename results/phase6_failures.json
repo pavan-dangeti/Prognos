@@ -1,0 +1,154 @@
+{
+  "all_passed": false,
+  "command": "prognos failures",
+  "engines": [
+    "DS01-005/unit001",
+    "DS01-005/unit002"
+  ],
+  "envelope": {
+    "lower": [
+      1399.4000244140625,
+      0.1754549890756607,
+      20.478368759155273,
+      416.7552795410156
+    ],
+    "upper": [
+      36634.6015625,
+      0.7755930423736572,
+      92.02082824707031,
+      529.8619384765625
+    ]
+  },
+  "final_test_group": {
+    "engines": [
+      3,
+      7,
+      11,
+      13,
+      18,
+      21,
+      22,
+      23,
+      24,
+      26
+    ],
+    "status": "closed"
+  },
+  "generated_at": "2026-10-31",
+  "hardware": "Darwin arm64 / arm / Python 3.12.13",
+  "scenarios": [
+    {
+      "expected": [],
+      "injected": "nothing",
+      "opened": {},
+      "passed": true,
+      "predictions": 3892,
+      "scenario": "control"
+    },
+    {
+      "cleared": true,
+      "expected": [
+        "inference_unavailable"
+      ],
+      "injected": "inference service stopped for readings 173,330 to 259,995 of 433,325",
+      "missed_predictions": 778,
+      "opened": {
+        "DS01-005/unit001": [
+          "inference_unavailable"
+        ]
+      },
+      "passed": true,
+      "predictions_after": 1557,
+      "predictions_before": 1557,
+      "predictions_during": 0,
+      "scenario": "inference_outage"
+    },
+    {
+      "engine_max_altitude_after": 40158.12109375,
+      "envelope_altitude": [
+        1399.4000244140625,
+        36634.6015625
+      ],
+      "expected": [
+        "operating_shift"
+      ],
+      "injected": "altitude raised from cycle 40 to a tenth of the fitted altitude range above the training fleet's highest",
+      "opened": {
+        "DS01-005/unit001": [
+          "operating_shift",
+          "operating_shift",
+          "operating_shift",
+          "operating_shift",
+          "operating_shift",
+          "operating_shift",
+          "operating_shift",
+          "operating_shift",
+          "operating_shift"
+        ]
+      },
+      "openings": 9,
+      "passed": true,
+      "predictions": 3892,
+      "scenario": "operating_shift",
+      "step_feet": 22394.121875
+    },
+    {
+      "engine_max_altitude_after": 35381.6015625,
+      "envelope_altitude": [
+        1399.4000244140625,
+        36634.6015625
+      ],
+      "expected": [
+        "operating_shift"
+      ],
+      "injected": "altitude raised from cycle 40 by half the fitted altitude range, staying inside the training fleet's",
+      "opened": {},
+      "openings": 0,
+      "passed": false,
+      "predictions": 3892,
+      "scenario": "operating_shift_within_fleet",
+      "step_feet": 17617.6015625
+    },
+    {
+      "cleared": true,
+      "detected_after_seconds": 10.0,
+      "expected": [
+        "stream_silent"
+      ],
+      "injected": "DS01-005/unit002 stopped for 15 s of stream time while DS01-005/unit001 continued; watchdog timeout 10 s",
+      "opened": {
+        "DS01-005/unit002": [
+          "stream_silent"
+        ]
+      },
+      "passed": true,
+      "scenario": "delayed"
+    },
+    {
+      "expected": [
+        "cycle_regression"
+      ],
+      "injected": "the last 200 readings of cycle 39 delivered after the first reading of cycle 40",
+      "late_dropped": 200,
+      "opened": {
+        "DS01-005/unit001": [
+          "cycle_regression"
+        ]
+      },
+      "passed": true,
+      "predictions": 3890,
+      "predictions_in_order": 3892,
+      "scenario": "out_of_order"
+    }
+  ],
+  "versions": {
+    "h5py": "3.16.0",
+    "lightgbm": "4.6.0",
+    "numpy": "2.4.1",
+    "pandas": "3.0.1",
+    "pyarrow": "26.0.0",
+    "python": "3.12.13",
+    "scikit-learn": "1.8.0",
+    "torch": "2.10.0"
+  }
+}
