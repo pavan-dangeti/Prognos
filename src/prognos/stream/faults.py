@@ -46,9 +46,44 @@ DEGRADED_STATES: tuple[str, ...] = (
     "value_out_of_range",
     "cycle_regression",
     "stream_silent",
+    "operating_shift",
+    "inference_unavailable",
 )
 
-INJECTABLE_FAULTS: tuple[str, ...] = DEGRADED_STATES
+#: The faults an injector can apply to a row. The last two states are conditions of
+#: the flight and of the service, not of a sensor, and are provoked by the failure
+#: scenarios rather than by editing a reading.
+INJECTABLE_FAULTS: tuple[str, ...] = DEGRADED_STATES[:6]
+
+
+def alert_payload(state: DegradedState, cycle: int) -> dict[str, object]:
+    """A degraded state as the payload an alerting service would carry."""
+    return {
+        "kind": f"degraded_{state.state}",
+        "unit": state.engine,
+        "cycle": cycle,
+        "instrument": state.instrument,
+        "detail": state.detail,
+        "state": state.state,
+        "silent_cycles": state.silent_cycles,
+    }
+
+
+def operating_envelope(
+    windows: npt.NDArray[np.float32], margin: float = 0.05
+) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+    """The range of each flight condition in a model's training windows, widened.
+
+    Widened by `margin` of each range on both sides, so a reading at the edge of what
+    the fleet flew is not called a shift. Only the scenario descriptors are bounded:
+    a measured sensor leaving its range is a sensor or engine fault, named elsewhere.
+    """
+    descriptors = np.asarray(windows, dtype=np.float32)[..., : len(SCENARIO_DESCRIPTORS)]
+    flat = descriptors.reshape(-1, descriptors.shape[-1])
+    low = np.nanmin(flat, axis=0)
+    high = np.nanmax(flat, axis=0)
+    pad = (high - low) * np.float32(margin)
+    return (low - pad).astype(np.float32), (high + pad).astype(np.float32)
 
 
 def channel_of(channel: int) -> str:
@@ -178,6 +213,7 @@ class FaultDetector:
         "_drift_half",
         "_drift_persistence",
         "_drift_streak",
+        "_envelope",
         "_history",
         "_last_cycle",
         "_min_cycles",
@@ -198,6 +234,7 @@ class FaultDetector:
         drift_factor: float = 3.0,
         drift_half: int = 10,
         drift_persistence: int = 1,
+        envelope: tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]] | None = None,
     ) -> None:
         """Build a detector. `min_cycles` is the evidence floor for every judgement.
 
@@ -216,6 +253,7 @@ class FaultDetector:
         self._drift_half = drift_half
         self._drift_persistence = drift_persistence
         self._drift_streak: dict[int, int] = {}
+        self._envelope = envelope
         self._rows: deque[npt.NDArray[np.float32]] = deque(maxlen=window)
         self._channel_last_seen: dict[int, int] = {}
         self._last_cycle: int | None = None
@@ -329,6 +367,7 @@ class FaultDetector:
                     details={"engine": self._unit, "channel": channel, "value": float(value)},
                 )
 
+        found.update(self._shift_states(row))
         if len(self._rows) >= self._min_cycles:
             found.update(self._stuck_states())
             found.update(self._drift_states())
@@ -337,6 +376,41 @@ class FaultDetector:
             if key not in self._open:
                 self._history.append(state)
         self._open = found
+
+    def _shift_states(
+        self, row: npt.NDArray[np.float32]
+    ) -> dict[tuple[str, int | None], DegradedState]:
+        """Flight conditions outside the envelope the serving model was fitted on.
+
+        Not a sensor fault: the descriptors are read correctly, the engine is simply
+        somewhere the model has never seen, so its interval was calibrated on a
+        different population. Judged per reading against the envelope, with no
+        evidence floor, because the first flight outside it is already unsupported.
+        """
+        states: dict[tuple[str, int | None], DegradedState] = {}
+        if self._envelope is None:
+            return states
+        lower, upper = self._envelope
+        for channel in range(lower.size):
+            value = float(row[channel])
+            if np.isfinite(value) and not lower[channel] <= value <= upper[channel]:
+                states[("operating_shift", channel)] = DegradedState(
+                    state="operating_shift",
+                    engine=self._unit,
+                    channel=channel,
+                    detail=(
+                        f"{channel_of(channel)} at {value:.4g}, outside the fitted range "
+                        f"[{lower[channel]:.4g}, {upper[channel]:.4g}]"
+                    ),
+                    details={
+                        "engine": self._unit,
+                        "channel": channel,
+                        "value": value,
+                        "lower": float(lower[channel]),
+                        "upper": float(upper[channel]),
+                    },
+                )
+        return states
 
     def _stuck_states(self) -> dict[tuple[str, int | None], DegradedState]:
         """Channels holding exactly one value across the window.
@@ -408,7 +482,10 @@ class FaultDetector:
         # it flagged two healthy ones.
         recent = block[-half:]
         previous = block[-2 * half : -half]
-        for channel in range(N_CHANNELS):
+        # Measured sensors only. The scenario descriptors are the flight's conditions:
+        # when they move, the engine is flying somewhere else, which is
+        # `operating_shift`, not a sensor that has drifted.
+        for channel in range(len(SCENARIO_DESCRIPTORS), N_CHANNELS):
             current = float(np.nanmean(recent[:, channel]))
             before = float(np.nanmean(previous[:, channel]))
             if not (np.isfinite(current) and np.isfinite(before)):
@@ -485,15 +562,7 @@ class FaultDetector:
         Kept here so the mapping from fault to alert lives next to the fault, and cannot
         drift from it the way a separate mapping table would.
         """
-        return {
-            "kind": f"degraded_{state.state}",
-            "unit": state.engine,
-            "cycle": self._last_cycle or 0,
-            "instrument": state.instrument,
-            "detail": state.detail,
-            "state": state.state,
-            "silent_cycles": state.silent_cycles,
-        }
+        return alert_payload(state, self._last_cycle or 0)
 
     def _record(self, state: DegradedState) -> None:
         """Record a state that was detected outside the recompute path."""
@@ -509,5 +578,7 @@ __all__ = [
     "FaultDetector",
     "FaultInjector",
     "InjectedFault",
+    "alert_payload",
     "channel_of",
+    "operating_envelope",
 ]

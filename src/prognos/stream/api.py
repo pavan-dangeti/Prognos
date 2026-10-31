@@ -24,7 +24,7 @@ from typing import Any
 from .alerting import AlertingService
 from .coverage import CoverageMonitor
 from .events import MAX_BATCH_ROWS, N_CHANNELS, Reading, StreamStats, TelemetryBatch, validate_batch
-from .faults import DEGRADED_STATES, InjectedFault, channel_of
+from .faults import DEGRADED_STATES, INJECTABLE_FAULTS, InjectedFault, channel_of
 from .fleet import POLICY_RESULT, FleetView, build_cost_panel, engine_label
 from .inference import RulPredictor
 from .observability import (
@@ -265,9 +265,9 @@ def build_dashboard_state(
                 on_inject(engine, None, source)
             return {
                 "armed": {k: v.kind for k, v in injectors.items()},
-                "available": list(DEGRADED_STATES),
+                "available": list(INJECTABLE_FAULTS),
             }
-        if kind not in DEGRADED_STATES:
+        if kind not in INJECTABLE_FAULTS:
             raise HttpError(400, f"unknown fault {kind!r}")
         try:
             fault = InjectedFault(

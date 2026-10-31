@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -29,9 +30,15 @@ import numpy.typing as npt
 from prognos.stream.alerting import AlertingService, MaintenanceAlert
 from prognos.stream.coverage import CoverageMonitor, CoverageVerdict, Observation
 from prognos.stream.events import StreamStats, TelemetryBatch, validate_batch
-from prognos.stream.faults import FaultDetector, FaultInjector, InjectedFault
+from prognos.stream.faults import (
+    DegradedState,
+    FaultDetector,
+    FaultInjector,
+    InjectedFault,
+    alert_payload,
+)
 from prognos.stream.fleet import FleetView, engine_label
-from prognos.stream.inference import Prediction, RulPredictor
+from prognos.stream.inference import InferenceUnavailableError, Prediction, Predictor
 from prognos.stream.observability import (
     MetricsRegistry,
     record_coverage_metrics,
@@ -82,6 +89,18 @@ class _EngineState:
     detected_cycle: int | None = None
     last_good: npt.NDArray[np.float32] | None = None
     alerts: list[MaintenanceAlert] = field(default_factory=list)
+    #: Pipeline-level conditions, beside the detector's sensor faults.
+    outage: DegradedState | None = None
+    silent: DegradedState | None = None
+    last_seen: float = 0.0
+    #: Set when a replay reaches the end of an engine's recorded life, so the silence
+    #: watchdog does not call an engine that has finished a stream that went quiet.
+    ended: bool = False
+    #: Every degraded state that opened, as the alert payload it raised.
+    degraded_alerts: list[dict[str, object]] = field(default_factory=list)
+    open_states: set[tuple[str, int | None]] = field(default_factory=set)
+    late_dropped: int = 0
+    missed_predictions: int = 0
 
 
 class StreamPipeline:
@@ -94,10 +113,12 @@ class StreamPipeline:
 
     __slots__ = (
         "_alerting",
+        "_clock",
         "_config",
         "_coverage",
         "_detectors",
         "_engines",
+        "_envelope",
         "_fleet",
         "_injectors",
         "_logger",
@@ -108,18 +129,26 @@ class StreamPipeline:
 
     def __init__(
         self,
-        predictor: RulPredictor,
+        predictor: Predictor,
         config: PipelineConfig,
         metrics: MetricsRegistry | None = None,
         logger: logging.Logger | None = None,
         detect_faults: bool = True,
+        envelope: tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]] | None = None,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         """Wire the pipeline around a predictor.
 
         `detect_faults` exists so a caller can replay a clean stream without paying for
         detection. It defaults on because S6 requires any degraded state to be
         observable, and a detector that is off by default is a detector nobody turned on.
+
+        `envelope` is the range of flight conditions the model was fitted on; outside
+        it an engine is named `operating_shift`. `clock` is injectable so the silence
+        watchdog can be tested without waiting.
         """
+        self._envelope = envelope
+        self._clock = clock
         self._predictor = predictor
         self._config = config
         self._metrics = metrics or MetricsRegistry()
@@ -169,7 +198,7 @@ class StreamPipeline:
         # Replaced rather than reused: a replay restarts the engine's stream, and a
         # detector carrying the last replay's frozen baseline would judge the new one
         # against a different engine life.
-        self._detectors[key] = FaultDetector(unit=key[1])
+        self._detectors[key] = FaultDetector(unit=key[1], envelope=self._envelope)
         return self._detectors[key]
 
     @property
@@ -179,11 +208,11 @@ class StreamPipeline:
         S6: any degraded state must be observable. A fault that is detected and then
         dropped on the floor is the same as one never detected.
         """
-        if self._detectors is None:
-            return []
         states: list[dict[str, object]] = []
-        for detector in self._detectors.values():
-            states.extend(state.to_dict() for state in detector.active())
+        for state in self._engines.values():
+            if state.detector is not None:
+                states.extend(s.to_dict() for s in state.detector.active())
+            states.extend(s.to_dict() for s in (state.outage, state.silent) if s is not None)
         return states
 
     @property
@@ -240,14 +269,27 @@ class StreamPipeline:
         """
         key = (source, unit)
         state = self._engine(key)
+        state.last_seen = self._clock()
+        if state.silent is not None:
+            state.silent = None
+            self._publish(key, state)
         injector = self._injectors.get(key)
         if injector is not None:
             row = injector.apply(cycle, row.copy())
+
+        # A reading from a cycle already passed is named and dropped. Folding it in
+        # would change windows whose predictions have already been reported.
+        if state.detected_cycle is not None and cycle < state.detected_cycle:
+            state.late_dropped += 1
+            if state.detector is not None:
+                state.detector.observe(cycle, row)
+                self._publish(key, state)
+            return []
         detector = state.detector
         if detector is not None and cycle != state.detected_cycle:
-            state.detected_cycle = cycle
             detector.observe(cycle, row)
-            self._fleet.set_degraded(unit, [s.to_dict() for s in detector.active()], source=source)
+            self._publish(key, state)
+        state.detected_cycle = cycle
 
         # A missing channel is held at its last good value, so the engine keeps a
         # prediction while the detector names the dropout and the fleet view marks the
@@ -267,9 +309,26 @@ class StreamPipeline:
         predictions: list[Prediction] = []
         while window.has_window:
             features = window.materialise()
-            interval = self._predictor.predict(
-                features[None, ...], np.asarray([cycle], dtype=np.int64)
-            )[0]
+            try:
+                interval = self._predictor.predict(
+                    features[None, ...], np.asarray([cycle], dtype=np.int64)
+                )[0]
+            except InferenceUnavailableError as error:
+                # No prediction rather than the last one: a stale interval drawn as
+                # current is the silent wrong answer this state exists to prevent.
+                state.missed_predictions += 1
+                if state.outage is None:
+                    state.outage = DegradedState(
+                        state="inference_unavailable",
+                        engine=unit,
+                        detail=f"no prediction since cycle {cycle}: {error}",
+                        details={"engine": unit, "cycle": cycle},
+                    )
+                    self._publish(key, state)
+                continue
+            if state.outage is not None:
+                state.outage = None
+                self._publish(key, state)
             prediction = Prediction(
                 unit=unit,
                 cycle=cycle,
@@ -304,6 +363,48 @@ class StreamPipeline:
                 unit, open_alert.to_dict() if open_alert is not None else None, source=source
             )
         return predictions
+
+    def _publish(self, key: tuple[str | None, int], state: _EngineState) -> None:
+        """Show an engine's degraded states, and raise an alert for each that opened.
+
+        One place for detector faults and pipeline conditions alike, so a state cannot
+        reach the fleet view without its alert, or the alert without the view.
+        """
+        source, unit = key
+        current = list(state.detector.active()) if state.detector is not None else []
+        current += [s for s in (state.outage, state.silent) if s is not None]
+        names = {(s.state, s.channel) for s in current}
+        for degraded in current:
+            if (degraded.state, degraded.channel) not in state.open_states:
+                alert = {**alert_payload(degraded, state.detected_cycle or 0), "source": source}
+                state.degraded_alerts.append(alert)
+                self._logger.warning("degraded state opened", extra={"extra_fields": {**alert}})
+        state.open_states = names
+        self._fleet.set_degraded(unit, [s.to_dict() for s in current], source=source)
+
+    def check_silence(self, timeout: float) -> list[dict[str, object]]:
+        """Name every engine that has sent nothing for `timeout` seconds.
+
+        Absence cannot be seen in the readings, only in the clock: a stream that stops
+        logs nothing. Engines whose replay has finished are excluded; they are done,
+        not silent.
+        """
+        now = self._clock()
+        opened: list[dict[str, object]] = []
+        for key, state in self._engines.items():
+            quiet = now - state.last_seen
+            if state.ended or state.silent is not None or quiet < timeout:
+                continue
+            state.silent = DegradedState(
+                state="stream_silent",
+                engine=key[1],
+                detail=f"nothing received for {quiet:.1f} s",
+                details={"engine": key[1], "seconds": quiet},
+            )
+            before = len(state.degraded_alerts)
+            self._publish(key, state)
+            opened.extend(state.degraded_alerts[before:])
+        return opened
 
     def run_engine(
         self,
@@ -360,9 +461,9 @@ class StreamPipeline:
 
         state = self._engines.get((source, unit))
         if state is not None:
+            state.ended = True
             replay.alerts = state.alerts
-            if state.detector is not None:
-                replay.faults = [state.detector.raise_alert_for(s) for s in state.detector.history]
+            replay.faults = state.degraded_alerts
         return replay
 
     def record_metrics(self) -> None:

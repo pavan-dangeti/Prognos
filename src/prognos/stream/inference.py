@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Protocol
 
 import numpy as np
 import numpy.typing as npt
@@ -192,3 +193,71 @@ class RulPredictor:
         ) - np.asarray(calibration_targets, dtype=np.float64)
         calibrator = SplitConformalCalibrator(target_coverage).calibrate(residuals)
         return cls(model=model, calibrator=calibrator, model_name=model_name)
+
+
+class InferenceUnavailableError(RuntimeError):
+    """The inference service could not be reached or refused to answer."""
+
+
+class Predictor(Protocol):
+    """What the pipeline needs from inference, in-process or over HTTP."""
+
+    @property
+    def model_name(self) -> str:
+        """Which model is serving."""
+        ...
+
+    def predict(
+        self, windows: npt.NDArray[np.float32], cycles: npt.NDArray[np.int64]
+    ) -> list[Interval]:
+        """Intervals for a batch of windows."""
+        ...
+
+
+class RemotePredictor:
+    """The inference service, called over HTTP.
+
+    Every failure to get an answer — refused connection, timeout, a 5xx, a body that
+    is not a prediction — is raised as `InferenceUnavailableError`, one exception the
+    pipeline turns into a named degraded state. Retrying here would hide an outage
+    behind latency; the pipeline decides what an outage means, and it means no
+    prediction rather than a stale one.
+    """
+
+    __slots__ = ("_timeout", "_token", "_url")
+
+    def __init__(self, base_url: str, timeout: float = 2.0, token: str | None = None) -> None:
+        """Point at a running inference service."""
+        self._url = base_url.rstrip("/") + "/predict"
+        self._timeout = timeout
+        self._token = token
+
+    @property
+    def model_name(self) -> str:
+        """Named for where it runs; the service reports the model it loaded."""
+        return "remote"
+
+    def predict(
+        self, windows: npt.NDArray[np.float32], cycles: npt.NDArray[np.int64]
+    ) -> list[Interval]:
+        """Ask the service for intervals, or raise `InferenceUnavailableError`."""
+        import urllib.error
+        import urllib.request
+
+        body = json.dumps(
+            {"windows": np.asarray(windows).tolist(), "cycles": np.asarray(cycles).tolist()}
+        ).encode()
+        headers = {"Content-Type": "application/json"}
+        if self._token:
+            headers["Authorization"] = f"Bearer {self._token}"
+        request = urllib.request.Request(self._url, data=body, headers=headers)
+        try:
+            with urllib.request.urlopen(request, timeout=self._timeout) as response:
+                payload = json.loads(response.read())
+            return [
+                Interval(lower=float(p["lower"]), point=float(p["rul"]), upper=float(p["upper"]))
+                for p in payload["predictions"]
+            ]
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            # URLError and timeouts are OSErrors; a malformed body is the others.
+            raise InferenceUnavailableError(f"{self._url}: {error}") from error

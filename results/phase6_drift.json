@@ -266,8 +266,8 @@
         }
       ],
       "false_alarms": {
-        "alarm_cycles": 61,
-        "alarm_cycles_per_100": 7.4754901960784315,
+        "alarm_cycles": 60,
+        "alarm_cycles_per_100": 7.352941176470588,
         "alarmed_engines": [
           "DS01-005/unit005",
           "DS01-005/unit009",
@@ -287,8 +287,7 @@
           "Ps30": 30,
           "T30": 37,
           "T48": 47,
-          "T50": 33,
-          "alt": 2
+          "T50": 33
         },
         "cycles": 816,
         "engines": 10,

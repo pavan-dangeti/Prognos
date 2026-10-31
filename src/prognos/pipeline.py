@@ -37,10 +37,17 @@ from .dataset import WindowSource
 from .evaluate import build_folds, library_versions
 from .policy_eval import split_fit_and_calibration
 from .stream.alerting import MaintenanceAlert
+from .stream.auth import token_from_env
 from .stream.coverage import CoverageVerdict
-from .stream.faults import DEGRADED_STATES, FaultDetector, FaultInjector, InjectedFault
+from .stream.faults import (
+    DEGRADED_STATES,
+    FaultDetector,
+    FaultInjector,
+    InjectedFault,
+    operating_envelope,
+)
 from .stream.fleet import engine_label
-from .stream.inference import RulPredictor
+from .stream.inference import Predictor, RemotePredictor, RulPredictor
 from .stream.observability import MetricsRegistry
 from .stream.pipeline import PipelineConfig, StreamPipeline
 from .stream.window import replay_windows
@@ -96,6 +103,7 @@ def replay_pipeline(
     model_dir: Path | None = None,
     logger: logging.Logger | None = None,
     pace: float | None = None,
+    inference_url: str | None = None,
 ) -> ReplayOutcome:
     """Train the serving predictor, then replay each engine through the pipeline.
 
@@ -164,7 +172,17 @@ def replay_pipeline(
         target_coverage=config.uncertainty.target_coverage,
     )
     metrics = MetricsRegistry()
-    pipeline = StreamPipeline(predictor, pipeline_config, metrics=metrics, logger=log)
+    # The envelope comes from the windows the serving model was fitted on, so an
+    # operating_shift means "outside what this model has seen", not outside some
+    # other population's range.
+    envelope = operating_envelope(fit_windows)
+    serving: Predictor = predictor
+    if inference_url is not None:
+        serving = RemotePredictor(inference_url, token=token_from_env())
+        print(f"predicting through {inference_url}", flush=True)
+    pipeline = StreamPipeline(
+        serving, pipeline_config, metrics=metrics, logger=log, envelope=envelope
+    )
     if on_pipeline is not None:
         # Handed out the moment it exists, so a caller serving the dashboard sees the
         # fleet view fill as the replay runs rather than appearing in full at the end.

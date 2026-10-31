@@ -374,6 +374,7 @@ def cmd_stream(args: argparse.Namespace) -> int:
                 seed=config.split.seed,
                 calibration_fraction=args.calibration_fraction,
                 pace=args.pace,
+                inference_url=args.inference_url,
                 model_dir=Path(args.model_dir),
                 on_pipeline=lambda p: holder.update(pipeline=p),
             )
@@ -449,7 +450,11 @@ def _serve_until_done(
     httpd = build_server(state(), host=args.host, port=args.port)
     print(f"dashboard on http://{args.host}:{httpd.server_address[1]}/fleet", flush=True)
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
-    worker.join()
+    # The silence watchdog. Absence never arrives as a reading, so something has to
+    # look at the clock; once a second is far finer than any timeout worth setting.
+    while worker.is_alive():
+        holder["pipeline"].check_silence(args.silence_timeout)
+        worker.join(timeout=1.0)
     httpd.shutdown()
     httpd.server_close()
 
@@ -758,6 +763,17 @@ def main(argv: list[str] | None = None) -> int:
         type=float,
         default=None,
         help="cap the replay at this many readings per second, for watching the dashboard",
+    )
+    stream.add_argument(
+        "--inference-url",
+        default=None,
+        help="predict through a running inference service instead of in-process",
+    )
+    stream.add_argument(
+        "--silence-timeout",
+        type=float,
+        default=10.0,
+        help="seconds without a reading before an engine is named stream_silent",
     )
     stream.add_argument("--host", default="127.0.0.1")
     stream.add_argument("--port", type=int, default=8090)
