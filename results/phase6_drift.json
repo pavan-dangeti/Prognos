@@ -1,0 +1,4287 @@
+{
+  "channel_scales": {
+    "Nc": 51.47408542884964,
+    "Nf": 40.03813946414017,
+    "P15": 0.3495580401829124,
+    "P2": 0.2584768110441302,
+    "P21": 0.35488122826616203,
+    "P24": 0.5754023639861285,
+    "P40": 15.162430489632941,
+    "P50": 0.20868620115939515,
+    "Ps30": 15.073241040445478,
+    "T24": 4.410609844426887,
+    "T30": 16.37250577344032,
+    "T48": 32.17707549761625,
+    "T50": 15.825497214187191,
+    "Wf": 0.257571974304225
+  },
+  "chosen": {
+    "factor": 3.0,
+    "half": 10,
+    "persistence": 1
+  },
+  "command": "prognos drift-study",
+  "development": {
+    "after": {
+      "detection": [
+        {
+          "detected": 47,
+          "median_delay_cycles": 8.0,
+          "missed_by_channel": {
+            "Nc": 4,
+            "Nf": 3,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 4,
+            "P50": 10,
+            "Ps30": 4,
+            "T24": 8,
+            "T30": 4,
+            "T48": 3,
+            "T50": 3,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.3357142857142857,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 3.0,
+        "half": 10,
+        "persistence": 1
+      }
+    },
+    "before": {
+      "detection": [
+        {
+          "detected": 43,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 4,
+            "Nf": 4,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 4,
+            "P50": 10,
+            "Ps30": 4,
+            "T24": 9,
+            "T30": 4,
+            "T48": 4,
+            "T50": 4,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.30714285714285716,
+          "trials": 140
+        },
+        {
+          "detected": 79,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "T24": 1,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.5642857142857143,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 1.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 9,
+        "alarm_cycles_per_100": 1.1029411764705883,
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit009",
+          "DS01-005/unit001",
+          "DS02-006/unit014",
+          "DS06/unit001"
+        ],
+        "by_channel": {
+          "Nc": 5,
+          "Nf": 7,
+          "P40": 3,
+          "Ps30": 3,
+          "T30": 3,
+          "T48": 8,
+          "T50": 6
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 5
+      },
+      "settings": {
+        "factor": 4.0,
+        "half": 6,
+        "persistence": 1
+      }
+    }
+  },
+  "development_engines": [
+    "DS01-005/unit005",
+    "DS01-005/unit009",
+    "DS01-005/unit001",
+    "DS01-005/unit003",
+    "DS02-006/unit002",
+    "DS02-006/unit014",
+    "DS02-006/unit015",
+    "DS06/unit010",
+    "DS06/unit001",
+    "DS06/unit009"
+  ],
+  "final_test_group": {
+    "engines": [
+      3,
+      7,
+      11,
+      13,
+      18,
+      21,
+      22,
+      23,
+      24,
+      26
+    ],
+    "status": "closed"
+  },
+  "generated_at": "2026-10-31",
+  "grid": [
+    {
+      "detection": [
+        {
+          "detected": 66,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "Nc": 1,
+            "Nf": 1,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 1,
+            "P50": 10,
+            "Ps30": 1,
+            "T24": 7,
+            "T30": 1,
+            "T48": 1,
+            "T50": 1,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.4714285714285714,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 1.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 0.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 61,
+        "alarm_cycles_per_100": 7.4754901960784315,
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit009",
+          "DS01-005/unit001",
+          "DS01-005/unit003",
+          "DS02-006/unit002",
+          "DS02-006/unit014",
+          "DS02-006/unit015",
+          "DS06/unit010",
+          "DS06/unit001",
+          "DS06/unit009"
+        ],
+        "by_channel": {
+          "Nc": 43,
+          "Nf": 36,
+          "P40": 30,
+          "Ps30": 30,
+          "T30": 37,
+          "T48": 47,
+          "T50": 33,
+          "alt": 2
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 10
+      },
+      "settings": {
+        "factor": 3.0,
+        "half": 4,
+        "persistence": 1
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 43,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 4,
+            "Nf": 4,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 4,
+            "P50": 10,
+            "Ps30": 4,
+            "T24": 9,
+            "T30": 4,
+            "T48": 4,
+            "T50": 4,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.30714285714285716,
+          "trials": 140
+        },
+        {
+          "detected": 70,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "Nc": 1,
+            "Nf": 1,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 2,
+            "P50": 10,
+            "Ps30": 2,
+            "T24": 2,
+            "T30": 1,
+            "T48": 1,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.5,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 1.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 20,
+        "alarm_cycles_per_100": 2.450980392156863,
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit009",
+          "DS01-005/unit001",
+          "DS02-006/unit014",
+          "DS06/unit010",
+          "DS06/unit001",
+          "DS06/unit009"
+        ],
+        "by_channel": {
+          "Nc": 11,
+          "Nf": 9,
+          "P40": 8,
+          "Ps30": 8,
+          "T30": 8,
+          "T48": 16,
+          "T50": 10
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 7
+      },
+      "settings": {
+        "factor": 3.0,
+        "half": 4,
+        "persistence": 2
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 29,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 5,
+            "Nf": 6,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 6,
+            "P50": 10,
+            "Ps30": 6,
+            "T24": 10,
+            "T30": 5,
+            "T48": 6,
+            "T50": 7,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.20714285714285716,
+          "trials": 140
+        },
+        {
+          "detected": 57,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 3,
+            "Nf": 3,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 3,
+            "P50": 10,
+            "Ps30": 3,
+            "T24": 3,
+            "T30": 3,
+            "T48": 3,
+            "T50": 2,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.40714285714285714,
+          "trials": 140
+        },
+        {
+          "detected": 77,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 1,
+            "P50": 10,
+            "Ps30": 1,
+            "T24": 1,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.55,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 6,
+        "alarm_cycles_per_100": 0.7352941176470589,
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit009",
+          "DS01-005/unit001",
+          "DS02-006/unit014"
+        ],
+        "by_channel": {
+          "Nc": 3,
+          "Nf": 3,
+          "P40": 1,
+          "Ps30": 1,
+          "T30": 1,
+          "T48": 5,
+          "T50": 3
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 4
+      },
+      "settings": {
+        "factor": 3.0,
+        "half": 4,
+        "persistence": 3
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 53,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 3,
+            "Nf": 3,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 2,
+            "P50": 10,
+            "Ps30": 2,
+            "T24": 7,
+            "T30": 3,
+            "T48": 3,
+            "T50": 4,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.37857142857142856,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 1.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 15,
+        "alarm_cycles_per_100": 1.838235294117647,
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit009",
+          "DS01-005/unit001",
+          "DS02-006/unit014",
+          "DS02-006/unit015",
+          "DS06/unit001"
+        ],
+        "by_channel": {
+          "Nc": 13,
+          "Nf": 10,
+          "P40": 7,
+          "Ps30": 7,
+          "T30": 12,
+          "T48": 10,
+          "T50": 11
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 6
+      },
+      "settings": {
+        "factor": 3.0,
+        "half": 6,
+        "persistence": 1
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 41,
+          "median_delay_cycles": 4.0,
+          "missed_by_channel": {
+            "Nc": 4,
+            "Nf": 5,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 4,
+            "P50": 10,
+            "Ps30": 4,
+            "T24": 8,
+            "T30": 4,
+            "T48": 5,
+            "T50": 5,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.29285714285714287,
+          "trials": 140
+        },
+        {
+          "detected": 77,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 1,
+            "P50": 10,
+            "Ps30": 1,
+            "T24": 1,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.55,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 8,
+        "alarm_cycles_per_100": 0.9803921568627451,
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit009",
+          "DS01-005/unit001",
+          "DS02-006/unit014",
+          "DS06/unit001"
+        ],
+        "by_channel": {
+          "Nc": 5,
+          "Nf": 4,
+          "P40": 2,
+          "Ps30": 2,
+          "T30": 4,
+          "T48": 4,
+          "T50": 6
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 5
+      },
+      "settings": {
+        "factor": 3.0,
+        "half": 6,
+        "persistence": 2
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 22,
+          "median_delay_cycles": 5.0,
+          "missed_by_channel": {
+            "Nc": 7,
+            "Nf": 7,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 7,
+            "P50": 10,
+            "Ps30": 7,
+            "T24": 9,
+            "T30": 7,
+            "T48": 7,
+            "T50": 7,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.15714285714285714,
+          "trials": 140
+        },
+        {
+          "detected": 73,
+          "median_delay_cycles": 4.0,
+          "missed_by_channel": {
+            "Nc": 1,
+            "Nf": 1,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 1,
+            "P50": 10,
+            "Ps30": 1,
+            "T24": 1,
+            "T30": 1,
+            "T48": 1,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.5214285714285715,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 3,
+        "alarm_cycles_per_100": 0.36764705882352944,
+        "alarmed_engines": [
+          "DS01-005/unit009",
+          "DS02-006/unit014",
+          "DS06/unit001"
+        ],
+        "by_channel": {
+          "Nc": 2,
+          "Nf": 1,
+          "P40": 1,
+          "Ps30": 1,
+          "T30": 2,
+          "T48": 1,
+          "T50": 2
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 3
+      },
+      "settings": {
+        "factor": 3.0,
+        "half": 6,
+        "persistence": 3
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 47,
+          "median_delay_cycles": 8.0,
+          "missed_by_channel": {
+            "Nc": 4,
+            "Nf": 3,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 4,
+            "P50": 10,
+            "Ps30": 4,
+            "T24": 8,
+            "T30": 4,
+            "T48": 3,
+            "T50": 3,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.3357142857142857,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 3.0,
+        "half": 10,
+        "persistence": 1
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 35,
+          "median_delay_cycles": 8.0,
+          "missed_by_channel": {
+            "Nc": 6,
+            "Nf": 5,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 5,
+            "P50": 10,
+            "Ps30": 5,
+            "T24": 9,
+            "T30": 6,
+            "T48": 4,
+            "T50": 5,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.25,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 4.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 3.0,
+        "half": 10,
+        "persistence": 2
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 25,
+          "median_delay_cycles": 7.0,
+          "missed_by_channel": {
+            "Nc": 7,
+            "Nf": 7,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 6,
+            "P50": 10,
+            "Ps30": 6,
+            "T24": 9,
+            "T30": 7,
+            "T48": 6,
+            "T50": 7,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.17857142857142858,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 5.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 4.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 3.0,
+        "half": 10,
+        "persistence": 3
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 53,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "Nc": 2,
+            "Nf": 2,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 3,
+            "P50": 10,
+            "Ps30": 3,
+            "T24": 9,
+            "T30": 3,
+            "T48": 2,
+            "T50": 3,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.37857142857142856,
+          "trials": 140
+        },
+        {
+          "detected": 75,
+          "median_delay_cycles": 1.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 2,
+            "P50": 10,
+            "Ps30": 2,
+            "T24": 1,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.5357142857142857,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 1.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 37,
+        "alarm_cycles_per_100": 4.534313725490196,
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit009",
+          "DS01-005/unit001",
+          "DS02-006/unit002",
+          "DS02-006/unit014",
+          "DS02-006/unit015",
+          "DS06/unit010",
+          "DS06/unit001",
+          "DS06/unit009"
+        ],
+        "by_channel": {
+          "Nc": 26,
+          "Nf": 17,
+          "P40": 11,
+          "Ps30": 11,
+          "T30": 15,
+          "T48": 18,
+          "T50": 13
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 9
+      },
+      "settings": {
+        "factor": 4.0,
+        "half": 4,
+        "persistence": 1
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 37,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 5,
+            "Nf": 5,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 4,
+            "P50": 10,
+            "Ps30": 4,
+            "T24": 10,
+            "T30": 5,
+            "T48": 5,
+            "T50": 5,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.2642857142857143,
+          "trials": 140
+        },
+        {
+          "detected": 66,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "Nc": 2,
+            "Nf": 2,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 2,
+            "P50": 10,
+            "Ps30": 2,
+            "T24": 2,
+            "T30": 2,
+            "T48": 1,
+            "T50": 1,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.4714285714285714,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 13,
+        "alarm_cycles_per_100": 1.5931372549019607,
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit009",
+          "DS01-005/unit001",
+          "DS02-006/unit014",
+          "DS06/unit010",
+          "DS06/unit001"
+        ],
+        "by_channel": {
+          "Nc": 8,
+          "Nf": 2,
+          "P40": 5,
+          "Ps30": 5,
+          "T30": 5,
+          "T48": 4,
+          "T50": 2
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 6
+      },
+      "settings": {
+        "factor": 4.0,
+        "half": 4,
+        "persistence": 2
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 15,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 8,
+            "Nf": 7,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 8,
+            "P50": 10,
+            "Ps30": 8,
+            "T24": 10,
+            "T30": 9,
+            "T48": 7,
+            "T50": 8,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.10714285714285714,
+          "trials": 140
+        },
+        {
+          "detected": 44,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 4,
+            "Nf": 4,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 4,
+            "P50": 10,
+            "Ps30": 4,
+            "T24": 8,
+            "T30": 4,
+            "T48": 4,
+            "T50": 4,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.3142857142857143,
+          "trials": 140
+        },
+        {
+          "detected": 73,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "Nc": 1,
+            "Nf": 1,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 1,
+            "P50": 10,
+            "Ps30": 1,
+            "T24": 2,
+            "T30": 1,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5214285714285715,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 4,
+        "alarm_cycles_per_100": 0.49019607843137253,
+        "alarmed_engines": [
+          "DS01-005/unit009",
+          "DS01-005/unit001",
+          "DS02-006/unit014"
+        ],
+        "by_channel": {
+          "Nc": 3,
+          "Nf": 1,
+          "T30": 1,
+          "T48": 2
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 3
+      },
+      "settings": {
+        "factor": 4.0,
+        "half": 4,
+        "persistence": 3
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 43,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 4,
+            "Nf": 4,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 4,
+            "P50": 10,
+            "Ps30": 4,
+            "T24": 9,
+            "T30": 4,
+            "T48": 4,
+            "T50": 4,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.30714285714285716,
+          "trials": 140
+        },
+        {
+          "detected": 79,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "T24": 1,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.5642857142857143,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 1.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 9,
+        "alarm_cycles_per_100": 1.1029411764705883,
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit009",
+          "DS01-005/unit001",
+          "DS02-006/unit014",
+          "DS06/unit001"
+        ],
+        "by_channel": {
+          "Nc": 5,
+          "Nf": 7,
+          "P40": 3,
+          "Ps30": 3,
+          "T30": 3,
+          "T48": 8,
+          "T50": 6
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 5
+      },
+      "settings": {
+        "factor": 4.0,
+        "half": 6,
+        "persistence": 1
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 30,
+          "median_delay_cycles": 4.0,
+          "missed_by_channel": {
+            "Nc": 6,
+            "Nf": 6,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 5,
+            "P50": 10,
+            "Ps30": 5,
+            "T24": 10,
+            "T30": 6,
+            "T48": 6,
+            "T50": 6,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.21428571428571427,
+          "trials": 140
+        },
+        {
+          "detected": 72,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 1,
+            "Nf": 1,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 1,
+            "P50": 10,
+            "Ps30": 1,
+            "T24": 2,
+            "T30": 1,
+            "T48": 1,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.5142857142857142,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 4,
+        "alarm_cycles_per_100": 0.49019607843137253,
+        "alarmed_engines": [
+          "DS01-005/unit009",
+          "DS01-005/unit001",
+          "DS02-006/unit014"
+        ],
+        "by_channel": {
+          "Nc": 3,
+          "Nf": 3,
+          "P40": 2,
+          "Ps30": 2,
+          "T30": 2,
+          "T48": 3,
+          "T50": 2
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 3
+      },
+      "settings": {
+        "factor": 4.0,
+        "half": 6,
+        "persistence": 2
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 15,
+          "median_delay_cycles": 5.0,
+          "missed_by_channel": {
+            "Nc": 8,
+            "Nf": 8,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 7,
+            "P50": 10,
+            "Ps30": 7,
+            "T24": 10,
+            "T30": 8,
+            "T48": 8,
+            "T50": 9,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.10714285714285714,
+          "trials": 140
+        },
+        {
+          "detected": 60,
+          "median_delay_cycles": 4.0,
+          "missed_by_channel": {
+            "Nc": 2,
+            "Nf": 2,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 3,
+            "P50": 10,
+            "Ps30": 3,
+            "T24": 3,
+            "T30": 2,
+            "T48": 2,
+            "T50": 3,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.42857142857142855,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 1,
+        "alarm_cycles_per_100": 0.12254901960784313,
+        "alarmed_engines": [
+          "DS02-006/unit014"
+        ],
+        "by_channel": {
+          "Nc": 1,
+          "Nf": 1,
+          "P40": 1,
+          "Ps30": 1,
+          "T30": 1,
+          "T48": 1,
+          "T50": 1
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 1
+      },
+      "settings": {
+        "factor": 4.0,
+        "half": 6,
+        "persistence": 3
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 26,
+          "median_delay_cycles": 7.0,
+          "missed_by_channel": {
+            "Nc": 6,
+            "Nf": 6,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 6,
+            "P50": 10,
+            "Ps30": 6,
+            "T24": 10,
+            "T30": 6,
+            "T48": 7,
+            "T50": 7,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.18571428571428572,
+          "trials": 140
+        },
+        {
+          "detected": 79,
+          "median_delay_cycles": 5.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "T24": 1,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.5642857142857143,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 4.0,
+        "half": 10,
+        "persistence": 1
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 16,
+          "median_delay_cycles": 6.0,
+          "missed_by_channel": {
+            "Nc": 8,
+            "Nf": 8,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 7,
+            "P50": 10,
+            "Ps30": 7,
+            "T24": 10,
+            "T30": 8,
+            "T48": 8,
+            "T50": 8,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.11428571428571428,
+          "trials": 140
+        },
+        {
+          "detected": 77,
+          "median_delay_cycles": 6.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 1,
+            "P50": 10,
+            "Ps30": 1,
+            "T24": 1,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.55,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 4.0,
+        "half": 10,
+        "persistence": 2
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 14,
+          "median_delay_cycles": 8.0,
+          "missed_by_channel": {
+            "Nc": 8,
+            "Nf": 8,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 8,
+            "P50": 10,
+            "Ps30": 8,
+            "T24": 10,
+            "T30": 8,
+            "T48": 8,
+            "T50": 8,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.1,
+          "trials": 140
+        },
+        {
+          "detected": 70,
+          "median_delay_cycles": 7.0,
+          "missed_by_channel": {
+            "Nc": 2,
+            "Nf": 1,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 2,
+            "P50": 10,
+            "Ps30": 2,
+            "T24": 1,
+            "T30": 1,
+            "T48": 1,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.5,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 4.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 4.0,
+        "half": 10,
+        "persistence": 3
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 32,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "Nc": 5,
+            "Nf": 5,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 6,
+            "P50": 10,
+            "Ps30": 6,
+            "T24": 10,
+            "T30": 6,
+            "T48": 4,
+            "T50": 6,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.22857142857142856,
+          "trials": 140
+        },
+        {
+          "detected": 66,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "Nc": 1,
+            "Nf": 1,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 2,
+            "P50": 10,
+            "Ps30": 2,
+            "T24": 3,
+            "T30": 2,
+            "T48": 1,
+            "T50": 2,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.4714285714285714,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 1.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 15,
+        "alarm_cycles_per_100": 1.838235294117647,
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit009",
+          "DS01-005/unit001",
+          "DS02-006/unit002",
+          "DS02-006/unit014",
+          "DS06/unit010"
+        ],
+        "by_channel": {
+          "Nc": 11,
+          "Nf": 6,
+          "P40": 3,
+          "Ps30": 3,
+          "T30": 3,
+          "T48": 8,
+          "T50": 3
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 6
+      },
+      "settings": {
+        "factor": 6.0,
+        "half": 4,
+        "persistence": 1
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 20,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 6,
+            "Nf": 7,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 8,
+            "P50": 10,
+            "Ps30": 8,
+            "T24": 10,
+            "T30": 7,
+            "T48": 7,
+            "T50": 7,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.14285714285714285,
+          "trials": 140
+        },
+        {
+          "detected": 52,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "Nc": 2,
+            "Nf": 3,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 3,
+            "P50": 10,
+            "Ps30": 3,
+            "T24": 9,
+            "T30": 2,
+            "T48": 3,
+            "T50": 3,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.37142857142857144,
+          "trials": 140
+        },
+        {
+          "detected": 76,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 1,
+            "P50": 10,
+            "Ps30": 1,
+            "T24": 2,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5428571428571428,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 4,
+        "alarm_cycles_per_100": 0.49019607843137253,
+        "alarmed_engines": [
+          "DS01-005/unit001",
+          "DS02-006/unit014"
+        ],
+        "by_channel": {
+          "Nc": 4,
+          "Nf": 2,
+          "T30": 1
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "factor": 6.0,
+        "half": 4,
+        "persistence": 2
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 7,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 9,
+            "Nf": 9,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 9,
+            "P50": 10,
+            "Ps30": 9,
+            "T24": 10,
+            "T30": 9,
+            "T48": 9,
+            "T50": 9,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.05,
+          "trials": 140
+        },
+        {
+          "detected": 30,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 6,
+            "Nf": 6,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 5,
+            "P50": 10,
+            "Ps30": 5,
+            "T24": 10,
+            "T30": 6,
+            "T48": 6,
+            "T50": 6,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.21428571428571427,
+          "trials": 140
+        },
+        {
+          "detected": 50,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "Nc": 4,
+            "Nf": 4,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 4,
+            "P50": 10,
+            "Ps30": 4,
+            "T24": 3,
+            "T30": 4,
+            "T48": 4,
+            "T50": 3,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.35714285714285715,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 2,
+        "alarm_cycles_per_100": 0.24509803921568626,
+        "alarmed_engines": [
+          "DS01-005/unit001",
+          "DS02-006/unit014"
+        ],
+        "by_channel": {
+          "Nc": 2,
+          "Nf": 1
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "factor": 6.0,
+        "half": 4,
+        "persistence": 3
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 24,
+          "median_delay_cycles": 4.0,
+          "missed_by_channel": {
+            "Nc": 6,
+            "Nf": 7,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 6,
+            "P50": 10,
+            "Ps30": 7,
+            "T24": 10,
+            "T30": 5,
+            "T48": 7,
+            "T50": 8,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.17142857142857143,
+          "trials": 140
+        },
+        {
+          "detected": 63,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 2,
+            "Nf": 2,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 2,
+            "P50": 10,
+            "Ps30": 2,
+            "T24": 3,
+            "T30": 2,
+            "T48": 2,
+            "T50": 2,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.45,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 6,
+        "alarm_cycles_per_100": 0.7352941176470589,
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit001",
+          "DS02-006/unit014"
+        ],
+        "by_channel": {
+          "Nc": 4,
+          "Nf": 3,
+          "T30": 2,
+          "T48": 3,
+          "T50": 1
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 3
+      },
+      "settings": {
+        "factor": 6.0,
+        "half": 6,
+        "persistence": 1
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 9,
+          "median_delay_cycles": 5.0,
+          "missed_by_channel": {
+            "Nc": 8,
+            "Nf": 8,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 9,
+            "P50": 10,
+            "Ps30": 9,
+            "T24": 10,
+            "T30": 9,
+            "T48": 9,
+            "T50": 9,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.06428571428571428,
+          "trials": 140
+        },
+        {
+          "detected": 45,
+          "median_delay_cycles": 4.0,
+          "missed_by_channel": {
+            "Nc": 4,
+            "Nf": 4,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 4,
+            "P50": 10,
+            "Ps30": 4,
+            "T24": 7,
+            "T30": 4,
+            "T48": 4,
+            "T50": 4,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.32142857142857145,
+          "trials": 140
+        },
+        {
+          "detected": 79,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "T24": 1,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5642857142857143,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 3,
+        "alarm_cycles_per_100": 0.36764705882352944,
+        "alarmed_engines": [
+          "DS01-005/unit001",
+          "DS02-006/unit014"
+        ],
+        "by_channel": {
+          "Nc": 2,
+          "Nf": 2,
+          "T30": 1,
+          "T48": 2
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "factor": 6.0,
+        "half": 6,
+        "persistence": 2
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 2,
+          "median_delay_cycles": 13.0,
+          "missed_by_channel": {
+            "Nc": 10,
+            "Nf": 9,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 10,
+            "P50": 10,
+            "Ps30": 10,
+            "T24": 10,
+            "T30": 10,
+            "T48": 9,
+            "T50": 10,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.014285714285714285,
+          "trials": 140
+        },
+        {
+          "detected": 25,
+          "median_delay_cycles": 5.0,
+          "missed_by_channel": {
+            "Nc": 7,
+            "Nf": 7,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 6,
+            "P50": 10,
+            "Ps30": 6,
+            "T24": 10,
+            "T30": 7,
+            "T48": 7,
+            "T50": 5,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.17857142857142858,
+          "trials": 140
+        },
+        {
+          "detected": 75,
+          "median_delay_cycles": 4.0,
+          "missed_by_channel": {
+            "Nc": 1,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 1,
+            "P50": 10,
+            "Ps30": 1,
+            "T24": 1,
+            "T30": 1,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5357142857142857,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 1,
+        "alarm_cycles_per_100": 0.12254901960784313,
+        "alarmed_engines": [
+          "DS02-006/unit014"
+        ],
+        "by_channel": {
+          "Nf": 1,
+          "T48": 1
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 1
+      },
+      "settings": {
+        "factor": 6.0,
+        "half": 6,
+        "persistence": 3
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 9,
+          "median_delay_cycles": 6.0,
+          "missed_by_channel": {
+            "Nc": 9,
+            "Nf": 9,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 8,
+            "P50": 10,
+            "Ps30": 8,
+            "T24": 10,
+            "T30": 9,
+            "T48": 9,
+            "T50": 9,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.06428571428571428,
+          "trials": 140
+        },
+        {
+          "detected": 63,
+          "median_delay_cycles": 7.0,
+          "missed_by_channel": {
+            "Nc": 2,
+            "Nf": 2,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 2,
+            "P50": 10,
+            "Ps30": 2,
+            "T24": 4,
+            "T30": 2,
+            "T48": 2,
+            "T50": 1,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.45,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 6.0,
+        "half": 10,
+        "persistence": 1
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 7,
+          "median_delay_cycles": 7.0,
+          "missed_by_channel": {
+            "Nc": 9,
+            "Nf": 9,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 9,
+            "P50": 10,
+            "Ps30": 9,
+            "T24": 10,
+            "T30": 9,
+            "T48": 9,
+            "T50": 9,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.05,
+          "trials": 140
+        },
+        {
+          "detected": 56,
+          "median_delay_cycles": 8.0,
+          "missed_by_channel": {
+            "Nc": 2,
+            "Nf": 3,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 2,
+            "P50": 10,
+            "Ps30": 2,
+            "T24": 8,
+            "T30": 2,
+            "T48": 3,
+            "T50": 2,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.4,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 4.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 6.0,
+        "half": 10,
+        "persistence": 2
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 7,
+          "median_delay_cycles": 8.0,
+          "missed_by_channel": {
+            "Nc": 9,
+            "Nf": 9,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 9,
+            "P50": 10,
+            "Ps30": 9,
+            "T24": 10,
+            "T30": 9,
+            "T48": 9,
+            "T50": 9,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.05,
+          "trials": 140
+        },
+        {
+          "detected": 41,
+          "median_delay_cycles": 8.0,
+          "missed_by_channel": {
+            "Nc": 4,
+            "Nf": 6,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 3,
+            "P50": 10,
+            "Ps30": 3,
+            "T24": 9,
+            "T30": 4,
+            "T48": 5,
+            "T50": 5,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.29285714285714287,
+          "trials": 140
+        },
+        {
+          "detected": 80,
+          "median_delay_cycles": 5.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 6.0,
+        "half": 10,
+        "persistence": 3
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 22,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "Nc": 6,
+            "Nf": 6,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 8,
+            "P50": 10,
+            "Ps30": 8,
+            "T24": 10,
+            "T30": 7,
+            "T48": 6,
+            "T50": 7,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.15714285714285714,
+          "trials": 140
+        },
+        {
+          "detected": 51,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "Nc": 3,
+            "Nf": 3,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 3,
+            "P50": 10,
+            "Ps30": 3,
+            "T24": 8,
+            "T30": 3,
+            "T48": 3,
+            "T50": 3,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.36428571428571427,
+          "trials": 140
+        },
+        {
+          "detected": 79,
+          "median_delay_cycles": 1.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "T24": 1,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5642857142857143,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 4,
+        "alarm_cycles_per_100": 0.49019607843137253,
+        "alarmed_engines": [
+          "DS01-005/unit009",
+          "DS02-006/unit002",
+          "DS02-006/unit014"
+        ],
+        "by_channel": {
+          "Nc": 4,
+          "Nf": 2,
+          "T30": 1,
+          "T48": 2,
+          "T50": 1
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 3
+      },
+      "settings": {
+        "factor": 8.0,
+        "half": 4,
+        "persistence": 1
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 14,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 7,
+            "Nf": 8,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 8,
+            "P50": 10,
+            "Ps30": 8,
+            "T24": 10,
+            "T30": 8,
+            "T48": 8,
+            "T50": 9,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.1,
+          "trials": 140
+        },
+        {
+          "detected": 42,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 4,
+            "Nf": 4,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 4,
+            "P50": 10,
+            "Ps30": 4,
+            "T24": 10,
+            "T30": 4,
+            "T48": 4,
+            "T50": 4,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.3,
+          "trials": 140
+        },
+        {
+          "detected": 70,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "Nc": 1,
+            "Nf": 1,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 2,
+            "P50": 10,
+            "Ps30": 2,
+            "T24": 2,
+            "T30": 1,
+            "T48": 1,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 8.0,
+        "half": 4,
+        "persistence": 2
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 3,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 9,
+            "Nf": 9,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 10,
+            "P50": 10,
+            "Ps30": 10,
+            "T24": 10,
+            "T30": 10,
+            "T48": 9,
+            "T50": 10,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.02142857142857143,
+          "trials": 140
+        },
+        {
+          "detected": 19,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 7,
+            "Nf": 7,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 8,
+            "P50": 10,
+            "Ps30": 8,
+            "T24": 10,
+            "T30": 7,
+            "T48": 7,
+            "T50": 7,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.1357142857142857,
+          "trials": 140
+        },
+        {
+          "detected": 40,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 4,
+            "Nf": 5,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 4,
+            "P50": 10,
+            "Ps30": 4,
+            "T24": 9,
+            "T30": 4,
+            "T48": 5,
+            "T50": 5,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.2857142857142857,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 8.0,
+        "half": 4,
+        "persistence": 3
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 9,
+          "median_delay_cycles": 5.0,
+          "missed_by_channel": {
+            "Nc": 8,
+            "Nf": 8,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 9,
+            "P50": 10,
+            "Ps30": 9,
+            "T24": 10,
+            "T30": 9,
+            "T48": 9,
+            "T50": 9,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.06428571428571428,
+          "trials": 140
+        },
+        {
+          "detected": 44,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 4,
+            "Nf": 4,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 4,
+            "P50": 10,
+            "Ps30": 4,
+            "T24": 8,
+            "T30": 4,
+            "T48": 4,
+            "T50": 4,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.3142857142857143,
+          "trials": 140
+        },
+        {
+          "detected": 79,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "T24": 1,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5642857142857143,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 2,
+        "alarm_cycles_per_100": 0.24509803921568626,
+        "alarmed_engines": [
+          "DS01-005/unit001",
+          "DS02-006/unit014"
+        ],
+        "by_channel": {
+          "Nc": 2,
+          "Nf": 1
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "factor": 8.0,
+        "half": 6,
+        "persistence": 1
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 2,
+          "median_delay_cycles": 4.5,
+          "missed_by_channel": {
+            "Nc": 9,
+            "Nf": 10,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 10,
+            "P50": 10,
+            "Ps30": 10,
+            "T24": 10,
+            "T30": 10,
+            "T48": 10,
+            "T50": 9,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.014285714285714285,
+          "trials": 140
+        },
+        {
+          "detected": 30,
+          "median_delay_cycles": 4.0,
+          "missed_by_channel": {
+            "Nc": 6,
+            "Nf": 6,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 5,
+            "P50": 10,
+            "Ps30": 5,
+            "T24": 10,
+            "T30": 6,
+            "T48": 6,
+            "T50": 6,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.21428571428571427,
+          "trials": 140
+        },
+        {
+          "detected": 74,
+          "median_delay_cycles": 3.5,
+          "missed_by_channel": {
+            "Nc": 1,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 1,
+            "P50": 10,
+            "Ps30": 1,
+            "T24": 2,
+            "T30": 1,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5285714285714286,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 8.0,
+        "half": 6,
+        "persistence": 2
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 0,
+          "median_delay_cycles": null,
+          "missed_by_channel": {
+            "Nc": 10,
+            "Nf": 10,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 10,
+            "P50": 10,
+            "Ps30": 10,
+            "T24": 10,
+            "T30": 10,
+            "T48": 10,
+            "T50": 10,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.0,
+          "trials": 140
+        },
+        {
+          "detected": 21,
+          "median_delay_cycles": 5.0,
+          "missed_by_channel": {
+            "Nc": 7,
+            "Nf": 7,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 7,
+            "P50": 10,
+            "Ps30": 7,
+            "T24": 10,
+            "T30": 7,
+            "T48": 7,
+            "T50": 7,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.15,
+          "trials": 140
+        },
+        {
+          "detected": 61,
+          "median_delay_cycles": 4.0,
+          "missed_by_channel": {
+            "Nc": 2,
+            "Nf": 2,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 3,
+            "P50": 10,
+            "Ps30": 3,
+            "T24": 3,
+            "T30": 2,
+            "T48": 2,
+            "T50": 2,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.4357142857142857,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 8.0,
+        "half": 6,
+        "persistence": 3
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 7,
+          "median_delay_cycles": 8.0,
+          "missed_by_channel": {
+            "Nc": 9,
+            "Nf": 9,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 9,
+            "P50": 10,
+            "Ps30": 9,
+            "T24": 10,
+            "T30": 9,
+            "T48": 9,
+            "T50": 9,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.05,
+          "trials": 140
+        },
+        {
+          "detected": 38,
+          "median_delay_cycles": 8.0,
+          "missed_by_channel": {
+            "Nc": 5,
+            "Nf": 6,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 3,
+            "P50": 10,
+            "Ps30": 3,
+            "T24": 9,
+            "T30": 5,
+            "T48": 6,
+            "T50": 5,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.2714285714285714,
+          "trials": 140
+        },
+        {
+          "detected": 79,
+          "median_delay_cycles": 5.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "T24": 1,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5642857142857143,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 8.0,
+        "half": 10,
+        "persistence": 1
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 5,
+          "median_delay_cycles": 9.0,
+          "missed_by_channel": {
+            "Nc": 10,
+            "Nf": 9,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 9,
+            "P50": 10,
+            "Ps30": 9,
+            "T24": 10,
+            "T30": 10,
+            "T48": 9,
+            "T50": 9,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.03571428571428571,
+          "trials": 140
+        },
+        {
+          "detected": 27,
+          "median_delay_cycles": 8.0,
+          "missed_by_channel": {
+            "Nc": 6,
+            "Nf": 6,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 7,
+            "P50": 10,
+            "Ps30": 7,
+            "T24": 9,
+            "T30": 6,
+            "T48": 6,
+            "T50": 6,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.19285714285714287,
+          "trials": 140
+        },
+        {
+          "detected": 79,
+          "median_delay_cycles": 6.0,
+          "missed_by_channel": {
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P50": 10,
+            "T24": 1,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5642857142857143,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 8.0,
+        "half": 10,
+        "persistence": 2
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 0,
+          "median_delay_cycles": null,
+          "missed_by_channel": {
+            "Nc": 10,
+            "Nf": 10,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 10,
+            "P50": 10,
+            "Ps30": 10,
+            "T24": 10,
+            "T30": 10,
+            "T48": 10,
+            "T50": 10,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.0,
+          "trials": 140
+        },
+        {
+          "detected": 14,
+          "median_delay_cycles": 8.0,
+          "missed_by_channel": {
+            "Nc": 8,
+            "Nf": 8,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 8,
+            "P50": 10,
+            "Ps30": 8,
+            "T24": 10,
+            "T30": 8,
+            "T48": 8,
+            "T50": 8,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.1,
+          "trials": 140
+        },
+        {
+          "detected": 70,
+          "median_delay_cycles": 6.0,
+          "missed_by_channel": {
+            "Nc": 1,
+            "Nf": 1,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 2,
+            "P50": 10,
+            "Ps30": 2,
+            "T24": 1,
+            "T30": 1,
+            "T48": 1,
+            "T50": 1,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.5,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 8.0,
+        "half": 10,
+        "persistence": 3
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 8,
+          "median_delay_cycles": 2.5,
+          "missed_by_channel": {
+            "Nc": 8,
+            "Nf": 8,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 9,
+            "P50": 10,
+            "Ps30": 9,
+            "T24": 10,
+            "T30": 10,
+            "T48": 8,
+            "T50": 10,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.05714285714285714,
+          "trials": 140
+        },
+        {
+          "detected": 32,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "Nc": 5,
+            "Nf": 6,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 5,
+            "P50": 10,
+            "Ps30": 5,
+            "T24": 10,
+            "T30": 5,
+            "T48": 6,
+            "T50": 6,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.22857142857142856,
+          "trials": 140
+        },
+        {
+          "detected": 63,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "Nc": 2,
+            "Nf": 2,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 2,
+            "P50": 10,
+            "Ps30": 2,
+            "T24": 3,
+            "T30": 2,
+            "T48": 2,
+            "T50": 2,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.45,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 1,
+        "alarm_cycles_per_100": 0.12254901960784313,
+        "alarmed_engines": [
+          "DS01-005/unit009"
+        ],
+        "by_channel": {
+          "Nc": 1,
+          "T48": 1
+        },
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 1
+      },
+      "settings": {
+        "factor": 12.0,
+        "half": 4,
+        "persistence": 1
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 0,
+          "median_delay_cycles": null,
+          "missed_by_channel": {
+            "Nc": 10,
+            "Nf": 10,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 10,
+            "P50": 10,
+            "Ps30": 10,
+            "T24": 10,
+            "T30": 10,
+            "T48": 10,
+            "T50": 10,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.0,
+          "trials": 140
+        },
+        {
+          "detected": 30,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 6,
+            "Nf": 6,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 5,
+            "P50": 10,
+            "Ps30": 5,
+            "T24": 10,
+            "T30": 6,
+            "T48": 6,
+            "T50": 6,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.21428571428571427,
+          "trials": 140
+        },
+        {
+          "detected": 47,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "Nc": 3,
+            "Nf": 4,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 3,
+            "P50": 10,
+            "Ps30": 3,
+            "T24": 9,
+            "T30": 3,
+            "T48": 4,
+            "T50": 4,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.3357142857142857,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 12.0,
+        "half": 4,
+        "persistence": 2
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 0,
+          "median_delay_cycles": null,
+          "missed_by_channel": {
+            "Nc": 10,
+            "Nf": 10,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 10,
+            "P50": 10,
+            "Ps30": 10,
+            "T24": 10,
+            "T30": 10,
+            "T48": 10,
+            "T50": 10,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.0,
+          "trials": 140
+        },
+        {
+          "detected": 11,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 8,
+            "Nf": 8,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 9,
+            "P50": 10,
+            "Ps30": 9,
+            "T24": 10,
+            "T30": 8,
+            "T48": 8,
+            "T50": 9,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.07857142857142857,
+          "trials": 140
+        },
+        {
+          "detected": 27,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 7,
+            "Nf": 6,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 6,
+            "P50": 10,
+            "Ps30": 6,
+            "T24": 10,
+            "T30": 6,
+            "T48": 6,
+            "T50": 6,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.19285714285714287,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 12.0,
+        "half": 4,
+        "persistence": 3
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 7,
+          "median_delay_cycles": 5.0,
+          "missed_by_channel": {
+            "Nc": 8,
+            "Nf": 10,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 9,
+            "P50": 10,
+            "Ps30": 9,
+            "T24": 10,
+            "T30": 9,
+            "T48": 9,
+            "T50": 9,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.05,
+          "trials": 140
+        },
+        {
+          "detected": 23,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "Nc": 7,
+            "Nf": 7,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 6,
+            "P50": 10,
+            "Ps30": 6,
+            "T24": 10,
+            "T30": 7,
+            "T48": 7,
+            "T50": 7,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.16428571428571428,
+          "trials": 140
+        },
+        {
+          "detected": 63,
+          "median_delay_cycles": 4.0,
+          "missed_by_channel": {
+            "Nc": 2,
+            "Nf": 2,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 2,
+            "P50": 10,
+            "Ps30": 2,
+            "T24": 4,
+            "T30": 2,
+            "T48": 2,
+            "T50": 1,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.45,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 12.0,
+        "half": 6,
+        "persistence": 1
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 1,
+          "median_delay_cycles": 4.0,
+          "missed_by_channel": {
+            "Nc": 9,
+            "Nf": 10,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 10,
+            "P50": 10,
+            "Ps30": 10,
+            "T24": 10,
+            "T30": 10,
+            "T48": 10,
+            "T50": 10,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.007142857142857143,
+          "trials": 140
+        },
+        {
+          "detected": 21,
+          "median_delay_cycles": 4.0,
+          "missed_by_channel": {
+            "Nc": 7,
+            "Nf": 7,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 7,
+            "P50": 10,
+            "Ps30": 7,
+            "T24": 10,
+            "T30": 7,
+            "T48": 7,
+            "T50": 7,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.15,
+          "trials": 140
+        },
+        {
+          "detected": 45,
+          "median_delay_cycles": 4.0,
+          "missed_by_channel": {
+            "Nc": 4,
+            "Nf": 4,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 4,
+            "P50": 10,
+            "Ps30": 4,
+            "T24": 7,
+            "T30": 4,
+            "T48": 4,
+            "T50": 4,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.32142857142857145,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 12.0,
+        "half": 6,
+        "persistence": 2
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 0,
+          "median_delay_cycles": null,
+          "missed_by_channel": {
+            "Nc": 10,
+            "Nf": 10,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 10,
+            "P50": 10,
+            "Ps30": 10,
+            "T24": 10,
+            "T30": 10,
+            "T48": 10,
+            "T50": 10,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.0,
+          "trials": 140
+        },
+        {
+          "detected": 12,
+          "median_delay_cycles": 5.0,
+          "missed_by_channel": {
+            "Nc": 9,
+            "Nf": 8,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 8,
+            "P50": 10,
+            "Ps30": 8,
+            "T24": 10,
+            "T30": 9,
+            "T48": 8,
+            "T50": 8,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.08571428571428572,
+          "trials": 140
+        },
+        {
+          "detected": 24,
+          "median_delay_cycles": 4.0,
+          "missed_by_channel": {
+            "Nc": 7,
+            "Nf": 7,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 6,
+            "P50": 10,
+            "Ps30": 6,
+            "T24": 10,
+            "T30": 7,
+            "T48": 7,
+            "T50": 6,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.17142857142857143,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 12.0,
+        "half": 6,
+        "persistence": 3
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 0,
+          "median_delay_cycles": null,
+          "missed_by_channel": {
+            "Nc": 10,
+            "Nf": 10,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 10,
+            "P50": 10,
+            "Ps30": 10,
+            "T24": 10,
+            "T30": 10,
+            "T48": 10,
+            "T50": 10,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.0,
+          "trials": 140
+        },
+        {
+          "detected": 12,
+          "median_delay_cycles": 6.0,
+          "missed_by_channel": {
+            "Nc": 9,
+            "Nf": 9,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 8,
+            "P50": 10,
+            "Ps30": 8,
+            "T24": 10,
+            "T30": 8,
+            "T48": 8,
+            "T50": 8,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.08571428571428572,
+          "trials": 140
+        },
+        {
+          "detected": 66,
+          "median_delay_cycles": 7.0,
+          "missed_by_channel": {
+            "Nc": 2,
+            "Nf": 1,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 2,
+            "P50": 10,
+            "Ps30": 2,
+            "T24": 3,
+            "T30": 2,
+            "T48": 1,
+            "T50": 1,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.4714285714285714,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 12.0,
+        "half": 10,
+        "persistence": 1
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 0,
+          "median_delay_cycles": null,
+          "missed_by_channel": {
+            "Nc": 10,
+            "Nf": 10,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 10,
+            "P50": 10,
+            "Ps30": 10,
+            "T24": 10,
+            "T30": 10,
+            "T48": 10,
+            "T50": 10,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.0,
+          "trials": 140
+        },
+        {
+          "detected": 9,
+          "median_delay_cycles": 6.0,
+          "missed_by_channel": {
+            "Nc": 9,
+            "Nf": 9,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 8,
+            "P50": 10,
+            "Ps30": 8,
+            "T24": 10,
+            "T30": 9,
+            "T48": 9,
+            "T50": 9,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.06428571428571428,
+          "trials": 140
+        },
+        {
+          "detected": 58,
+          "median_delay_cycles": 8.0,
+          "missed_by_channel": {
+            "Nc": 2,
+            "Nf": 3,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 2,
+            "P50": 10,
+            "Ps30": 2,
+            "T24": 8,
+            "T30": 2,
+            "T48": 2,
+            "T50": 1,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.4142857142857143,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 12.0,
+        "half": 10,
+        "persistence": 2
+      }
+    },
+    {
+      "detection": [
+        {
+          "detected": 0,
+          "median_delay_cycles": null,
+          "missed_by_channel": {
+            "Nc": 10,
+            "Nf": 10,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 10,
+            "P50": 10,
+            "Ps30": 10,
+            "T24": 10,
+            "T30": 10,
+            "T48": 10,
+            "T50": 10,
+            "Wf": 10
+          },
+          "multiple": 2.0,
+          "rate": 0.0,
+          "trials": 140
+        },
+        {
+          "detected": 7,
+          "median_delay_cycles": 7.0,
+          "missed_by_channel": {
+            "Nc": 9,
+            "Nf": 9,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 9,
+            "P50": 10,
+            "Ps30": 9,
+            "T24": 10,
+            "T30": 9,
+            "T48": 9,
+            "T50": 9,
+            "Wf": 10
+          },
+          "multiple": 5.0,
+          "rate": 0.05,
+          "trials": 140
+        },
+        {
+          "detected": 41,
+          "median_delay_cycles": 8.0,
+          "missed_by_channel": {
+            "Nc": 4,
+            "Nf": 6,
+            "P15": 10,
+            "P2": 10,
+            "P21": 10,
+            "P24": 10,
+            "P40": 3,
+            "P50": 10,
+            "Ps30": 3,
+            "T24": 9,
+            "T30": 4,
+            "T48": 6,
+            "T50": 4,
+            "Wf": 10
+          },
+          "multiple": 10.0,
+          "rate": 0.29285714285714287,
+          "trials": 140
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 816,
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 12.0,
+        "half": 10,
+        "persistence": 3
+      }
+    }
+  ],
+  "hardware": "Darwin arm64 / arm / Python 3.12.13",
+  "held_out": {
+    "after": {
+      "detection": [
+        {
+          "detected": 33,
+          "median_delay_cycles": 7.0,
+          "missed_by_channel": {
+            "Nc": 5,
+            "Nf": 5,
+            "P15": 9,
+            "P2": 9,
+            "P21": 9,
+            "P24": 9,
+            "P40": 5,
+            "P50": 9,
+            "Ps30": 5,
+            "T24": 7,
+            "T30": 4,
+            "T48": 4,
+            "T50": 4,
+            "Wf": 9
+          },
+          "multiple": 2.0,
+          "rate": 0.2619047619047619,
+          "trials": 126
+        },
+        {
+          "detected": 72,
+          "median_delay_cycles": 4.0,
+          "missed_by_channel": {
+            "P15": 9,
+            "P2": 9,
+            "P21": 9,
+            "P24": 9,
+            "P50": 9,
+            "Wf": 9
+          },
+          "multiple": 5.0,
+          "rate": 0.5714285714285714,
+          "trials": 126
+        },
+        {
+          "detected": 72,
+          "median_delay_cycles": 2.0,
+          "missed_by_channel": {
+            "P15": 9,
+            "P2": 9,
+            "P21": 9,
+            "P24": 9,
+            "P50": 9,
+            "Wf": 9
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 126
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 0,
+        "alarm_cycles_per_100": 0.0,
+        "alarmed_engines": [],
+        "by_channel": {},
+        "cycles": 715,
+        "engines": 9,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "factor": 3.0,
+        "half": 10,
+        "persistence": 1
+      }
+    },
+    "before": {
+      "detection": [
+        {
+          "detected": 28,
+          "median_delay_cycles": 4.0,
+          "missed_by_channel": {
+            "Nc": 5,
+            "Nf": 5,
+            "P15": 9,
+            "P2": 9,
+            "P21": 9,
+            "P24": 9,
+            "P40": 5,
+            "P50": 9,
+            "Ps30": 5,
+            "T24": 9,
+            "T30": 5,
+            "T48": 5,
+            "T50": 5,
+            "Wf": 9
+          },
+          "multiple": 2.0,
+          "rate": 0.2222222222222222,
+          "trials": 126
+        },
+        {
+          "detected": 71,
+          "median_delay_cycles": 3.0,
+          "missed_by_channel": {
+            "P15": 9,
+            "P2": 9,
+            "P21": 9,
+            "P24": 9,
+            "P50": 9,
+            "T50": 1,
+            "Wf": 9
+          },
+          "multiple": 5.0,
+          "rate": 0.5634920634920635,
+          "trials": 126
+        },
+        {
+          "detected": 72,
+          "median_delay_cycles": 1.0,
+          "missed_by_channel": {
+            "P15": 9,
+            "P2": 9,
+            "P21": 9,
+            "P24": 9,
+            "P50": 9,
+            "Wf": 9
+          },
+          "multiple": 10.0,
+          "rate": 0.5714285714285714,
+          "trials": 126
+        }
+      ],
+      "false_alarms": {
+        "alarm_cycles": 6,
+        "alarm_cycles_per_100": 0.8391608391608392,
+        "alarmed_engines": [
+          "DS01-005/unit010",
+          "DS02-006/unit016",
+          "DS06/unit002",
+          "DS06/unit007"
+        ],
+        "by_channel": {
+          "Nc": 2,
+          "Nf": 5,
+          "P40": 2,
+          "Ps30": 2,
+          "T30": 3,
+          "T48": 4,
+          "T50": 2
+        },
+        "cycles": 715,
+        "engines": 9,
+        "engines_alarmed": 4
+      },
+      "settings": {
+        "factor": 4.0,
+        "half": 6,
+        "persistence": 1
+      }
+    }
+  },
+  "held_out_engines": [
+    "DS01-005/unit006",
+    "DS01-005/unit007",
+    "DS01-005/unit002",
+    "DS01-005/unit010",
+    "DS02-006/unit016",
+    "DS02-006/unit018",
+    "DS02-006/unit010",
+    "DS06/unit002",
+    "DS06/unit007"
+  ],
+  "protocol": {
+    "grid": {
+      "factor": [
+        3.0,
+        4.0,
+        6.0,
+        8.0,
+        12.0
+      ],
+      "half": [
+        4,
+        6,
+        10
+      ],
+      "persistence": [
+        1,
+        2,
+        3
+      ]
+    },
+    "horizon_cycles": 15,
+    "multiples": [
+      2.0,
+      5.0,
+      10.0
+    ],
+    "selection": "fewest development engines with any false alarm, then highest detection at 5x, then at 2x, then the most sensitive setting",
+    "start_cycle": 40
+  },
+  "shipped": {
+    "factor": 4.0,
+    "half": 6,
+    "persistence": 1
+  },
+  "versions": {
+    "h5py": "3.16.0",
+    "lightgbm": "4.6.0",
+    "numpy": "2.4.1",
+    "pandas": "3.0.1",
+    "pyarrow": "26.0.0",
+    "python": "3.12.13",
+    "scikit-learn": "1.8.0",
+    "torch": "2.10.0"
+  }
+}

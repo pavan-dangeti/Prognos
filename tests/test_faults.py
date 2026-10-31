@@ -479,7 +479,11 @@ class TestAStepIsAnEventNotAState:
         onset = steps[0]
         assert onset.details["previous"] == pytest.approx(100.0, abs=4.0)
         assert onset.details["current"] > onset.details["previous"]
-        assert onset.details["shift"] == pytest.approx(40.0, abs=14.0)
+        # How much of the step the onset sees depends on the comparison window: with ten
+        # cycles a side the alert opens partway in, around half the move. Bounded on
+        # both sides so a detector that opened on noise, or only after the whole step
+        # had passed, still fails.
+        assert 10.0 < onset.details["shift"] <= 54.0
         # The starting level is carried too, so the step can be placed against the
         # engine's whole life rather than only against the moment it was noticed.
         assert onset.details["baseline"] == pytest.approx(100.0, abs=4.0)

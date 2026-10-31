@@ -174,6 +174,10 @@ class FaultDetector:
     __slots__ = (
         "_baseline",
         "_channel_last_seen",
+        "_drift_factor",
+        "_drift_half",
+        "_drift_persistence",
+        "_drift_streak",
         "_history",
         "_last_cycle",
         "_min_cycles",
@@ -191,12 +195,27 @@ class FaultDetector:
         min_cycles: int = 20,
         window: int = 40,
         plausible_max: float = 1e6,
+        drift_factor: float = 3.0,
+        drift_half: int = 10,
+        drift_persistence: int = 1,
     ) -> None:
-        """Build a detector. `min_cycles` is the evidence floor for every judgement."""
+        """Build a detector. `min_cycles` is the evidence floor for every judgement.
+
+        The three `drift_` settings are the ones `prognos drift-study` tunes: how many
+        spreads a shift must exceed, how many cycles each side of the comparison
+        averages, and how many consecutive cycles the shift must hold before it is
+        named. The defaults are the study's choice, recorded in
+        `results/phase6_drift.json`; Phase 5 shipped 4.0, 6 and 1, which raised drift
+        on 4 of 9 held-out healthy engines.
+        """
         self._unit = unit
         self._min_cycles = min_cycles
         self._window = window
         self._plausible_max = plausible_max
+        self._drift_factor = drift_factor
+        self._drift_half = drift_half
+        self._drift_persistence = drift_persistence
+        self._drift_streak: dict[int, int] = {}
         self._rows: deque[npt.NDArray[np.float32]] = deque(maxlen=window)
         self._channel_last_seen: dict[int, int] = {}
         self._last_cycle: int | None = None
@@ -368,7 +387,7 @@ class FaultDetector:
         block = np.stack(self._rows)
         states: dict[tuple[str, int | None], DegradedState] = {}
         baseline = self._baseline
-        half = max(4, self._window // 6)
+        half = self._drift_half
         if baseline is None or block.shape[0] < 2 * half:
             return states
         spread = np.nanstd(block, axis=0)
@@ -433,17 +452,32 @@ class FaultDetector:
                         "baseline": float(baseline[channel]),
                     },
                 )
-        return states
+        return self._persisting(states)
+
+    def _persisting(
+        self, states: dict[tuple[str, int | None], DegradedState]
+    ) -> dict[tuple[str, int | None], DegradedState]:
+        """Only the shifts that have held for `drift_persistence` consecutive cycles.
+
+        A broken sensor that steps stays stepped, so its shift holds for as long as the
+        step sits between the two halves of the comparison. Ordinary operation moves a
+        channel for a cycle or two and then settles back.
+        """
+        streak = {
+            key[1]: self._drift_streak.get(key[1], 0) + 1 for key in states if key[1] is not None
+        }
+        self._drift_streak = streak
+        return {
+            key: state
+            for key, state in states.items()
+            if key[1] is not None and streak[key[1]] >= self._drift_persistence
+        }
 
     def _freeze_baseline(self) -> None:
         """Lock the baseline once there is enough evidence for one."""
         if self._baseline is not None or len(self._rows) < self._min_cycles:
             return
         self._baseline = np.nanmean(np.stack(self._rows), axis=0)
-
-    #: How many fleet standard deviations of shift counts as drift. Four is chosen so
-    #: ordinary sampling noise, which moves by well under one, cannot reach it.
-    _drift_factor = 4.0
 
     def raise_alert_for(self, state: DegradedState) -> dict[str, object]:
         """Render a degraded state as the payload an alerting service would carry.

@@ -594,6 +594,45 @@ def cmd_bench(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_drift_study(args: argparse.Namespace) -> int:
+    """Tune the drift detector on development engines and judge it on held-out ones."""
+    from prognos.drift_study import study
+    from prognos.evaluate import build_folds, library_versions
+
+    config = load_config(Path(args.config))
+    cache_dir = config.data.parquet_dir.parent / "cache"
+    data = load_windows(
+        config.data.parquet_dir, config.window, config.data.subdatasets, cache_dir=cache_dir
+    )
+    folds = build_folds(
+        data,
+        n_splits=config.split.n_splits,
+        test_fraction=config.split.test_fraction,
+        seed=config.split.seed,
+    )
+    cv_units = sorted({int(u) for f in folds for u in f.split.val_units})
+    labels = [data.group_labels[u] for u in cv_units]
+    print(f"drift study over {len(labels)} cross-validation engines", flush=True)
+    report = study(Path(config.data.parquet_dir), labels, seed=config.split.seed)
+    report.update(
+        {
+            "command": " ".join(["prognos", *sys.argv[1:]]),
+            "hardware": hardware_description(),
+            "versions": library_versions(),
+            "generated_at": date.today().isoformat(),
+            "final_test_group": {
+                "engines": sorted(folds[0].split.test_units),
+                "status": "closed",
+            },
+        }
+    )
+    out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    print(f"wrote {out_path}; chosen {report['chosen']}", flush=True)
+    return 0
+
+
 def cmd_serve(args: argparse.Namespace) -> int:
     """Serve one streaming component over HTTP until interrupted."""
     import logging
@@ -738,6 +777,13 @@ def main(argv: list[str] | None = None) -> int:
     bench.add_argument("--http-requests", type=int, default=2000)
     bench.add_argument("--no-cache", action="store_true")
     bench.set_defaults(func=cmd_bench)
+
+    drift = sub.add_parser(
+        "drift-study", help="tune the drift detector on development engines, judge on held-out"
+    )
+    drift.add_argument("--config", default="configs/base.yaml")
+    drift.add_argument("--out", default="results/phase6_drift.json")
+    drift.set_defaults(func=cmd_drift_study)
 
     serve_cmd = sub.add_parser("serve", help="serve one streaming component over HTTP")
     serve_cmd.add_argument("--component", required=True, choices=list(COMPONENTS))
