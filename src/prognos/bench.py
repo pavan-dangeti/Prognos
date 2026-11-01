@@ -37,6 +37,7 @@ import numpy.typing as npt
 
 from .dataset import GroupKey
 from .pipeline import _unit_table
+from .stream.faults import Envelope
 from .stream.inference import RulPredictor
 from .stream.pipeline import PipelineConfig, StreamPipeline
 
@@ -98,7 +99,11 @@ def percentiles(samples_ns: list[int]) -> dict[str, float]:
 
 
 def run_fleet(
-    predictor: RulPredictor, config: PipelineConfig, engines: list[Engine], fleet_size: int
+    predictor: RulPredictor,
+    config: PipelineConfig,
+    engines: list[Engine],
+    fleet_size: int,
+    envelope: Envelope | None = None,
 ) -> dict[str, Any]:
     """Replay a fleet of `fleet_size` engines, interleaved, and time every reading.
 
@@ -106,7 +111,9 @@ def run_fleet(
     so a fleet larger than the dataset is many independent streams, not one stream
     counted several times.
     """
-    pipeline = StreamPipeline(predictor, config)
+    # The envelope makes every reading pay for operating-shift tracking, as it does in
+    # the live replay; without it the benchmark would time a cheaper pipeline.
+    pipeline = StreamPipeline(predictor, config, envelope=envelope)
     members = [engines[i % len(engines)] for i in range(fleet_size)]
     length = min(e.cycles.size for e in members)
     updates: list[int] = []
@@ -167,6 +174,7 @@ def benchmark(
     rows_per_engine: int,
     repeats: int,
     http_requests: int,
+    envelope: Envelope | None = None,
 ) -> dict[str, Any]:
     """Every fleet size `repeats` times, interleaved, then the inference hop.
 
@@ -180,12 +188,12 @@ def benchmark(
     engines = load_engines(parquet_dir, labels, rows_per_engine)
     # Warm the model before timing, so the first fleet does not pay for allocations
     # the others get for free.
-    run_fleet(predictor, config, engines[:1], 1)
+    run_fleet(predictor, config, engines[:1], 1, envelope)
 
     runs: dict[int, list[dict[str, Any]]] = {size: [] for size in fleet_sizes}
     for round_ in range(repeats):
         for size in fleet_sizes:
-            run = run_fleet(predictor, config, engines, size)
+            run = run_fleet(predictor, config, engines, size, envelope)
             runs[size].append(run)
             print(
                 f"  round {round_ + 1} {size:>5} engines: "
@@ -205,6 +213,7 @@ def benchmark(
         "source_engines": [label.label() for label in labels],
         "sample_rate_hz": SAMPLE_RATE_HZ,
         "model": predictor.model_name,
+        "operating_envelope": envelope is not None,
         "hardware": machine(),
     }
 

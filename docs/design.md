@@ -4,7 +4,7 @@ Remaining Useful Life (RUL) prediction for turbofan engines, with calibrated
 prediction intervals, a cost-based maintenance policy, and a streaming pipeline
 that replays held-out engines as a live fleet.
 
-Status: Phases 0–5 and 6A are built and released as v1.0.0; Phase 6B is in review. This
+Status: Phases 0–5 and 6A are released as v1.0.0; 6B is merged; 6C is in review. This
 document was written in Phase 0 and is kept as the design of record. Where the build
 departed from it, §14 says how and why, and the README carries the measured results.
 
@@ -16,8 +16,8 @@ departed from it, §14 says how and why, and the README carries the measured res
 | §4.5 Decision layer | Lower-bound and point policies, run-to-failure, fixed interval, ratio sweep | — |
 | §4.6 Streaming | Replay, online window, inference, alerting, fleet view, cost panel, auth | Hosted demo |
 | §4.7 Sensor faults | Dropout, stuck, drift (tuned on development engines, judged on held-out), out-of-range, cycle regression, silence, operating shift, inference outage | Drift on 6 of 14 sensors; shifts inside the fleet's envelope (README, Limitations) |
-| §4.8 Monitoring | Prometheus metrics, Grafana dashboard, structured logs | OpenTelemetry tracing (spans are in-process today) |
-| §4.9 MLOps | YAML configs, data checksums, training CLI, CI smoke run | MLflow tracking and registry, model card |
+| §4.8 Monitoring | Prometheus metrics, Grafana dashboard, structured logs with trace ids, OpenTelemetry tracing across services into Jaeger | — |
+| §4.9 MLOps | YAML configs, data checksums, training CLI, CI smoke run, MLflow tracking and registry (SQLite), model card | — |
 
 ---
 

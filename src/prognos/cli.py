@@ -598,6 +598,7 @@ def cmd_bench(args: argparse.Namespace) -> int:
         rows_per_engine=args.rows_per_engine,
         repeats=args.repeats,
         http_requests=args.http_requests,
+        envelope=_serving_envelope(config, data, cv_units),
     )
     report.update(
         {

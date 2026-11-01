@@ -20,74 +20,74 @@
       "fleet_size": 10,
       "runs": [
         {
-          "engines_in_real_time": 49599.05020596403,
+          "engines_in_real_time": 149875.44750810286,
           "fleet_size": 10,
           "latency_ms": {
-            "p50": 1.123521,
-            "p95": 3.177341349999998,
-            "p99": 10.878944720000034
+            "p50": 0.4987705,
+            "p95": 0.5738479,
+            "p99": 0.7591694400000012
           },
           "predictions": 260,
-          "predictions_per_second": 429.8584351183549,
+          "predictions_per_second": 1298.9205450702248,
           "readings": 30000,
-          "readings_per_second": 49599.05020596403,
-          "wall_seconds": 0.604850292
+          "readings_per_second": 149875.44750810286,
+          "wall_seconds": 0.200166208
         },
         {
-          "engines_in_real_time": 161352.5647662472,
+          "engines_in_real_time": 146226.94916757898,
           "fleet_size": 10,
           "latency_ms": {
-            "p50": 0.4927915,
-            "p95": 0.5856118499999999,
-            "p99": 0.7098743100000001
+            "p50": 0.5138745,
+            "p95": 0.5464167000000001,
+            "p99": 0.5758989700000009
           },
           "predictions": 260,
-          "predictions_per_second": 1398.3888946408092,
+          "predictions_per_second": 1267.3002261190177,
           "readings": 30000,
-          "readings_per_second": 161352.5647662472,
-          "wall_seconds": 0.18592825
+          "readings_per_second": 146226.94916757898,
+          "wall_seconds": 0.205160541
         },
         {
-          "engines_in_real_time": 141983.71784677546,
+          "engines_in_real_time": 136534.43349260287,
           "fleet_size": 10,
           "latency_ms": {
-            "p50": 0.5646045,
-            "p95": 0.63944825,
-            "p99": 0.7245062500000016
+            "p50": 0.5459795000000001,
+            "p95": 0.5961586499999999,
+            "p99": 0.7013735300000016
           },
           "predictions": 260,
-          "predictions_per_second": 1230.5255546720539,
+          "predictions_per_second": 1183.2984236025582,
           "readings": 30000,
-          "readings_per_second": 141983.71784677546,
-          "wall_seconds": 0.211291833
+          "readings_per_second": 136534.43349260287,
+          "wall_seconds": 0.219724792
         },
         {
-          "engines_in_real_time": 51074.92499966483,
+          "engines_in_real_time": 128434.89768822535,
           "fleet_size": 10,
           "latency_ms": {
-            "p50": 1.4978965,
-            "p95": 3.1299003499999976,
-            "p99": 5.156304720000001
+            "p50": 0.5899165,
+            "p95": 0.6323181,
+            "p99": 0.6797600600000001
           },
           "predictions": 260,
-          "predictions_per_second": 442.64934999709516,
+          "predictions_per_second": 1113.1024466312863,
           "readings": 30000,
-          "readings_per_second": 51074.92499966483,
-          "wall_seconds": 0.587372375
+          "readings_per_second": 128434.89768822535,
+          "wall_seconds": 0.233581375
         },
         {
-          "engines_in_real_time": 43140.93576555103,
+          "engines_in_real_time": 129797.715668369,
           "fleet_size": 10,
           "latency_ms": {
-            "p50": 1.9364375,
-            "p95": 4.481307699999992,
-            "p99": 8.487717560000004
+            "p50": 0.585875,
+            "p95": 0.6203628499999999,
+            "p99": 0.6517497800000003
           },
           "predictions": 260,
-          "predictions_per_second": 373.88810996810895,
+          "predictions_per_second": 1124.9135357925313,
           "readings": 30000,
-          "readings_per_second": 43140.93576555103,
-          "wall_seconds": 0.695395208
+          "readings_per_second": 129797.715668369,
+          "wall_seconds": 0.231128875
         }
       ]
     },
@@ -95,74 +95,74 @@
       "fleet_size": 100,
       "runs": [
         {
-          "engines_in_real_time": 82240.82395436704,
+          "engines_in_real_time": 154322.22802716715,
           "fleet_size": 100,
           "latency_ms": {
-            "p50": 0.671625,
-            "p95": 1.5694587999999978,
-            "p99": 8.545826820000011
+            "p50": 0.497208,
+            "p95": 0.5267875,
+            "p99": 0.5683536400000001
           },
           "predictions": 2555,
-          "predictions_per_second": 700.4176840113593,
+          "predictions_per_second": 1314.3109753647068,
           "readings": 300000,
-          "readings_per_second": 82240.82395436704,
-          "wall_seconds": 3.647823375
+          "readings_per_second": 154322.22802716715,
+          "wall_seconds": 1.943984375
         },
         {
-          "engines_in_real_time": 165101.86403625732,
+          "engines_in_real_time": 151887.6245395679,
           "fleet_size": 100,
           "latency_ms": {
-            "p50": 0.485416,
-            "p95": 0.5785207,
-            "p99": 0.8690376800000005
+            "p50": 0.498833,
+            "p95": 0.5383295,
+            "p99": 0.5755160400000002
           },
           "predictions": 2555,
-          "predictions_per_second": 1406.1175420421248,
+          "predictions_per_second": 1293.57626899532,
           "readings": 300000,
-          "readings_per_second": 165101.86403625732,
-          "wall_seconds": 1.817060042
+          "readings_per_second": 151887.6245395679,
+          "wall_seconds": 1.975144459
         },
         {
-          "engines_in_real_time": 144339.90025752044,
+          "engines_in_real_time": 136787.87569064205,
           "fleet_size": 100,
           "latency_ms": {
-            "p50": 0.559625,
-            "p95": 0.7105,
-            "p99": 0.9290317200000008
+            "p50": 0.559208,
+            "p95": 0.5946376,
+            "p99": 0.6514705000000002
           },
           "predictions": 2555,
-          "predictions_per_second": 1229.2948171932157,
+          "predictions_per_second": 1164.9767412986348,
           "readings": 300000,
-          "readings_per_second": 144339.90025752044,
-          "wall_seconds": 2.078427375
+          "readings_per_second": 136787.87569064205,
+          "wall_seconds": 2.193176833
         },
         {
-          "engines_in_real_time": 52144.62476804061,
+          "engines_in_real_time": 128652.31645479453,
           "fleet_size": 100,
           "latency_ms": {
-            "p50": 1.439042,
-            "p95": 3.673945599999986,
-            "p99": 7.4500276800000105
+            "p50": 0.596625,
+            "p95": 0.6317212999999999,
+            "p99": 0.6728210400000001
           },
           "predictions": 2555,
-          "predictions_per_second": 444.0983876078125,
+          "predictions_per_second": 1095.68889514,
           "readings": 300000,
-          "readings_per_second": 52144.62476804061,
-          "wall_seconds": 5.753229625
+          "readings_per_second": 128652.31645479453,
+          "wall_seconds": 2.331866291
         },
         {
-          "engines_in_real_time": 51099.121519454005,
+          "engines_in_real_time": 128845.40916759294,
           "fleet_size": 100,
           "latency_ms": {
-            "p50": 1.272792,
-            "p95": 3.854158099999999,
-            "p99": 7.4214209600000025
+            "p50": 0.59775,
+            "p95": 0.6345662,
+            "p99": 0.6922436400000002
           },
           "predictions": 2555,
-          "predictions_per_second": 435.1941849406833,
+          "predictions_per_second": 1097.3334014106665,
           "readings": 300000,
-          "readings_per_second": 51099.121519454005,
-          "wall_seconds": 5.870942417
+          "readings_per_second": 128845.40916759294,
+          "wall_seconds": 2.328371666
         }
       ]
     },
@@ -170,79 +170,79 @@
       "fleet_size": 1000,
       "runs": [
         {
-          "engines_in_real_time": 163499.13101233737,
+          "engines_in_real_time": 150549.75690166192,
           "fleet_size": 1000,
           "latency_ms": {
-            "p50": 0.474417,
-            "p95": 0.6016585999999998,
-            "p99": 0.8038112599999991
+            "p50": 0.496625,
+            "p95": 0.542792,
+            "p99": 0.57725
           },
           "predictions": 25523,
-          "predictions_per_second": 1390.9961069426288,
+          "predictions_per_second": 1280.827148467039,
           "readings": 3000000,
-          "readings_per_second": 163499.13101233737,
-          "wall_seconds": 18.348721375
+          "readings_per_second": 150549.75690166192,
+          "wall_seconds": 19.92696675
         },
         {
-          "engines_in_real_time": 165014.87124333074,
+          "engines_in_real_time": 143155.2685302347,
           "fleet_size": 1000,
           "latency_ms": {
-            "p50": 0.480541,
-            "p95": 0.563292,
-            "p99": 0.7360809799999964
+            "p50": 0.536166,
+            "p95": 0.579917,
+            "p99": 0.6181210199999998
           },
           "predictions": 25523,
-          "predictions_per_second": 1403.8915195811767,
+          "predictions_per_second": 1217.9173062323932,
           "readings": 3000000,
-          "readings_per_second": 165014.87124333074,
-          "wall_seconds": 18.180179625
+          "readings_per_second": 143155.2685302347,
+          "wall_seconds": 20.956266792
         },
         {
-          "engines_in_real_time": 51037.084111265474,
+          "engines_in_real_time": 132729.44043561522,
           "fleet_size": 1000,
           "latency_ms": {
-            "p50": 1.096208,
-            "p95": 4.172200299999993,
-            "p99": 9.487146739999979
+            "p50": 0.575416,
+            "p95": 0.620958,
+            "p99": 0.6607237799999994
           },
           "predictions": 25523,
-          "predictions_per_second": 434.2064992572762,
+          "predictions_per_second": 1129.2178360794023,
           "readings": 3000000,
-          "readings_per_second": 51037.084111265474,
-          "wall_seconds": 58.780787583
+          "readings_per_second": 132729.44043561522,
+          "wall_seconds": 22.602370583
         },
         {
-          "engines_in_real_time": 50402.77169881849,
+          "engines_in_real_time": 129358.00539630622,
           "fleet_size": 1000,
           "latency_ms": {
-            "p50": 1.277292,
-            "p95": 4.0645506,
-            "p99": 8.71335071999999
+            "p50": 0.594459,
+            "p95": 0.627458,
+            "p99": 0.6704312199999994
           },
           "predictions": 25523,
-          "predictions_per_second": 428.8099806896481,
+          "predictions_per_second": 1100.5347905766412,
           "readings": 3000000,
-          "readings_per_second": 50402.77169881849,
-          "wall_seconds": 59.52053625
+          "readings_per_second": 129358.00539630622,
+          "wall_seconds": 23.191452209
         },
         {
-          "engines_in_real_time": 50161.68794531391,
+          "engines_in_real_time": 128981.99646553808,
           "fleet_size": 1000,
           "latency_ms": {
-            "p50": 1.27975,
-            "p95": 3.900108299999997,
-            "p99": 7.539389479999994
+            "p50": 0.595458,
+            "p95": 0.629,
+            "p99": 0.6723710199999998
           },
           "predictions": 25523,
-          "predictions_per_second": 426.7589204760823,
+          "predictions_per_second": 1097.3358319299762,
           "readings": 3000000,
-          "readings_per_second": 50161.68794531391,
-          "wall_seconds": 59.806599875
+          "readings_per_second": 128981.99646553808,
+          "wall_seconds": 23.259060041
         }
       ]
     }
   ],
-  "generated_at": "2026-10-31",
+  "generated_at": "2026-11-01",
   "hardware": {
     "cpu": "Apple M5",
     "cpu_count": 10,
@@ -253,14 +253,15 @@
   },
   "inference_http": {
     "latency_ms": {
-      "p50": 3.4350625,
-      "p95": 3.94040275,
-      "p99": 8.927311339999996
+      "p50": 0.9790625,
+      "p95": 1.0488527,
+      "p99": 1.0997824999999999
     },
     "payload_bytes": 16706,
     "requests": 2000
   },
   "model": "lightgbm",
+  "operating_envelope": true,
   "rows_per_engine": 3000,
   "sample_rate_hz": 1.0,
   "source_engines": [

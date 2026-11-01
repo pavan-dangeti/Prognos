@@ -24,8 +24,20 @@ All notable changes to this project. The format follows
   within-fleet shifts named 8/9 -> 9/9, alerts per event 4.6-8.4 -> 1.0. All five
   provoked system failures are now named.
 
+- **MLflow**: every command that writes a result records a run (configuration,
+  numeric results, git commit, result file) in a SQLite store under `mlruns/`.
+  `prognos stream` registers the serving model as `prognos-rul` and points the `serving`
+  alias at it; the inference service loads `models:/prognos-rul@serving` and reports the
+  version on `/readyz`; `prognos export-model` copies a version for containers.
+- **`docs/model-card.md`**, with every figure checked against its result file.
+- **OpenTelemetry** tracing across services, exported over OTLP to Jaeger in compose,
+  with trace ids in the JSON logs and a traces panel in Grafana.
+- Deploy and rollback by registry alias in the runbook.
+
 ### Changed
 
+- `prognos bench` now includes operating-shift tracking and the tracing spans, as the
+  live replay does, and was rerun.
 - Drift detector defaults are the study's choice: factor 3, half-window 10, persistence
   1. Drift is judged on measured sensors only; a move in flight conditions is an
   operating shift.
@@ -34,6 +46,9 @@ All notable changes to this project. The format follows
 
 ### Fixed
 
+- Trace context never crossed the HTTP hop: `Traceparent` was looked up case-sensitively.
+- The Grafana datasource file used a shape Grafana ignores, leaving panels without data.
+- The benchmark omitted operating-shift tracking after it was added to the live path.
 - The coverage monitor names its worst engine by sub-dataset and unit.
 - A late reading reset the detector's cycle tracking.
 - The operating-envelope check ran on each cycle's first reading, taken on the ground,

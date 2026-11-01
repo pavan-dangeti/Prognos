@@ -25,7 +25,7 @@ on an Apple M5 with 16 GB (macOS, Python 3.12.13). `tests/test_results.py` and
 | Do sensors help where it matters, late in life? | Transformer 3.76 RMSE in late life | 8.84 from cycle number alone | Same folds, error split by life stage | same |
 | Do the intervals hold? | 0.926 offline, 0.991 live, target 0.90 | — | Split conformal, calibrated on engines held out of the fit | `prognos policy`, `prognos stream` |
 | What does it save? | 30.8 total cost for the best policy | 577.3 run-to-failure, 44.0 best fixed interval | 19 engines, 2,000 cycles, failure 25× a planned visit, ratio swept 1–100 | `prognos policy` → [`phase4_policy.json`](results/phase4_policy.json) |
-| How fast is the live path? | p99 5.16–9.49 ms per updated prediction; at least 43,141 readings/s | — | Real engines interleaved at fleets of 10, 100 and 1,000, 5 rounds | `prognos bench` → [`phase6_streaming_bench.json`](results/phase6_streaming_bench.json) |
+| How fast is the live path? | p99 0.65–0.70 ms per updated prediction; at least 128,435 readings/s in this run, 43,141 in v1.0.0's | — | Real engines interleaved at fleets of 10, 100 and 1,000, 5 rounds | `prognos bench` → [`phase6_streaming_bench.json`](results/phase6_streaming_bench.json) |
 | Are sensor faults named? | 4 of 4 injected faults named, clean control | — | Each fault injected alone into a clean engine | `prognos stream --faults` → [`phase5_faults.json`](results/phase5_faults.json) |
 | Does drift detection stay quiet on healthy engines? | 0 of 9 held-out engines alarmed | 4 of 9 before tuning | Tuned on 10 development engines only, judged on 9 held-out | `prognos drift-study` → [`phase6_drift.json`](results/phase6_drift.json) |
 | Does the system name its own failures? | 5 of 5 provoked failures named | Clean control names nothing | Inference outage, operating shift beyond and within the fleet, silence, late data, on real engines | `prognos failures` → [`phase6_failures.json`](results/phase6_failures.json) |
@@ -65,6 +65,8 @@ flowchart LR
     FV --> UI[Dashboard /ui<br/>fault injection]
     UI -->|POST /inject| SIM
     COV --> PROM[Prometheus] --> GRAF[Grafana]
+    INF -. OTLP spans .-> JAEGER[Jaeger] --> GRAF
+    ART -. registered as prognos-rul .-> REG[(MLflow registry)]
     FV --> PROM
 ```
 
@@ -92,7 +94,7 @@ uvx mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db   # browse runs and
 # Latency and throughput, after `prognos stream` has written artifacts/model.
 uv run prognos bench
 
-# The six-service stack with Prometheus and Grafana; see docs/runbook.md.
+# The stack: four services, Prometheus, Grafana and Jaeger; see docs/runbook.md.
 docker compose up -d --build
 ```
 
@@ -106,34 +108,42 @@ uv run prognos bench    # fleets of 10, 100 and 1,000 engines, 5 interleaved rou
 ```
 
 Latency is from a sensor reading handed to the pipeline to the updated prediction it
-returns: fault detection, the online window, features, LightGBM, the conformal
-interval, alerting and the fleet view. It is timed only for readings that complete a
-window, which is about one in a hundred. Throughput is readings per second through one
-Python process. N-CMAPSS records at 1 Hz, so readings per second is also the number of
-engines one process keeps up with in real time. Fleets are built from the 19
-cross-validation engines, interleaved one reading per engine in turn, so every engine
-keeps its own window and detector live at once.
+returns: fault detection, operating-shift tracking, the online window, features,
+LightGBM, the conformal interval, alerting, the fleet view, and the OpenTelemetry spans
+around each window. It is timed only for readings that complete a window, about one in
+a hundred. Throughput is readings per second through one Python process. N-CMAPSS
+records at 1 Hz, so readings per second is also the number of engines one process
+keeps up with in real time. Fleets are built from the 19 cross-validation engines,
+interleaved one reading per engine in turn, so every engine keeps its own window,
+detector and shift tracker live at once.
 
 | fleet size | readings/s, median (min–max of 5) | predictions/s | p50 ms | p95 ms | p99 ms | worst p99 ms |
 | --- | --- | --- | --- | --- | --- | --- |
-| 10 | 51,075 (43,141–161,353) | 443 | 1.50 | 3.13 | 5.16 | 10.88 |
-| 100 | 82,241 (51,099–165,102) | 700 | 0.67 | 1.57 | 8.55 | 8.55 |
-| 1,000 | 51,037 (50,162–165,015) | 434 | 1.10 | 4.17 | 9.49 | 9.49 |
+| 10 | 136,534 (128,435–149,875) | 1,183 | 0.55 | 0.60 | 0.70 | 0.76 |
+| 100 | 136,788 (128,652–154,322) | 1,165 | 0.56 | 0.59 | 0.65 | 0.69 |
+| 1,000 | 132,729 (128,982–150,550) | 1,129 | 0.58 | 0.62 | 0.66 | 0.67 |
 
-The inference service over loopback HTTP, one window per request: p50 3.44 ms, p95
-3.94 ms, p99 8.93 ms over 2,000 requests. That hop is not in the figures above.
+The inference service over loopback HTTP, one window per request: p50 0.98 ms, p95
+1.05 ms, p99 1.10 ms over 2,000 requests. That hop is not in the figures above.
 
 Hardware: Apple M5 (10 cores, one used), 16 GB, macOS 26, Python 3.12.13, LightGBM
 4.6.0. Raw runs: [`results/phase6_streaming_bench.json`](results/phase6_streaming_bench.json).
 
-**Fleet size does not change the cost per reading between 10 and 1,000 engines.**
-The variation in the table is not a scaling effect. Rounds fall into two clusters,
-about 50,000 and about 160,000 readings a second, and which cluster a round lands in
-depends on when it ran, not on its size: round 2 was fast at every size, rounds 4 and
-5 slow at every size. That is consistent with macOS moving an unpinned process
-between performance and efficiency cores, which I cannot control on this machine. So
-the figure to rely on is the slowest round, 43,141 readings a second, and the sizes
-are interleaved so the drift cannot pose as a trend.
+**Fleet size does not change the cost per reading between 10 and 1,000 engines.** The
+slowest round here is 128,435 readings a second.
+
+**This machine's speed is not stable, and that matters more than the table.** The
+v1.0.0 run on the same laptop
+([`phase6_streaming_bench.json` at v1.0.0](https://github.com/pavan-dangeti/Prognos/blob/v1.0.0/results/phase6_streaming_bench.json))
+had rounds in two clusters, about 50,000 and about 160,000 readings a second, decided
+by when a round ran rather than its size; its slowest round was 43,141. This run had
+every round in the fast cluster, and its HTTP figures are a third of v1.0.0's, which no
+code change made faster. Both are consistent with macOS moving an unpinned process
+between performance and efficiency cores, which I cannot control here. So the planning
+figure stays the slowest round either run has seen, 43,141 readings a second, and the
+sizes are interleaved so the drift cannot pose as a trend. Comparing the two runs
+cannot isolate what tracing and shift tracking cost; only an instrumented run on a
+pinned core could.
 
 **Measuring this found the detector being fed the wrong data.** As Phase 5 shipped
 it, the live path handed the fault detector every raw reading, about 11,000 per
@@ -186,7 +196,10 @@ What the system does not yet do:
 - **No like-for-like published comparison.** The published DS02 split needs engines in
   the closed final test group. The run that avoids them is not comparable, for reasons
   listed with it.
-- **Not yet built:** OpenTelemetry tracing and a hosted demo.
+- **Not yet built:** a hosted demo.
+- **The seven-service stack has not been run.** Jaeger was added to compose in Phase
+  6C, and Docker Desktop on the build machine was failing throughout. The stack is
+  checked by `tests/test_ops_config.py` and CI's image build, not by bringing it up.
 - **Latency is measured on a laptop against a replay,** at accelerated time, not on an
   aircraft datalink, and the HTTP figure is loopback only.
 - **Maintenance is assumed schedulable at any threshold.** Real maintenance has
@@ -402,7 +415,7 @@ fleet, with the S5 coverage check actually implemented rather than merely specif
 
 ```bash
 uv run prognos stream --config configs/base.yaml --out results/phase5_streaming.json
-docker compose up -d        # ingestion, inference, dashboard, Prometheus, Grafana
+docker compose up -d        # ingestion, inference, alerting, dashboard, Prometheus, Grafana, Jaeger
 ```
 
 All 19 cross-validation engines: 100,000 scored predictions, 91 maintenance alerts. The
@@ -528,6 +541,25 @@ running the thing, which is the argument for running it.
 inference mounts it. Without it the service stays unready, which is the right
 behaviour: no calibrator means no interval, and an interval-free prediction service is
 worse than one that refuses traffic.
+
+### Tracing across services
+
+```bash
+OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318 uv run prognos serve --component inference
+```
+
+Every process installs an OpenTelemetry tracer named for its service and exports over
+OTLP when an endpoint is set. Each HTTP request is a server span that continues the
+caller's trace, and `RemotePredictor` sends `traceparent`, so a prediction made through
+the inference service is one trace: `pipeline.window`, then `inference.remote_predict`,
+then the service's `POST /predict` and its `inference.predict`. Spans are per window,
+never per reading. JSON log lines carry the trace and span ids. In compose the services
+export to Jaeger, which Grafana reads; `tests/test_tracing.py` asserts the single trace
+across the socket.
+
+**That assertion found that no trace had ever crossed the socket.** `urllib` sends the
+header as `Traceparent`, the propagator's lookup was case-sensitive, and every server
+span began a new trace. Header names are now lower-cased before extraction.
 
 ## The fleet view, and a cost panel that does not recompute anything
 
