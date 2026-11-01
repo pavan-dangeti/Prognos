@@ -157,3 +157,33 @@ def test_seed_summaries_are_mean_and_t_interval() -> None:
     # std 0.7071, t(0.975, 4) = 2.776: half-width 2.776 * 0.7071 / sqrt(5) = 0.878
     assert row["ci_high"] - row["mean"] == pytest.approx(0.878, abs=1e-3)
     assert row["values"] == [6.0, 7.0, 8.0, 7.0, 7.0]
+
+
+def test_the_readme_quotes_the_seeded_run() -> None:
+    seeded = Path("results/final_ds02_seeds.json")
+    if not seeded.exists():
+        pytest.skip("the seeded run has not happened")
+    summary = json.loads(seeded.read_text())["summary"]
+    single = json.loads(Path("results/final_ds02.json").read_text())["ours"]
+    readme = " ".join(Path("README.md").read_text().split())
+
+    def cell(variant: str, name: str) -> str:
+        a = summary[variant][name]["all"]
+        return f"{a['mean']:.2f} [{a['ci_low']:.2f}, {a['ci_high']:.2f}]"
+
+    for name in ("transformer", "cnn", "lightgbm"):
+        line = (
+            f"| `{name}` | {cell('without_cycle', name)} "
+            f"| {single['without_cycle'][name]['rmse']['all']:.2f} "
+            f"| {cell('with_cycle', name)} | {single['with_cycle'][name]['rmse']['all']:.2f} |"
+        )
+        assert line in readme, line
+
+
+def test_the_first_seed_reproduces_the_single_seed_run() -> None:
+    seeded = Path("results/final_ds02_seeds.json")
+    if not seeded.exists():
+        pytest.skip("the seeded run has not happened")
+    first = json.loads(seeded.read_text())["runs"][0]["ours"]
+    single = json.loads(Path("results/final_ds02.json").read_text())["ours"]
+    assert first == single

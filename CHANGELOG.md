@@ -4,6 +4,29 @@ All notable changes to this project. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [semantic versioning](https://semver.org/).
 
+## [1.1.1] - 2026-11-01
+
+### Added
+
+- **`prognos final-ds02-seeds`**: the frozen final DS02 comparison over five seeds, with
+  each RMSE as a mean and t-based 95% interval. Models, features and settings
+  unchanged; the first seed reproduces the 1.1.0 single-seed result exactly.
+  Sensor-only Transformer 6.49 [6.20, 6.78] against the published Transformer's 6.54.
+- ADR-0007 (tuning on development engines, reporting on held-out ones), ADR-0008 (MLflow
+  with a local SQLite registry) and ADR-0009 (per-engine operating envelopes).
+
+### Corrected
+
+- 1.1.0 said the cycle input made every model worse on the published split. Over five
+  seeds that holds for the Transformer and LightGBM; for the CNN the intervals overlap
+  and the difference is not shown. The single-seed CNN figure, 6.69, was one of its two
+  best seeds; its five-seed mean is 7.63.
+
+### Security
+
+- The commit adding `prognos final-ds02` (7970e9c), whose automated security review did
+  not complete in 1.1.0, was reviewed: no findings.
+
 ## [1.1.0] - 2026-11-01
 
 Reliability, MLOps and an honest published comparison: the detectors are tuned on
@@ -160,5 +183,6 @@ Merged as pull requests before the first release:
   leakage test.
 - **Phase 0**: design document and architecture decision records.
 
+[1.1.1]: https://github.com/pavan-dangeti/Prognos/releases/tag/v1.1.1
 [1.1.0]: https://github.com/pavan-dangeti/Prognos/releases/tag/v1.1.0
 [1.0.0]: https://github.com/pavan-dangeti/Prognos/releases/tag/v1.0.0

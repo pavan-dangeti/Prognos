@@ -28,7 +28,7 @@ on an Apple M5 with 16 GB (macOS, Python 3.12.13). `tests/test_results.py` and
 | How fast is the live path? | p99 0.65–0.70 ms per updated prediction; at least 128,435 readings/s in this run, 43,141 in v1.0.0's | — | Real engines interleaved at fleets of 10, 100 and 1,000, 5 rounds | `prognos bench` → [`phase6_streaming_bench.json`](results/phase6_streaming_bench.json) |
 | Are sensor faults named? | 4 of 4 injected faults named, clean control | — | Each fault injected alone into a clean engine | `prognos stream --faults` → [`phase5_faults.json`](results/phase5_faults.json) |
 | Does drift detection stay quiet on healthy engines? | 0 of 9 held-out engines alarmed | 4 of 9 before tuning | Tuned on 10 development engines only, judged on 9 held-out | `prognos drift-study` → [`phase6_drift.json`](results/phase6_drift.json) |
-| How does it compare with published DS02 results? | Sensor-only Transformer 6.47 RMSE on units 11, 14 and 15 | Published Transformer 6.54, best published (THGNN) 5.59 | The published split, run once with the code frozen; the cycle input removed | `prognos final-ds02` → [`final_ds02.json`](results/final_ds02.json) |
+| How does it compare with published DS02 results? | Sensor-only Transformer 6.49 RMSE (95% CI 6.20–6.78, 5 seeds) on units 11, 14 and 15 | Published Transformer 6.54, best published (THGNN) 5.59 | The published split, code frozen, cycle input removed, 5 seeds | `prognos final-ds02-seeds` → [`final_ds02_seeds.json`](results/final_ds02_seeds.json) |
 | Does the system name its own failures? | 5 of 5 provoked failures named | Clean control names nothing | Inference outage, operating shift beyond and within the fleet, silence, late data, on real engines | `prognos failures` → [`phase6_failures.json`](results/phase6_failures.json) |
 
 Three results go against what was hoped for and are reported as they came out: acting
@@ -199,8 +199,8 @@ What the system does not yet do:
   two flights outside in a row before it opens, which ordinary scatter needs to be kept
   out by. Every other shift tested, inside or beyond the fleet, is named with one alert.
 - **The published comparison is close, not identical.** The full DS02 split and
-  sensor-only inputs now match, but it is one seed against a mean of five subsamples,
-  and the published table does not state its sampling or what one RMSE sample is.
+  sensor-only inputs now match, and five seeds give an interval, but the published
+  table does not state its sampling or what one RMSE sample is.
 - **The final test group is partly open.** DS02 units 5, 11 and 20 were opened once for
   the published comparison. The other seven closed engines have still not been scored.
 - **Not yet built:** a hosted demo.
@@ -895,18 +895,43 @@ variant: sensors only, as the published models are described.
 RMSE in cycles over 11,649 test windows; published figures as printed in
 arXiv:2405.04336v3, Table 5.
 
-**On the published split, the sensor-only Transformer lands among the published
-results, not above them.** 6.47 against 6.54 for the published Transformer and 6.99
-for the 2D-CNN, behind the best published model, THGNN at 5.59. It is one seed against
-the table's mean of five subsamples, with a different sampling, so a difference of
-0.07 says the two are comparable and nothing more.
+### The same run over five seeds
 
-**The cycle input that flattered the earlier comparison hurts here.** Every model is
-worse with it on the full split, driven by unit 11, where the cycle-only baseline
-scores 15.68. Engine age predicts remaining life only for engines whose lives resemble
-the training engines'; unit 11's does not. The restricted comparison's lower numbers
-were the age input working on two convenient engines, which is what that section
-warned.
+```bash
+uv run prognos final-ds02-seeds    # -> results/final_ds02_seeds.json
+```
+
+The frozen comparison, called once per seed with nothing else changed: the configured
+seed and the next four. The first run reproduces the single-seed result above exactly.
+RMSE over all three test units, mean and t-based 95% interval across the five seeds:
+
+| model | sensors only, 5 seeds | single seed | sensors and cycle, 5 seeds | single seed |
+| --- | --- | --- | --- | --- |
+| `transformer` | 6.49 [6.20, 6.78] | 6.47 | 7.50 [7.01, 7.99] | 7.06 |
+| `cnn` | 7.63 [6.56, 8.70] | 6.69 | 7.77 [7.17, 8.36] | 8.06 |
+| `lightgbm` | 10.44 [10.43, 10.45] | 10.44 | 10.89 [10.86, 10.92] | 10.89 |
+
+The interval measures what the seed alone moves: the split, data and configuration
+are the same in every run. It says how far apart two models must be before one seed
+could not have made the difference, not how they would do on other engines.
+
+**On the published split, the sensor-only Transformer lands among the published
+results, not above them.** 6.49 [6.20, 6.78] over five seeds. The published
+Transformer's 6.54 is inside that interval; the best published model, THGNN at 5.59, is
+clearly better. The published table is itself a mean of five subsamples with an
+unstated sampling, so "comparable" is the strongest claim this supports.
+
+**The single seed flattered the CNN.** Its 6.69 was one of its two best seeds; across
+five it averages 7.63, with the widest interval of any model, 6.56 to 8.70.
+
+**The cycle input hurts the Transformer and LightGBM, not shown for the CNN.** The
+single-seed table said every model was worse with it. Over five seeds the Transformer
+(7.50 against 6.49) and LightGBM (10.89 against 10.44) are, with intervals that do not
+overlap; the CNN's intervals overlap, so for it the difference is not shown. The cause
+is unit 11, where the cycle-only baseline scores 15.68: engine age predicts remaining
+life only for engines whose lives resemble the training engines'. The restricted
+comparison's lower numbers were the age input working on two convenient engines, which
+is what that section warned.
 
 **The served model is the weakest learned model here.** LightGBM scores 10.44 without
 the cycle and 10.89 with it, against 6.47 for the Transformer. The trade-off for
