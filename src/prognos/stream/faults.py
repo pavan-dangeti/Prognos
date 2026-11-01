@@ -86,41 +86,132 @@ def operating_envelope(
     return (low - pad).astype(np.float32), (high + pad).astype(np.float32)
 
 
-def outside_envelope(
-    row: npt.NDArray[np.float32],
-    envelope: tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]],
-    unit: int,
-) -> DegradedState | None:
-    """An `operating_shift` if any flight condition in `row` is outside the envelope.
+Envelope = tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]
 
-    Not a sensor fault: the descriptors are read correctly, the engine is simply
-    somewhere the model has never seen, so its interval was calibrated on a different
-    population. Judged on every reading rather than once a cycle, because a cycle's
-    first reading is taken on the ground and a shift at altitude never reaches it.
+
+class ShiftTracker:
+    """Names an engine flying outside the conditions its prediction can be trusted in.
+
+    Two envelopes, judged per flight on that flight's lowest and highest flight
+    conditions. The fleet envelope is what the serving model was fitted on. The
+    engine's own is learned from its first `learn_cycles` flights and widened by
+    `margin` of its range: the fleet envelope alone could not see a short-haul engine
+    suddenly flying long-haul altitudes, because long-haul engines are in the fleet.
+
+    `persistence` flights outside are needed to open the state and `release` flights
+    fully inside to close it, so one shift is one event and one alert, not one per
+    flight that happens to cross the line. Both, and the margin and learning period,
+    are chosen by `prognos envelope-study` on development engines.
     """
-    lower, upper = envelope
-    values = row[: lower.size]
-    outside = np.flatnonzero(np.isfinite(values) & ((values < lower) | (values > upper)))
-    if outside.size == 0:
-        return None
-    channel = int(outside[0])
-    value = float(values[channel])
-    return DegradedState(
-        state="operating_shift",
-        engine=unit,
-        channel=channel,
-        detail=(
-            f"{channel_of(channel)} at {value:.4g}, outside the fitted range "
-            f"[{lower[channel]:.4g}, {upper[channel]:.4g}]"
-        ),
-        details={
-            "engine": unit,
-            "channel": channel,
-            "value": value,
-            "lower": float(lower[channel]),
-            "upper": float(upper[channel]),
-        },
+
+    __slots__ = (
+        "_fleet",
+        "_flights",
+        "_inside_run",
+        "_learn_cycles",
+        "_margin",
+        "_open",
+        "_outside_run",
+        "_own",
+        "_persistence",
+        "_release",
+        "_seen_high",
+        "_seen_low",
+        "_unit",
     )
+
+    def __init__(
+        self,
+        unit: int,
+        fleet: Envelope | None,
+        learn_cycles: int = 10,
+        margin: float = 0.1,
+        persistence: int = 2,
+        release: int = 5,
+    ) -> None:
+        """A tracker for one engine. `learn_cycles=0` disables the engine's own envelope.
+
+        The defaults are the study's choice, recorded in `results/phase6_envelope.json`.
+        """
+        self._unit = unit
+        self._fleet = fleet
+        self._learn_cycles = learn_cycles
+        self._margin = margin
+        self._persistence = persistence
+        self._release = release
+        self._flights = 0
+        self._seen_low: npt.NDArray[np.float32] | None = None
+        self._seen_high: npt.NDArray[np.float32] | None = None
+        self._own: Envelope | None = None
+        self._outside_run = 0
+        self._inside_run = 0
+        self._open: DegradedState | None = None
+
+    @property
+    def open(self) -> DegradedState | None:
+        """The shift currently open, if any."""
+        return self._open
+
+    def _breach(
+        self, low: npt.NDArray[np.float32], high: npt.NDArray[np.float32]
+    ) -> DegradedState | None:
+        """The first envelope this flight leaves, fleet before own."""
+        for name, envelope in (("fleet", self._fleet), ("own", self._own)):
+            if envelope is None:
+                continue
+            lower, upper = envelope
+            for channel in range(lower.size):
+                if low[channel] < lower[channel] or high[channel] > upper[channel]:
+                    value = float(high[channel] if high[channel] > upper[channel] else low[channel])
+                    whose = "the fleet's fitted" if name == "fleet" else "this engine's own"
+                    return DegradedState(
+                        state="operating_shift",
+                        engine=self._unit,
+                        channel=channel,
+                        detail=(
+                            f"{channel_of(channel)} at {value:.4g}, outside {whose} range "
+                            f"[{lower[channel]:.4g}, {upper[channel]:.4g}]"
+                        ),
+                        details={
+                            "engine": self._unit,
+                            "channel": channel,
+                            "value": value,
+                            "envelope": name,
+                            "lower": float(lower[channel]),
+                            "upper": float(upper[channel]),
+                        },
+                    )
+        return None
+
+    def observe_flight(self, low: npt.NDArray[np.float32], high: npt.NDArray[np.float32]) -> bool:
+        """Judge one completed flight; return True if the open state changed."""
+        self._flights += 1
+        breach = self._breach(low, high)
+        if self._own is None and self._learn_cycles:
+            # Learning: the flight extends the engine's own record, unless the fleet
+            # envelope already says it is abnormal, which would teach the wrong range.
+            if breach is None:
+                self._seen_low = low if self._seen_low is None else np.minimum(self._seen_low, low)
+                self._seen_high = (
+                    high if self._seen_high is None else np.maximum(self._seen_high, high)
+                )
+            if self._flights >= self._learn_cycles and self._seen_low is not None:
+                assert self._seen_high is not None
+                pad = (self._seen_high - self._seen_low) * np.float32(self._margin)
+                self._own = (self._seen_low - pad, self._seen_high + pad)
+        if breach is not None:
+            self._outside_run += 1
+            self._inside_run = 0
+            if self._open is None and self._outside_run >= self._persistence:
+                self._open = breach
+                return True
+        else:
+            self._inside_run += 1
+            self._outside_run = 0
+            if self._open is not None and self._inside_run >= self._release:
+                self._open = None
+                return True
+        return False
 
 
 def channel_of(channel: int) -> str:
@@ -576,8 +667,8 @@ __all__ = [
     "FaultDetector",
     "FaultInjector",
     "InjectedFault",
+    "ShiftTracker",
     "alert_payload",
     "channel_of",
     "operating_envelope",
-    "outside_envelope",
 ]

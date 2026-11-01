@@ -39,7 +39,11 @@ def predictor() -> RulPredictor:
 def stream(n_cycles: int = 30, seed: int = 1) -> tuple[np.ndarray, np.ndarray]:
     """Healthy readings around 100, several per cycle."""
     cycles = np.repeat(np.arange(1, n_cycles + 1), ROWS_PER_CYCLE).astype(np.int64)
-    rows = np.random.default_rng(seed).normal(100.0, 5.0, size=(cycles.size, N_CHANNELS))
+    rng = np.random.default_rng(seed)
+    rows = rng.normal(100.0, 5.0, size=(cycles.size, N_CHANNELS))
+    # Flight conditions are bounded, as real ones are: unbounded noise would leave any
+    # envelope learned from an engine's early flights sooner or later.
+    rows[:, :4] = rng.uniform(90.0, 110.0, size=(cycles.size, 4))
     return cycles, rows.astype(np.float32)
 
 
@@ -222,7 +226,7 @@ class TestScenarioHarness:
         assert result["passed"], result
         assert result["predictions_during"] == 0 < result["predictions_after"]
 
-    def test_a_shift_beyond_the_fleet_is_named_and_within_it_is_not(self) -> None:
+    def test_a_shift_is_named_beyond_the_fleet_and_within_it(self) -> None:
         from prognos.failures import operating_shift
 
         # Low in the fleet's altitude range, like the short-haul engine that exposed the
@@ -233,8 +237,10 @@ class TestScenarioHarness:
         beyond = operating_shift(predictor(), CONFIG, self.ENVELOPE, short_haul, True)
         within = operating_shift(predictor(), CONFIG, self.ENVELOPE, short_haul, False)
         assert beyond["passed"] and beyond["openings"] >= 1
+        # Inside the fleet's envelope, outside the engine's own: named since the
+        # per-engine envelope, and the reason that envelope exists.
         assert within["engine_max_altitude_after"] <= self.ENVELOPE[1][0]
-        assert not within["passed"]
+        assert within["passed"] and within["openings"] == 1
 
     def test_silence_is_named_on_the_engine_that_stopped(self) -> None:
         from prognos.failures import delayed

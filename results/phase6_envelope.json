@@ -1,0 +1,3077 @@
+{
+  "chosen": {
+    "learn": 10,
+    "margin": 0.1,
+    "persistence": 2,
+    "release": 5
+  },
+  "command": "prognos envelope-study",
+  "development": {
+    "after": {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.1,
+        "persistence": 2,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    "before": {
+      "beyond_fleet": {
+        "alerts_per_event": 8.1,
+        "detected": 10,
+        "max_alerts_per_event": 12,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "learn": 0,
+        "margin": 0.0,
+        "persistence": 1,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 6.0,
+        "detected": 5,
+        "max_alerts_per_event": 14,
+        "rate": 0.5
+      }
+    }
+  },
+  "development_engines": [
+    "DS01-005/unit005",
+    "DS01-005/unit009",
+    "DS01-005/unit001",
+    "DS01-005/unit003",
+    "DS02-006/unit002",
+    "DS02-006/unit014",
+    "DS02-006/unit015",
+    "DS06/unit010",
+    "DS06/unit001",
+    "DS06/unit009"
+  ],
+  "final_test_group": {
+    "engines": [
+      "DS01-005/unit004",
+      "DS01-005/unit008",
+      "DS02-006/unit005",
+      "DS02-006/unit011",
+      "DS02-006/unit020",
+      "DS06/unit003",
+      "DS06/unit004",
+      "DS06/unit005",
+      "DS06/unit006",
+      "DS06/unit008"
+    ],
+    "status": "closed"
+  },
+  "fleet_envelope": {
+    "lower": [
+      1399.4000244140625,
+      0.1754549890756607,
+      20.478368759155273,
+      416.7552795410156
+    ],
+    "upper": [
+      36634.6015625,
+      0.7755930423736572,
+      92.02082824707031,
+      529.8619384765625
+    ]
+  },
+  "generated_at": "2026-11-01",
+  "grid": [
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 4.4,
+        "detected": 10,
+        "max_alerts_per_event": 13,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit003",
+          "DS02-006/unit002",
+          "DS02-006/unit015",
+          "DS06/unit010",
+          "DS06/unit001",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 7
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.1,
+        "persistence": 1,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.2222222222222223,
+        "detected": 9,
+        "max_alerts_per_event": 2,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.3333333333333333,
+        "detected": 9,
+        "max_alerts_per_event": 4,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit003",
+          "DS02-006/unit002",
+          "DS02-006/unit015",
+          "DS06/unit010",
+          "DS06/unit001",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 7
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.1,
+        "persistence": 1,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.3333333333333333,
+        "detected": 9,
+        "max_alerts_per_event": 4,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit003",
+          "DS02-006/unit002",
+          "DS02-006/unit015",
+          "DS06/unit010",
+          "DS06/unit001",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 7
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.1,
+        "persistence": 1,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.1428571428571428,
+        "detected": 7,
+        "max_alerts_per_event": 2,
+        "rate": 0.7
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit003",
+          "DS02-006/unit002",
+          "DS02-006/unit015",
+          "DS06/unit010",
+          "DS06/unit001",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 7
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.1,
+        "persistence": 1,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 7,
+        "max_alerts_per_event": 1,
+        "rate": 0.7
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 3.4,
+        "detected": 10,
+        "max_alerts_per_event": 11,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.1,
+        "persistence": 2,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.2,
+        "detected": 10,
+        "max_alerts_per_event": 2,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.1,
+        "detected": 10,
+        "max_alerts_per_event": 2,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.1,
+        "persistence": 2,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.1,
+        "persistence": 2,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.1,
+        "persistence": 2,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 2.888888888888889,
+        "detected": 9,
+        "max_alerts_per_event": 7,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.1,
+        "persistence": 3,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.2,
+        "detected": 10,
+        "max_alerts_per_event": 2,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.1111111111111112,
+        "detected": 9,
+        "max_alerts_per_event": 2,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.1,
+        "persistence": 3,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.1,
+        "persistence": 3,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.1,
+        "persistence": 3,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 5.4,
+        "detected": 10,
+        "max_alerts_per_event": 14,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit003",
+          "DS02-006/unit015",
+          "DS06/unit010",
+          "DS06/unit001",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 6
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.25,
+        "persistence": 1,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 2.0,
+        "detected": 9,
+        "max_alerts_per_event": 4,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.6,
+        "detected": 10,
+        "max_alerts_per_event": 4,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit003",
+          "DS02-006/unit015",
+          "DS06/unit010",
+          "DS06/unit001",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 6
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.25,
+        "persistence": 1,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.3333333333333333,
+        "detected": 9,
+        "max_alerts_per_event": 4,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit003",
+          "DS02-006/unit015",
+          "DS06/unit010",
+          "DS06/unit001",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 6
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.25,
+        "persistence": 1,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.25,
+        "detected": 8,
+        "max_alerts_per_event": 3,
+        "rate": 0.8
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit003",
+          "DS02-006/unit015",
+          "DS06/unit010",
+          "DS06/unit001",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 6
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.25,
+        "persistence": 1,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 8,
+        "max_alerts_per_event": 1,
+        "rate": 0.8
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 3.3,
+        "detected": 10,
+        "max_alerts_per_event": 7,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.25,
+        "persistence": 2,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.9,
+        "detected": 10,
+        "max_alerts_per_event": 4,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.4,
+        "detected": 10,
+        "max_alerts_per_event": 5,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.25,
+        "persistence": 2,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.1,
+        "detected": 10,
+        "max_alerts_per_event": 2,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.25,
+        "persistence": 2,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.25,
+        "persistence": 2,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 2.6666666666666665,
+        "detected": 9,
+        "max_alerts_per_event": 6,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.25,
+        "persistence": 3,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.8,
+        "detected": 10,
+        "max_alerts_per_event": 4,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.2222222222222223,
+        "detected": 9,
+        "max_alerts_per_event": 3,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.25,
+        "persistence": 3,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.1111111111111112,
+        "detected": 9,
+        "max_alerts_per_event": 2,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.25,
+        "persistence": 3,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.25,
+        "persistence": 3,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 5.4,
+        "detected": 10,
+        "max_alerts_per_event": 12,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.5,
+        "persistence": 1,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 3.7777777777777777,
+        "detected": 9,
+        "max_alerts_per_event": 14,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 2.3,
+        "detected": 10,
+        "max_alerts_per_event": 6,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.5,
+        "persistence": 1,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.8888888888888888,
+        "detected": 9,
+        "max_alerts_per_event": 5,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.5,
+        "persistence": 1,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.4444444444444444,
+        "detected": 9,
+        "max_alerts_per_event": 3,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.5,
+        "persistence": 1,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 2.888888888888889,
+        "detected": 9,
+        "max_alerts_per_event": 7,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.5,
+        "persistence": 2,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 2.6,
+        "detected": 10,
+        "max_alerts_per_event": 7,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.5555555555555556,
+        "detected": 9,
+        "max_alerts_per_event": 5,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.5,
+        "persistence": 2,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.2222222222222223,
+        "detected": 9,
+        "max_alerts_per_event": 2,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.5,
+        "persistence": 2,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.1111111111111112,
+        "detected": 9,
+        "max_alerts_per_event": 2,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.5,
+        "persistence": 2,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 2.0,
+        "detected": 7,
+        "max_alerts_per_event": 4,
+        "rate": 0.7
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.5,
+        "persistence": 3,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 2.4,
+        "detected": 10,
+        "max_alerts_per_event": 6,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.2857142857142858,
+        "detected": 7,
+        "max_alerts_per_event": 3,
+        "rate": 0.7
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.5,
+        "persistence": 3,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.1428571428571428,
+        "detected": 7,
+        "max_alerts_per_event": 2,
+        "rate": 0.7
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.5,
+        "persistence": 3,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 7,
+        "max_alerts_per_event": 1,
+        "rate": 0.7
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.5,
+        "persistence": 3,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 4.5,
+        "detected": 10,
+        "max_alerts_per_event": 15,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit003",
+          "DS06/unit001",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 4
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.1,
+        "persistence": 1,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.6666666666666667,
+        "detected": 9,
+        "max_alerts_per_event": 5,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.3333333333333333,
+        "detected": 9,
+        "max_alerts_per_event": 4,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit003",
+          "DS06/unit001",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 4
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.1,
+        "persistence": 1,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.3333333333333333,
+        "detected": 9,
+        "max_alerts_per_event": 4,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit003",
+          "DS06/unit001",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 4
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.1,
+        "persistence": 1,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.2222222222222223,
+        "detected": 9,
+        "max_alerts_per_event": 3,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit003",
+          "DS06/unit001",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 4
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.1,
+        "persistence": 1,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 3.2,
+        "detected": 10,
+        "max_alerts_per_event": 11,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.1,
+        "persistence": 2,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.6,
+        "detected": 10,
+        "max_alerts_per_event": 5,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.1,
+        "detected": 10,
+        "max_alerts_per_event": 2,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.1,
+        "persistence": 2,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.1,
+        "persistence": 2,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.1,
+        "persistence": 2,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 2.888888888888889,
+        "detected": 9,
+        "max_alerts_per_event": 7,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.1,
+        "persistence": 3,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.5,
+        "detected": 10,
+        "max_alerts_per_event": 4,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.1111111111111112,
+        "detected": 9,
+        "max_alerts_per_event": 2,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.1,
+        "persistence": 3,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.1,
+        "persistence": 3,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.1,
+        "persistence": 3,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 5.2,
+        "detected": 10,
+        "max_alerts_per_event": 12,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.25,
+        "persistence": 1,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 3.111111111111111,
+        "detected": 9,
+        "max_alerts_per_event": 14,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 2.4,
+        "detected": 10,
+        "max_alerts_per_event": 6,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.25,
+        "persistence": 1,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.7777777777777777,
+        "detected": 9,
+        "max_alerts_per_event": 5,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.25,
+        "persistence": 1,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.3333333333333333,
+        "detected": 9,
+        "max_alerts_per_event": 3,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.25,
+        "persistence": 1,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 2.9,
+        "detected": 10,
+        "max_alerts_per_event": 7,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.25,
+        "persistence": 2,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 2.2,
+        "detected": 10,
+        "max_alerts_per_event": 7,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.7,
+        "detected": 10,
+        "max_alerts_per_event": 5,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.25,
+        "persistence": 2,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.2,
+        "detected": 10,
+        "max_alerts_per_event": 2,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.25,
+        "persistence": 2,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.1,
+        "detected": 10,
+        "max_alerts_per_event": 2,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.25,
+        "persistence": 2,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 2.125,
+        "detected": 8,
+        "max_alerts_per_event": 5,
+        "rate": 0.8
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.25,
+        "persistence": 3,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 2.1,
+        "detected": 10,
+        "max_alerts_per_event": 6,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.375,
+        "detected": 8,
+        "max_alerts_per_event": 3,
+        "rate": 0.8
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.25,
+        "persistence": 3,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.125,
+        "detected": 8,
+        "max_alerts_per_event": 2,
+        "rate": 0.8
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.25,
+        "persistence": 3,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 8,
+        "max_alerts_per_event": 1,
+        "rate": 0.8
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.25,
+        "persistence": 3,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 5.2,
+        "detected": 10,
+        "max_alerts_per_event": 12,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.5,
+        "persistence": 1,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 3.7777777777777777,
+        "detected": 9,
+        "max_alerts_per_event": 14,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 2.3,
+        "detected": 10,
+        "max_alerts_per_event": 6,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.5,
+        "persistence": 1,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.8888888888888888,
+        "detected": 9,
+        "max_alerts_per_event": 5,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.5,
+        "persistence": 1,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.4444444444444444,
+        "detected": 9,
+        "max_alerts_per_event": 3,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.5,
+        "persistence": 1,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 2.875,
+        "detected": 8,
+        "max_alerts_per_event": 7,
+        "rate": 0.8
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.5,
+        "persistence": 2,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 2.6,
+        "detected": 10,
+        "max_alerts_per_event": 7,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.5,
+        "detected": 8,
+        "max_alerts_per_event": 5,
+        "rate": 0.8
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.5,
+        "persistence": 2,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.125,
+        "detected": 8,
+        "max_alerts_per_event": 2,
+        "rate": 0.8
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.5,
+        "persistence": 2,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 8,
+        "max_alerts_per_event": 1,
+        "rate": 0.8
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.5,
+        "persistence": 2,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 2.0,
+        "detected": 7,
+        "max_alerts_per_event": 4,
+        "rate": 0.7
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.5,
+        "persistence": 3,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 2.4,
+        "detected": 10,
+        "max_alerts_per_event": 6,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.2857142857142858,
+        "detected": 7,
+        "max_alerts_per_event": 3,
+        "rate": 0.7
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.5,
+        "persistence": 3,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.1428571428571428,
+        "detected": 7,
+        "max_alerts_per_event": 2,
+        "rate": 0.7
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.5,
+        "persistence": 3,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 7,
+        "max_alerts_per_event": 1,
+        "rate": 0.7
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 20,
+        "margin": 0.5,
+        "persistence": 3,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 5.1,
+        "detected": 10,
+        "max_alerts_per_event": 15,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit003",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 3
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.1,
+        "persistence": 1,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.8888888888888888,
+        "detected": 9,
+        "max_alerts_per_event": 5,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.3333333333333333,
+        "detected": 9,
+        "max_alerts_per_event": 4,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit003",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 3
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.1,
+        "persistence": 1,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.3333333333333333,
+        "detected": 9,
+        "max_alerts_per_event": 4,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit003",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 3
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.1,
+        "persistence": 1,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.2222222222222223,
+        "detected": 9,
+        "max_alerts_per_event": 3,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS01-005/unit003",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 3
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.1,
+        "persistence": 1,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 3.8,
+        "detected": 10,
+        "max_alerts_per_event": 11,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.1,
+        "persistence": 2,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.7,
+        "detected": 10,
+        "max_alerts_per_event": 5,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.1,
+        "detected": 10,
+        "max_alerts_per_event": 2,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.1,
+        "persistence": 2,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.1,
+        "persistence": 2,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.1,
+        "persistence": 2,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 3.4444444444444446,
+        "detected": 9,
+        "max_alerts_per_event": 7,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.1,
+        "persistence": 3,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.6,
+        "detected": 10,
+        "max_alerts_per_event": 4,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.1111111111111112,
+        "detected": 9,
+        "max_alerts_per_event": 2,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.1,
+        "persistence": 3,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.1,
+        "persistence": 3,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.1,
+        "persistence": 3,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 5.5,
+        "detected": 10,
+        "max_alerts_per_event": 12,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.25,
+        "persistence": 1,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 3.5555555555555554,
+        "detected": 9,
+        "max_alerts_per_event": 14,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 2.4,
+        "detected": 10,
+        "max_alerts_per_event": 6,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.25,
+        "persistence": 1,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.7777777777777777,
+        "detected": 9,
+        "max_alerts_per_event": 5,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.25,
+        "persistence": 1,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.3333333333333333,
+        "detected": 9,
+        "max_alerts_per_event": 3,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.25,
+        "persistence": 1,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 3.0,
+        "detected": 10,
+        "max_alerts_per_event": 7,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.25,
+        "persistence": 2,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 2.5,
+        "detected": 10,
+        "max_alerts_per_event": 7,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.7,
+        "detected": 10,
+        "max_alerts_per_event": 5,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.25,
+        "persistence": 2,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.2,
+        "detected": 10,
+        "max_alerts_per_event": 2,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.25,
+        "persistence": 2,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.1,
+        "detected": 10,
+        "max_alerts_per_event": 2,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.25,
+        "persistence": 2,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 2.125,
+        "detected": 8,
+        "max_alerts_per_event": 5,
+        "rate": 0.8
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.25,
+        "persistence": 3,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 2.4,
+        "detected": 10,
+        "max_alerts_per_event": 6,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.375,
+        "detected": 8,
+        "max_alerts_per_event": 3,
+        "rate": 0.8
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.25,
+        "persistence": 3,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.125,
+        "detected": 8,
+        "max_alerts_per_event": 2,
+        "rate": 0.8
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.25,
+        "persistence": 3,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 8,
+        "max_alerts_per_event": 1,
+        "rate": 0.8
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.25,
+        "persistence": 3,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 5.2,
+        "detected": 10,
+        "max_alerts_per_event": 12,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.5,
+        "persistence": 1,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 3.7777777777777777,
+        "detected": 9,
+        "max_alerts_per_event": 14,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 2.5,
+        "detected": 10,
+        "max_alerts_per_event": 6,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.5,
+        "persistence": 1,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.8888888888888888,
+        "detected": 9,
+        "max_alerts_per_event": 5,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.5,
+        "persistence": 1,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.4444444444444444,
+        "detected": 9,
+        "max_alerts_per_event": 3,
+        "rate": 0.9
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit005",
+          "DS06/unit009"
+        ],
+        "engines": 10,
+        "engines_alarmed": 2
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.5,
+        "persistence": 1,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 0.9
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 2.75,
+        "detected": 8,
+        "max_alerts_per_event": 7,
+        "rate": 0.8
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.5,
+        "persistence": 2,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 2.6,
+        "detected": 10,
+        "max_alerts_per_event": 7,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.75,
+        "detected": 8,
+        "max_alerts_per_event": 5,
+        "rate": 0.8
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.5,
+        "persistence": 2,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.125,
+        "detected": 8,
+        "max_alerts_per_event": 2,
+        "rate": 0.8
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.5,
+        "persistence": 2,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 8,
+        "max_alerts_per_event": 1,
+        "rate": 0.8
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.5,
+        "persistence": 2,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.6666666666666667,
+        "detected": 6,
+        "max_alerts_per_event": 3,
+        "rate": 0.6
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.5,
+        "persistence": 3,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 2.4,
+        "detected": 10,
+        "max_alerts_per_event": 6,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.3333333333333333,
+        "detected": 6,
+        "max_alerts_per_event": 3,
+        "rate": 0.6
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.5,
+        "persistence": 3,
+        "release": 3
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.1666666666666667,
+        "detected": 6,
+        "max_alerts_per_event": 2,
+        "rate": 0.6
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.5,
+        "persistence": 3,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 6,
+        "max_alerts_per_event": 1,
+        "rate": 0.6
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 10,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 30,
+        "margin": 0.5,
+        "persistence": 3,
+        "release": 10
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 10,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    }
+  ],
+  "hardware": "Darwin arm64 / arm / Python 3.12.13",
+  "held_out": {
+    "after": {
+      "beyond_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      },
+      "false_alarms": {
+        "alarmed_engines": [],
+        "engines": 9,
+        "engines_alarmed": 0
+      },
+      "settings": {
+        "learn": 10,
+        "margin": 0.1,
+        "persistence": 2,
+        "release": 5
+      },
+      "within_fleet": {
+        "alerts_per_event": 1.0,
+        "detected": 9,
+        "max_alerts_per_event": 1,
+        "rate": 1.0
+      }
+    },
+    "before": {
+      "beyond_fleet": {
+        "alerts_per_event": 8.375,
+        "detected": 8,
+        "max_alerts_per_event": 14,
+        "rate": 0.8888888888888888
+      },
+      "false_alarms": {
+        "alarmed_engines": [
+          "DS01-005/unit006",
+          "DS01-005/unit010",
+          "DS06/unit002",
+          "DS06/unit007"
+        ],
+        "engines": 9,
+        "engines_alarmed": 4
+      },
+      "settings": {
+        "learn": 0,
+        "margin": 0.0,
+        "persistence": 1,
+        "release": 1
+      },
+      "within_fleet": {
+        "alerts_per_event": 4.625,
+        "detected": 8,
+        "max_alerts_per_event": 11,
+        "rate": 0.8888888888888888
+      }
+    }
+  },
+  "held_out_engines": [
+    "DS01-005/unit006",
+    "DS01-005/unit007",
+    "DS01-005/unit002",
+    "DS01-005/unit010",
+    "DS02-006/unit016",
+    "DS02-006/unit018",
+    "DS02-006/unit010",
+    "DS06/unit002",
+    "DS06/unit007"
+  ],
+  "protocol": {
+    "grid": {
+      "learn": [
+        10,
+        20,
+        30
+      ],
+      "margin": [
+        0.1,
+        0.25,
+        0.5
+      ],
+      "persistence": [
+        1,
+        2,
+        3
+      ],
+      "release": [
+        1,
+        3,
+        5,
+        10
+      ]
+    },
+    "horizon_flights": 15,
+    "selection": "fewest development engines with any false alarm, then most within-fleet shifts named, then most beyond-fleet shifts named, then fewest alerts per event, then the most sensitive setting and the shortest release",
+    "shift_from_flight": 40
+  },
+  "shipped": {
+    "learn": 0,
+    "margin": 0.0,
+    "persistence": 1,
+    "release": 1
+  },
+  "versions": {
+    "h5py": "3.16.0",
+    "lightgbm": "4.6.0",
+    "numpy": "2.4.1",
+    "pandas": "3.0.1",
+    "pyarrow": "26.0.0",
+    "python": "3.12.13",
+    "scikit-learn": "1.8.0",
+    "torch": "2.10.0"
+  }
+}

@@ -634,14 +634,68 @@ def cmd_drift_study(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_failures(args: argparse.Namespace) -> int:
-    """Provoke system failures on real engines and record what was named."""
+def _serving_envelope(config: Config, data: WindowSource, cv_units: list[int]) -> Any:  # noqa: ANN401
+    """The fleet envelope the live replay uses: the serving model's own fit engines."""
     import numpy as np
 
-    from prognos.evaluate import build_folds, library_versions
-    from prognos.failures import run_failure_scenarios
     from prognos.policy_eval import split_fit_and_calibration
     from prognos.stream.faults import operating_envelope
+
+    groups = np.asarray(data.groups)
+    fit_mask, _calibration, _units = split_fit_and_calibration(
+        groups,
+        np.isin(groups, np.asarray(cv_units)),
+        seed=config.split.seed,
+        fraction=config.uncertainty.calibration_fraction,
+    )
+    return operating_envelope(data.subset(fit_mask).windows)
+
+
+def cmd_envelope_study(args: argparse.Namespace) -> int:
+    """Choose the operating-shift settings on development engines, judge on held-out."""
+    from prognos.envelope_study import study
+    from prognos.evaluate import build_folds, library_versions
+
+    config = load_config(Path(args.config))
+    data = load_windows(
+        config.data.parquet_dir,
+        config.window,
+        config.data.subdatasets,
+        cache_dir=config.data.parquet_dir.parent / "cache",
+    )
+    folds = build_folds(
+        data,
+        n_splits=config.split.n_splits,
+        test_fraction=config.split.test_fraction,
+        seed=config.split.seed,
+    )
+    cv_units = sorted({int(u) for f in folds for u in f.split.val_units})
+    labels = [data.group_labels[u] for u in cv_units]
+    envelope = _serving_envelope(config, data, cv_units)
+    report = study(Path(config.data.parquet_dir), labels, config.split.seed, envelope)
+    report.update(
+        {
+            "command": " ".join(["prognos", *sys.argv[1:]]),
+            "hardware": hardware_description(),
+            "versions": library_versions(),
+            "generated_at": date.today().isoformat(),
+            "final_test_group": {
+                "engines": sorted(data.group_labels[u].label() for u in folds[0].split.test_units),
+                "status": "closed",
+            },
+        }
+    )
+    out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    print(f"wrote {out_path}; chosen {report['chosen']}", flush=True)
+    return 0
+
+
+def cmd_failures(args: argparse.Namespace) -> int:
+    """Provoke system failures on real engines and record what was named."""
+    from prognos.evaluate import build_folds, library_versions
+    from prognos.failures import run_failure_scenarios
     from prognos.stream.pipeline import PipelineConfig
 
     config = load_config(Path(args.config))
@@ -658,15 +712,7 @@ def cmd_failures(args: argparse.Namespace) -> int:
         seed=config.split.seed,
     )
     cv_units = sorted({int(u) for f in folds for u in f.split.val_units})
-    # The envelope the live replay uses: the serving model's own fit engines.
-    groups = np.asarray(data.groups)
-    fit_mask, _calibration, _units = split_fit_and_calibration(
-        groups,
-        np.isin(groups, np.asarray(cv_units)),
-        seed=config.split.seed,
-        fraction=config.uncertainty.calibration_fraction,
-    )
-    envelope = operating_envelope(data.subset(fit_mask).windows)
+    envelope = _serving_envelope(config, data, cv_units)
     pipeline_config = PipelineConfig(
         window_length=config.window.length,
         window_stride=config.window.stride,
@@ -923,6 +969,13 @@ def main(argv: list[str] | None = None) -> int:
     comparison.add_argument("--out", default="results/phase6_published_comparison.json")
     comparison.add_argument("--epochs", type=int, default=30)
     comparison.set_defaults(func=cmd_compare)
+
+    envelope_cmd = sub.add_parser(
+        "envelope-study", help="choose operating-shift settings on development engines"
+    )
+    envelope_cmd.add_argument("--config", default="configs/base.yaml")
+    envelope_cmd.add_argument("--out", default="results/phase6_envelope.json")
+    envelope_cmd.set_defaults(func=cmd_envelope_study)
 
     serve_cmd = sub.add_parser("serve", help="serve one streaming component over HTTP")
     serve_cmd.add_argument("--component", required=True, choices=list(COMPONENTS))

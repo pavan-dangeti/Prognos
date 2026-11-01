@@ -1,5 +1,5 @@
 {
-  "all_passed": false,
+  "all_passed": true,
   "command": "prognos failures",
   "engines": [
     "DS01-005/unit001",
@@ -34,7 +34,7 @@
     ],
     "status": "closed"
   },
-  "generated_at": "2026-10-31",
+  "generated_at": "2026-11-01",
   "hardware": "Darwin arm64 / arm / Python 3.12.13",
   "scenarios": [
     {
@@ -75,18 +75,10 @@
       "injected": "altitude raised from cycle 40 to a tenth of the fitted altitude range above the training fleet's highest",
       "opened": {
         "DS01-005/unit001": [
-          "operating_shift",
-          "operating_shift",
-          "operating_shift",
-          "operating_shift",
-          "operating_shift",
-          "operating_shift",
-          "operating_shift",
-          "operating_shift",
           "operating_shift"
         ]
       },
-      "openings": 9,
+      "openings": 1,
       "passed": true,
       "predictions": 3892,
       "scenario": "operating_shift",
@@ -102,9 +94,13 @@
         "operating_shift"
       ],
       "injected": "altitude raised from cycle 40 by half the fitted altitude range, staying inside the training fleet's",
-      "opened": {},
-      "openings": 0,
-      "passed": false,
+      "opened": {
+        "DS01-005/unit001": [
+          "operating_shift"
+        ]
+      },
+      "openings": 1,
+      "passed": true,
       "predictions": 3892,
       "scenario": "operating_shift_within_fleet",
       "step_feet": 17617.6015625

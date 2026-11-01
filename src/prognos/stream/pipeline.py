@@ -27,6 +27,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import numpy.typing as npt
 
+from prognos.schema import SCENARIO_DESCRIPTORS
 from prognos.stream.alerting import AlertingService, MaintenanceAlert
 from prognos.stream.coverage import CoverageMonitor, CoverageVerdict, Observation
 from prognos.stream.events import StreamStats, TelemetryBatch, validate_batch
@@ -35,8 +36,8 @@ from prognos.stream.faults import (
     FaultDetector,
     FaultInjector,
     InjectedFault,
+    ShiftTracker,
     alert_payload,
-    outside_envelope,
 )
 from prognos.stream.fleet import FleetView, engine_label
 from prognos.stream.inference import InferenceUnavailableError, Prediction, Predictor
@@ -81,6 +82,10 @@ class EngineReplay:
     coverage: list[float] = field(default_factory=list)
 
 
+#: The flight conditions lead every reading; the shift tracker judges only these.
+N_DESCRIPTORS = len(SCENARIO_DESCRIPTORS)
+
+
 @dataclass(slots=True)
 class _EngineState:
     """One engine's live stream: its window, its detector, and what it has raised."""
@@ -93,10 +98,11 @@ class _EngineState:
     #: Pipeline-level conditions, beside the detector's sensor faults.
     outage: DegradedState | None = None
     silent: DegradedState | None = None
-    shift: DegradedState | None = None
-    #: Whether any reading of the current cycle was outside the envelope; a shift
-    #: clears only after a whole cycle has stayed inside.
-    shifted_this_cycle: bool = False
+    shift: ShiftTracker | None = None
+    #: The current flight's lowest and highest flight conditions, handed to the shift
+    #: tracker when the flight ends.
+    flight_low: npt.NDArray[np.float32] | None = None
+    flight_high: npt.NDArray[np.float32] | None = None
     last_seen: float = 0.0
     #: Set when a replay reaches the end of an engine's recorded life, so the silence
     #: watchdog does not call an engine that has finished a stream that went quiet.
@@ -217,7 +223,8 @@ class StreamPipeline:
         for state in self._engines.values():
             if state.detector is not None:
                 states.extend(s.to_dict() for s in state.detector.active())
-            pipeline_states = (state.outage, state.silent, state.shift)
+            shift = state.shift.open if state.shift is not None else None
+            pipeline_states = (state.outage, state.silent, shift)
             states.extend(s.to_dict() for s in pipeline_states if s is not None)
         return states
 
@@ -251,6 +258,11 @@ class StreamPipeline:
                     stride=config.window_stride,
                 ),
                 detector=self._detector_for(key),
+                shift=(
+                    ShiftTracker(unit=key[1], fleet=self._envelope)
+                    if self._envelope is not None
+                    else None
+                ),
             )
             self._engines[key] = state
         return state
@@ -292,8 +304,8 @@ class StreamPipeline:
                 self._publish(key, state)
             return []
         new_cycle = cycle != state.detected_cycle
-        if self._envelope is not None:
-            self._check_envelope(key, state, row, new_cycle)
+        if state.shift is not None:
+            self._track_flight(key, state, row, new_cycle)
         detector = state.detector
         if detector is not None and new_cycle:
             detector.observe(cycle, row)
@@ -373,32 +385,31 @@ class StreamPipeline:
             )
         return predictions
 
-    def _check_envelope(
+    def _track_flight(
         self,
         key: tuple[str | None, int],
         state: _EngineState,
         row: npt.NDArray[np.float32],
         new_cycle: bool,
     ) -> None:
-        """Open `operating_shift` on any reading outside the envelope.
-
-        Released only after a whole cycle with every reading inside, so a flight that
-        leaves the envelope at cruise is not called back inside by its next reading on
-        the ground.
-        """
-        assert self._envelope is not None
+        """Extend the current flight's extremes; judge the last flight when one ends."""
+        conditions = row[:N_DESCRIPTORS]
         if new_cycle:
-            if state.shift is not None and not state.shifted_this_cycle:
-                state.shift = None
-                self._publish(key, state)
-            state.shifted_this_cycle = False
-        shift = outside_envelope(row, self._envelope, key[1])
-        if shift is None:
+            self._end_flight(key, state)
+        if state.flight_low is None or state.flight_high is None:
+            state.flight_low = conditions.copy()
+            state.flight_high = conditions.copy()
+        else:
+            np.minimum(state.flight_low, conditions, out=state.flight_low)
+            np.maximum(state.flight_high, conditions, out=state.flight_high)
+
+    def _end_flight(self, key: tuple[str | None, int], state: _EngineState) -> None:
+        """Hand a finished flight to the shift tracker."""
+        if state.shift is None or state.flight_low is None or state.flight_high is None:
             return
-        state.shifted_this_cycle = True
-        if state.shift is None:
-            state.shift = shift
+        if state.shift.observe_flight(state.flight_low, state.flight_high):
             self._publish(key, state)
+        state.flight_low = state.flight_high = None
 
     def _publish(self, key: tuple[str | None, int], state: _EngineState) -> None:
         """Show an engine's degraded states, and raise an alert for each that opened.
@@ -408,7 +419,8 @@ class StreamPipeline:
         """
         source, unit = key
         current = list(state.detector.active()) if state.detector is not None else []
-        current += [s for s in (state.outage, state.silent, state.shift) if s is not None]
+        shift = state.shift.open if state.shift is not None else None
+        current += [s for s in (state.outage, state.silent, shift) if s is not None]
         names = {(s.state, s.channel) for s in current}
         for degraded in current:
             if (degraded.state, degraded.channel) not in state.open_states:
@@ -497,6 +509,7 @@ class StreamPipeline:
 
         state = self._engines.get((source, unit))
         if state is not None:
+            self._end_flight((source, unit), state)
             state.ended = True
             replay.alerts = state.alerts
             replay.faults = state.degraded_alerts
