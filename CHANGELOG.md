@@ -13,12 +13,16 @@ All notable changes to this project. The format follows
   healthy engines with a false alarm: 4 of 9 before, 0 of 9 after.
 - **`prognos failures`**: an inference outage, an operating-condition shift beyond and
   within the fleet's experience, a stream that stops, and late data, each provoked on
-  real engines with the served model after a clean control. 4 of 5 named; the shift
-  within the fleet is not.
+  real engines with the served model after a clean control.
 - **`prognos compare`**: the published DS02 split, restricted to engines outside the
   closed final test group, with every difference from the published protocol recorded.
 - Degraded states `inference_unavailable` and `operating_shift`; a silence watchdog;
   `RemotePredictor` and `prognos stream --inference-url`.
+- **Per-engine operating envelopes** (`ShiftTracker`), with flights grouped into events
+  so one shift raises one alert. `prognos envelope-study` chose the settings on
+  development engines; held-out healthy engines with a false shift alarm 4/9 -> 0/9,
+  within-fleet shifts named 8/9 -> 9/9, alerts per event 4.6-8.4 -> 1.0. All five
+  provoked system failures are now named.
 
 ### Changed
 
@@ -38,8 +42,7 @@ All notable changes to this project. The format follows
 ### Known issues
 
 - The drift detector never names drift on `P15`, `P2`, `P21`, `P24`, `P50` or `Wf`.
-- An operating shift inside the fleet's experience is not named, and one beyond it
-  alerts once per flight.
+- An operating shift on strictly alternating flights is not named.
 
 ## [1.0.0] - 2026-10-31
 

@@ -690,8 +690,9 @@ class TestPhase6bReadmeMatchesResults:
         outage = by_name["inference_outage"]
         assert outage["predictions_during"] == 0
         assert f"{outage['missed_predictions']} windows missed" in text
-        assert f"{by_name['operating_shift']['openings']} openings" in text
-        assert by_name["operating_shift_within_fleet"]["passed"] is False
+        assert by_name["operating_shift"]["openings"] == 1
+        assert by_name["operating_shift_within_fleet"]["openings"] == 1
+        assert "one alert for the event" in text
         assert f"after {by_name['delayed']['detected_after_seconds']:.1f} s" in text
         order = by_name["out_of_order"]
         assert (
@@ -711,3 +712,28 @@ class TestPhase6bReadmeMatchesResults:
         for row in report["published"]:
             r = row["rmse"]
             assert f"| {row['method']} | {r['14']:.2f} | {r['15']:.2f} |" in text, row["method"]
+
+    def test_envelope_study_rows(self) -> None:
+        study = load(Path("results/phase6_envelope.json"))
+        text = self.readme()
+        for side in ("held_out", "development"):
+            for when in ("before", "after"):
+                run = study[side][when]
+                st, fa = run["settings"], run["false_alarms"]
+                within, beyond = run["within_fleet"], run["beyond_fleet"]
+                name = (
+                    "fleet only, open 1, release 1"
+                    if st["learn"] == 0
+                    else f"own from {st['learn']} flights ±{st['margin']:.0%}, "
+                    f"open {st['persistence']}, release {st['release']}"
+                )
+                most = max(within["max_alerts_per_event"], beyond["max_alerts_per_event"])
+                line = (
+                    f"| {side.replace('_', '-')} | {when}: {name} "
+                    f"| {fa['engines_alarmed']}/{fa['engines']} "
+                    f"| {within['detected']}/{fa['engines']} "
+                    f"| {beyond['detected']}/{fa['engines']} "
+                    f"| {within['alerts_per_event']:.1f} | {beyond['alerts_per_event']:.1f} "
+                    f"| {most} |"
+                )
+                assert line in text, f"README envelope row drifted: {line}"

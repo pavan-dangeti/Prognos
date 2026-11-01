@@ -28,7 +28,7 @@ on an Apple M5 with 16 GB (macOS, Python 3.12.13). `tests/test_results.py` and
 | How fast is the live path? | p99 5.16–9.49 ms per updated prediction; at least 43,141 readings/s | — | Real engines interleaved at fleets of 10, 100 and 1,000, 5 rounds | `prognos bench` → [`phase6_streaming_bench.json`](results/phase6_streaming_bench.json) |
 | Are sensor faults named? | 4 of 4 injected faults named, clean control | — | Each fault injected alone into a clean engine | `prognos stream --faults` → [`phase5_faults.json`](results/phase5_faults.json) |
 | Does drift detection stay quiet on healthy engines? | 0 of 9 held-out engines alarmed | 4 of 9 before tuning | Tuned on 10 development engines only, judged on 9 held-out | `prognos drift-study` → [`phase6_drift.json`](results/phase6_drift.json) |
-| Does the system name its own failures? | 4 of 5 provoked failures named | Clean control names nothing | Inference outage, operating shift beyond and within the fleet, silence, late data, on real engines | `prognos failures` → [`phase6_failures.json`](results/phase6_failures.json) |
+| Does the system name its own failures? | 5 of 5 provoked failures named | Clean control names nothing | Inference outage, operating shift beyond and within the fleet, silence, late data, on real engines | `prognos failures` → [`phase6_failures.json`](results/phase6_failures.json) |
 
 Three results go against what was hoped for and are reported as they came out: acting
 on the interval's lower bound costs **more** than acting on the point estimate on this
@@ -176,10 +176,9 @@ What the system does not yet do:
   and `Wf` are never named at any step size, because a shift must also exceed the
   fleet's typical spread. Detection of a 5× step tops out at 57%. Its false-alarm rate
   is 0 of 9 held-out engines, measured on 9 engines.
-- **An operating shift within the fleet's experience is not named.** The envelope is the
-  fleet's, so a short-haul engine suddenly flying long-haul altitudes passes unnoticed.
-  A shift beyond the fleet is named, but once per flight outside the envelope, so one
-  event can raise several alerts.
+- **An operating shift on strictly alternating flights is not named.** The tracker needs
+  two flights outside in a row before it opens, which ordinary scatter needs to be kept
+  out by. Every other shift tested, inside or beyond the fleet, is named with one alert.
 - **No like-for-like published comparison.** The published DS02 split needs engines in
   the closed final test group. The run that avoids them is not comparable, for reasons
   listed with it.
@@ -685,17 +684,51 @@ through the same path:
 | --- | --- | --- | --- |
 | none (control) | clean replay of DS01-005/unit001 | nothing | clean |
 | inference outage | the real HTTP inference service stopped for readings 40–60% of the engine's life, then restarted | `inference_unavailable` | 0 predictions while down, 778 windows missed, cleared and predicting again after |
-| operating shift, beyond the fleet | altitude raised from cycle 40 past the highest any training engine flew | `operating_shift` | named on each flight outside the envelope: 9 openings |
-| operating shift, within the fleet | altitude raised by half the fitted range on a short-haul engine | nothing | **failed** |
+| operating shift, beyond the fleet | altitude raised from cycle 40 past the highest any training engine flew | `operating_shift` | one alert for the event (Phase 6B: 9 openings, one per flight) |
+| operating shift, within the fleet | altitude raised by half the fitted range on a short-haul engine | `operating_shift` | one alert (Phase 6B: nothing named) |
 | delayed data | one of two interleaved engines stops for 15 s of stream time, watchdog timeout 10 s | `stream_silent` | named on that engine alone after 10.0 s, cleared on resume |
 | out-of-order data | the last 200 readings of cycle 39 delivered after cycle 40 began | `cycle_regression` | all 200 dropped; 3,890 predictions against 3,892 in order |
 
-**The within-fleet shift is a real gap.** DS01-005/unit001 never climbs above 17,764 ft.
-Raised by half the fitted range it reaches 35,382 ft, which is new for this engine but
-inside the fleet's envelope (1,399 to 36,635 ft), because other engines fly long-haul.
-The envelope is the fleet's, so it cannot see an engine suddenly flying a profile the
-fleet knows and it does not. A per-engine regime check would, and it would need its own
-development and held-out tuning.
+**The within-fleet shift was a real gap in Phase 6B, and is closed.** DS01-005/unit001
+never climbs above 17,764 ft. Raised by half the fitted range it reaches 35,382 ft, new
+for this engine but inside the fleet's envelope (1,399 to 36,635 ft), because other
+engines fly long-haul. The fleet's envelope could not see it; the engine's own envelope,
+below, does. This engine is one of the study's development engines, so the scenario
+shows the live path behaves as the study says; the held-out table is the evidence.
+
+### Operating shifts: the engine's own envelope, and one alert per event
+
+```bash
+uv run prognos envelope-study    # -> results/phase6_envelope.json
+```
+
+`ShiftTracker` judges each flight on its lowest and highest flight conditions against
+two envelopes: the fleet's, which the serving model was fitted on, and the engine's own,
+learned from its first flights. A shift opens after `persistence` flights outside and
+closes after `release` flights inside, so one event raises one alert. The study and the
+live pipeline run the same tracker.
+
+The four settings were chosen exactly as the drift detector's were: the same 10
+development and 9 held-out engines, a rule written into the code before the run (fewest
+false alarms, then most within-fleet shifts named, then most beyond-fleet, then fewest
+alerts per event), development engines only. Shifts start at flight 40 and count if
+named within 15 flights.
+
+| engines | tracker | healthy engines with a false alarm | within-fleet shift named | beyond-fleet shift named | alerts per event, within | beyond | most alerts for one event |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| held-out | before: fleet only, open 1, release 1 | 4/9 | 8/9 | 8/9 | 4.6 | 8.4 | 14 |
+| held-out | after: own from 10 flights ±10%, open 2, release 5 | 0/9 | 9/9 | 9/9 | 1.0 | 1.0 | 1 |
+| development | before: fleet only, open 1, release 1 | 2/10 | 5/10 | 10/10 | 6.0 | 8.1 | 14 |
+| development | after: own from 10 flights ±10%, open 2, release 5 | 0/10 | 10/10 | 10/10 | 1.0 | 1.0 | 1 |
+
+**The Phase 6B check also had false alarms, and nothing showed it.** Fleet-only, it fired
+on 4 of 9 healthy held-out engines whose ordinary flights leave the envelope of the
+engines the model was fitted on. The Phase 6B control engine was itself a fit engine,
+so its clean run could not reveal that.
+
+**A gap that remains:** two flights outside in a row are needed to open, so a shift on
+strictly alternating flights is never named. None of the study's scenarios alternate;
+a test pins the behaviour so it is not forgotten.
 
 **The first run found that the envelope check could not see altitude at all.** It ran
 once a cycle, on the cycle's first reading, and that reading is taken on the ground. It
