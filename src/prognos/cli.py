@@ -41,6 +41,18 @@ def hardware_description() -> str:
     )
 
 
+def _record(
+    command: str, report: dict[str, Any], out_path: Path, model_dir: Path | None = None
+) -> None:
+    """Record the run in MLflow; register the serving model when one was written."""
+    from .tracking import record_run
+
+    recorded = record_run(command, report, out_path, model_dir=model_dir)
+    version = recorded.get("model_version")
+    suffix = f", registered prognos-rul version {version} as @serving" if version else ""
+    print(f"tracked run {recorded['run_id']}{suffix}", flush=True)
+
+
 def cmd_convert(args: argparse.Namespace) -> int:
     """Convert configured sub-datasets to per-unit Parquet and write the manifest."""
     config = load_config(Path(args.config))
@@ -184,6 +196,7 @@ def cmd_evaluate(args: argparse.Namespace) -> int:
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(report, indent=2, sort_keys=True, default=float) + "\n")
+    _record("evaluate", report, out_path)
     print(f"wrote {out_path}", flush=True)
 
     ranking = sorted(summaries, key=lambda k: summaries[k]["rmse"]["mean"])  # type: ignore[index]
@@ -287,6 +300,7 @@ def cmd_policy(args: argparse.Namespace) -> int:
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(report, indent=2, sort_keys=True, default=float) + "\n")
+    _record("policy", report, out_path)
     print(f"wrote {out_path}", flush=True)
 
     print("\npolicies by cost, cheapest first:")
@@ -399,6 +413,7 @@ def cmd_stream(args: argparse.Namespace) -> int:
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(outcome.report, indent=2, sort_keys=True, default=float) + "\n")
+    _record("stream", outcome.report, out_path, model_dir=Path(args.model_dir))
     print(f"wrote {out_path}", flush=True)
 
     verdict = outcome.verdict
@@ -529,6 +544,7 @@ def _run_fault_scenarios(data: WindowSource, config: Config, args: argparse.Name
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(report, indent=2, sort_keys=True, default=float) + "\n")
+    _record("faults", report, out_path)
     print(f"wrote {out_path}", flush=True)
     for scenario in scenarios:
         print(
@@ -591,6 +607,7 @@ def cmd_bench(args: argparse.Namespace) -> int:
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    _record("bench", report, out_path)
     print(f"wrote {out_path}", flush=True)
     return 0
 
@@ -630,6 +647,7 @@ def cmd_drift_study(args: argparse.Namespace) -> int:
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    _record("drift-study", report, out_path)
     print(f"wrote {out_path}; chosen {report['chosen']}", flush=True)
     return 0
 
@@ -688,6 +706,7 @@ def cmd_envelope_study(args: argparse.Namespace) -> int:
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    _record("envelope-study", report, out_path)
     print(f"wrote {out_path}; chosen {report['chosen']}", flush=True)
     return 0
 
@@ -747,6 +766,7 @@ def cmd_failures(args: argparse.Namespace) -> int:
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    _record("failures", report, out_path)
     print(f"wrote {out_path}; all passed: {report['all_passed']}", flush=True)
     return 0
 
@@ -789,9 +809,19 @@ def cmd_compare(args: argparse.Namespace) -> int:
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    _record("compare", report, out_path)
     print(f"wrote {out_path}", flush=True)
     for name, result in report["ours"].items():
         print(f"  {name:>12}: " + ", ".join(f"{k} {v:.2f}" for k, v in result["rmse"].items()))
+    return 0
+
+
+def cmd_export_model(args: argparse.Namespace) -> int:
+    """Copy a registered model version into a directory a container can mount."""
+    from .tracking import export_model
+
+    record = export_model(args.ref, Path(args.out))
+    print(f"exported {record['name']} version {record['version']} to {args.out}", flush=True)
     return 0
 
 
@@ -819,7 +849,10 @@ def cmd_serve(args: argparse.Namespace) -> int:
 
     options: dict[str, Any] = {"logger": logger}
     if args.component == "inference":
-        options["model_dir"] = Path(args.model_dir) if args.model_dir else None
+        from .tracking import resolve_model
+
+        # A path, or a registry reference such as models:/prognos-rul@serving.
+        options["model_dir"] = resolve_model(args.model_dir) if args.model_dir else None
     if args.component == "alerting":
         options["threshold"] = args.alert_threshold
         options["hysteresis"] = args.alert_hysteresis
@@ -976,6 +1009,11 @@ def main(argv: list[str] | None = None) -> int:
     envelope_cmd.add_argument("--config", default="configs/base.yaml")
     envelope_cmd.add_argument("--out", default="results/phase6_envelope.json")
     envelope_cmd.set_defaults(func=cmd_envelope_study)
+
+    export = sub.add_parser("export-model", help="copy a registered model version to a directory")
+    export.add_argument("--ref", default="models:/prognos-rul@serving")
+    export.add_argument("--out", default="artifacts/model")
+    export.set_defaults(func=cmd_export_model)
 
     serve_cmd = sub.add_parser("serve", help="serve one streaming component over HTTP")
     serve_cmd.add_argument("--component", required=True, choices=list(COMPONENTS))

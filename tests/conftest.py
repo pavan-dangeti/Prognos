@@ -8,6 +8,15 @@ suite runs in the configuration that production uses.
 
 from __future__ import annotations
 
+import os
+import tempfile
+
 from prognos.sequence import cap_torch_threads
 
 cap_torch_threads()
+
+# Every command records an MLflow run. Tests get a throwaway store, so a test run never
+# writes into the working tree's `mlruns/`.
+os.environ["MLFLOW_TRACKING_URI"] = (
+    f"sqlite:///{tempfile.mkdtemp(prefix='prognos-mlflow-')}/mlflow.db"
+)

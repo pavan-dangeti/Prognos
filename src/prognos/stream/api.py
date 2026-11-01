@@ -16,6 +16,7 @@ paths, library versions and internals to any caller that can reach the port.
 
 from __future__ import annotations
 
+import json
 import logging
 from collections.abc import Callable
 from pathlib import Path
@@ -137,6 +138,11 @@ def build_inference_state(
     """
     registry = metrics or MetricsRegistry()
     predictor: RulPredictor | None = None
+    # Which registered version is being served, when the directory came from
+    # `prognos export-model`. Reported on /readyz so a rollback can be confirmed.
+    version: dict[str, Any] | None = None
+    if model_dir is not None and (model_dir / "registry.json").exists():
+        version = json.loads((model_dir / "registry.json").read_text())
     if model_dir is not None:
         try:
             predictor = RulPredictor.load(model_dir)
@@ -175,6 +181,7 @@ def build_inference_state(
             {
                 "model": predictor.model_name if predictor else None,
                 "half_width": predictor.calibration_half_width if predictor else None,
+                "registry": version,
             },
         ),
         routes={"POST /predict": predict},
