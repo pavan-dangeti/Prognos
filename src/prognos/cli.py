@@ -863,6 +863,77 @@ def cmd_verify_stack(args: argparse.Namespace) -> int:
     return 0 if report["all_passed"] else 1
 
 
+def cmd_final_ds02(args: argparse.Namespace) -> int:
+    """Run the published DS02 split once, opening DS02 units 5, 11 and 20.
+
+    Refuses on a dirty working tree, so the result names exactly the code that made it,
+    and refuses if the result already exists, so the closed engines are opened once.
+    Nothing is to be tuned after this has run.
+    """
+    import subprocess
+
+    from prognos.evaluate import build_folds, library_versions
+    from prognos.published import PUBLISHED_TEST, PUBLISHED_TRAIN, SUBDATASET, final_comparison
+
+    out_path = Path(args.out)
+    if out_path.exists():
+        print(f"{out_path} exists: the final run has happened and is not repeated", file=sys.stderr)
+        return 1
+    dirty = subprocess.run(
+        ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    if dirty:
+        print("the working tree is not clean; commit before the final run", file=sys.stderr)
+        return 1
+    commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+
+    config = load_config(Path(args.config))
+    data = load_windows(
+        config.data.parquet_dir,
+        config.window,
+        config.data.subdatasets,
+        cache_dir=config.data.parquet_dir.parent / "cache",
+    )
+    folds = build_folds(
+        data,
+        n_splits=config.split.n_splits,
+        test_fraction=config.split.test_fraction,
+        seed=config.split.seed,
+    )
+    closed = sorted(data.group_labels[u].label() for u in folds[0].split.test_units)
+    opened = sorted(
+        f"{SUBDATASET}/unit{u:03d}"
+        for u in set(PUBLISHED_TRAIN) | set(PUBLISHED_TEST)
+        if f"{SUBDATASET}/unit{u:03d}" in closed
+    )
+    print(f"final run at {commit}; opening {', '.join(opened)}", flush=True)
+    report = final_comparison(data, seed=config.split.seed, epochs=args.epochs)
+    report.update(
+        {
+            "command": " ".join(["prognos", *sys.argv[1:]]),
+            "frozen_commit": commit,
+            "hardware": hardware_description(),
+            "versions": library_versions(),
+            "generated_at": date.today().isoformat(),
+            "final_test_group": {
+                "engines": closed,
+                "opened_by_this_run": opened,
+                "still_closed": [e for e in closed if e not in opened],
+            },
+        }
+    )
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    _record("final-ds02", report, out_path)
+    for variant, models in report["ours"].items():
+        for name, result in models.items():
+            figures = ", ".join(f"{k} {v:.2f}" for k, v in result["rmse"].items())
+            print(f"  {variant:>14} {name:>12}: {figures}", flush=True)
+    return 0
+
+
 def cmd_serve(args: argparse.Namespace) -> int:
     """Serve one streaming component over HTTP until interrupted."""
     import logging
@@ -1060,6 +1131,14 @@ def main(argv: list[str] | None = None) -> int:
     check.add_argument("--inference", default="http://127.0.0.1:8082")
     check.add_argument("--out", default="results/stack_verification.json")
     check.set_defaults(func=cmd_verify_stack)
+
+    final = sub.add_parser(
+        "final-ds02", help="run the published DS02 split once, opening units 5, 11 and 20"
+    )
+    final.add_argument("--config", default="configs/base.yaml")
+    final.add_argument("--out", default="results/final_ds02.json")
+    final.add_argument("--epochs", type=int, default=30)
+    final.set_defaults(func=cmd_final_ds02)
 
     serve_cmd = sub.add_parser("serve", help="serve one streaming component over HTTP")
     serve_cmd.add_argument("--component", required=True, choices=list(COMPONENTS))

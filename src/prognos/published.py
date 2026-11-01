@@ -144,4 +144,67 @@ def compare(data: WindowSource, seed: int, epochs: int = 30) -> dict[str, Any]:
     }
 
 
-__all__ = ["CONCLUSION", "DIFFERENCES", "PUBLISHED", "SOURCE", "compare"]
+__all__ = ["CONCLUSION", "DIFFERENCES", "PUBLISHED", "SOURCE", "compare", "final_comparison"]
+
+
+def final_comparison(data: WindowSource, seed: int, epochs: int = 30) -> dict[str, Any]:
+    """The published DS02 split, run once, with and without the cycle input.
+
+    Train on units 2, 5, 10, 16, 18 and 20, test on 11, 14 and 15, which reads DS02
+    units 5, 11 and 20 from the closed final test group. Without the cycle input, the
+    cycle is held at zero for training and testing alike, so it carries no information:
+    the model sees what the published models are described as seeing, the sensors.
+    """
+    from .sequence import HarnessAdapter, TrainConfig, _BaseSequenceModel, build_sequence_models
+
+    train = data.subset(_mask(data, PUBLISHED_TRAIN))
+    targets = np.asarray(train.targets, dtype=np.float32)
+    results: dict[str, Any] = {}
+    for with_cycle in (True, False):
+        models: dict[str, Any] = {"lightgbm": LightGbmModel(seed=seed)}
+        if with_cycle:
+            models = {"linear_cycle": LinearCycleBaseline(), **models}
+        sequence = build_sequence_models(
+            TrainConfig(epochs=epochs, seed=seed), names=("cnn", "transformer")
+        )
+        for name, model in sequence.items():
+            assert isinstance(model, _BaseSequenceModel)
+            models[name] = HarnessAdapter(model=model, seed=seed)
+
+        def cycles_of(cycles: npt.NDArray[np.int64]) -> npt.NDArray[np.int64]:
+            return cycles if with_cycle else np.zeros_like(cycles)  # noqa: B023
+
+        variant = "with_cycle" if with_cycle else "without_cycle"
+        for name, model in models.items():
+            print(f"  {variant} {name}", flush=True)
+            model.fit(train.windows, cycles_of(train.cycles), targets)
+            per_unit: dict[str, float] = {}
+            truths, preds = [], []
+            for unit in PUBLISHED_TEST:
+                test = data.subset(_mask(data, (unit,)))
+                truth = np.asarray(test.targets, dtype=np.float64)
+                pred = np.asarray(
+                    model.predict(test.windows, cycles_of(test.cycles)), dtype=np.float64
+                )
+                per_unit[str(unit)] = rmse(truth, pred)
+                truths.append(truth)
+                preds.append(pred)
+            both_truth, both_pred = np.concatenate(truths), np.concatenate(preds)
+            results.setdefault(variant, {})[name] = {
+                "rmse": {**per_unit, "all": rmse(both_truth, both_pred)},
+                "nasa_score": nasa_score(both_truth, both_pred),
+                "n_test_windows": int(both_truth.size),
+            }
+    return {
+        "split": {
+            "subdataset": SUBDATASET,
+            "train": list(PUBLISHED_TRAIN),
+            "test": list(PUBLISHED_TEST),
+        },
+        "published": list(PUBLISHED),
+        "published_source": SOURCE,
+        "ours": results,
+        "epochs": epochs,
+        "seed": seed,
+        "n_train_windows": int(train.windows.shape[0]),
+    }

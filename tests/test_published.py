@@ -80,3 +80,46 @@ def test_the_result_says_why_it_is_not_comparable() -> None:
     assert report["final_test_group"]["status"] == "closed"
     assert report["published"] == [dict(row) for row in PUBLISHED]
     assert any("cycle number" in text for text in report["differences"])
+
+
+def test_the_final_run_compares_with_and_without_the_cycle_input() -> None:
+    from prognos.published import PUBLISHED_TEST, final_comparison
+
+    rng = np.random.default_rng(1)
+    labels = tuple(GroupKey("DS02-006", unit) for unit in (2, 5, 10, 11, 14, 15, 16, 18, 20))
+    per_engine = 20
+    n = per_engine * len(labels)
+    groups = np.repeat(np.arange(len(labels)), per_engine).astype(np.int64)
+    cycles = np.tile(np.arange(1, per_engine + 1), len(labels)).astype(np.int64)
+    data = WindowSet(
+        windows=rng.normal(size=(n, 5, 18)).astype(np.float32),
+        targets=(80.0 - cycles).astype(np.float32),
+        groups=groups,
+        group_labels=labels,
+        cycles=cycles,
+        fractions=np.zeros(n, dtype=np.float32),
+        splits=("dev",) * n,
+        subdatasets=("DS02-006",) * n,
+        max_cycle=per_engine,
+    )
+    report = final_comparison(data, seed=0, epochs=1)
+    assert report["n_train_windows"] == per_engine * 6
+    assert set(report["ours"]) == {"with_cycle", "without_cycle"}
+    assert "linear_cycle" in report["ours"]["with_cycle"]
+    assert "linear_cycle" not in report["ours"]["without_cycle"]
+    for models in report["ours"].values():
+        for result in models.values():
+            assert set(result["rmse"]) == {*map(str, PUBLISHED_TEST), "all"}
+    # Targets here are a pure function of the cycle: with it LightGBM is near exact,
+    # without it the same model cannot know the age, which is the point of the variant.
+    with_cycle = report["ours"]["with_cycle"]["lightgbm"]["rmse"]["all"]
+    without_cycle = report["ours"]["without_cycle"]["lightgbm"]["rmse"]["all"]
+    assert with_cycle < without_cycle
+
+
+def test_the_final_command_refuses_to_run_twice(tmp_path: Path) -> None:
+    from prognos.cli import main
+
+    out = tmp_path / "final.json"
+    out.write_text("{}")
+    assert main(["final-ds02", "--out", str(out)]) == 1
