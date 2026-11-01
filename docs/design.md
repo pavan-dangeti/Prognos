@@ -4,7 +4,7 @@ Remaining Useful Life (RUL) prediction for turbofan engines, with calibrated
 prediction intervals, a cost-based maintenance policy, and a streaming pipeline
 that replays held-out engines as a live fleet.
 
-Status: Phases 0–5 and 6A are released as v1.0.0; 6B is merged; 6C is in review. This
+Status: Phases 0–6C are built and released as v1.1.0. A hosted demo (Phase 6D) is not yet deployed. This
 document was written in Phase 0 and is kept as the design of record. Where the build
 departed from it, §14 says how and why, and the README carries the measured results.
 

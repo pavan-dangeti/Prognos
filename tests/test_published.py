@@ -123,3 +123,23 @@ def test_the_final_command_refuses_to_run_twice(tmp_path: Path) -> None:
     out = tmp_path / "final.json"
     out.write_text("{}")
     assert main(["final-ds02", "--out", str(out)]) == 1
+
+
+def test_the_readme_quotes_the_final_run() -> None:
+    """Every final-run figure in the README rebuilds from the committed result."""
+    result = Path("results/final_ds02.json")
+    if not result.exists():
+        pytest.skip("the final run has not happened")
+    report = json.loads(result.read_text())
+    readme = " ".join(Path("README.md").read_text().split())
+    inputs = {"with_cycle": "sensors and cycle", "without_cycle": "sensors only"}
+    for variant, models in report["ours"].items():
+        for name, result_row in models.items():
+            r = result_row["rmse"]
+            label = "cycle only" if name == "linear_cycle" else inputs[variant]
+            cells = f"| {r['11']:.2f} | {r['14']:.2f} | {r['15']:.2f} |"
+            line = f"| `{name}` | {label} {cells}"
+            assert line in readme, line
+    opened = report["final_test_group"]["opened_by_this_run"]
+    assert opened == ["DS02-006/unit005", "DS02-006/unit011", "DS02-006/unit020"]
+    assert len(report["final_test_group"]["still_closed"]) == 7

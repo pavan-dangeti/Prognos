@@ -39,8 +39,10 @@ Every figure here is taken from a committed result file, named next to it, and
 
 NASA N-CMAPSS sub-datasets DS01, DS02 and DS06: 29 engines, 199,095 windows. Engine
 identity is the sub-dataset plus the unit number, because unit numbers restart in each
-sub-dataset. A final test group of 10 engines has been held closed throughout and has
-not been scored. Access and terms are in `docs/data.md`.
+sub-dataset. A final test group of 10 engines was held out of every figure here. Three
+of its DS02 engines (units 5, 11 and 20) were opened once, with the code frozen, for the
+published comparison in `results/final_ds02.json`; the other seven have not been scored.
+Access and terms are in `docs/data.md`.
 
 ## Metrics
 
@@ -91,9 +93,12 @@ is safe but means the interval is wider than it needs to be.
 - **Sensor faults.** A dropped channel is held at its last good value while
   `sensor_dropout` is raised; the prediction during it is degraded. Drift on `P15`,
   `P2`, `P21`, `P24`, `P50` and `Wf` is not detected.
-- **Engine age carries much of the signal.** The cycle number is an input, and engines
-  in a sub-dataset live similar spans. On DS02 units 14 and 15, LightGBM scores 5.38
-  RMSE and a model with no sensors 5.59 (`results/phase6_published_comparison.json`).
+- **Engine age carries much of the signal, and misleads on an unusual engine.** The
+  cycle number is an input, and engines in a sub-dataset live similar spans. On DS02
+  units 14 and 15, LightGBM scores 5.38 RMSE and a model with no sensors 5.59
+  (`results/phase6_published_comparison.json`). On the full published DS02 split, with
+  unit 11 whose life differs from the training engines', LightGBM scores 10.89 with the
+  cycle and 10.44 without it (`results/final_ds02.json`): the age input hurts.
 
 ## Non-goals
 

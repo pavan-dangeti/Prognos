@@ -4,9 +4,31 @@ All notable changes to this project. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [semantic versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.1.0] - 2026-11-01
+
+Reliability, MLOps and an honest published comparison: the detectors are tuned on
+engines they are not judged on, every run is tracked and the served model registered,
+the stack is traced across services and was run and verified, and the published DS02
+split was run once with the code frozen.
+
+### Results
+
+- **Published DS02 split**, run once at frozen commit `7970e9c`, opening DS02 units 5,
+  11 and 20 from the closed test group: the sensor-only Transformer scores 6.47 RMSE on
+  units 11, 14 and 15 against 6.54 for the published Transformer and 5.59 for the best
+  published model. The cycle input makes every model worse on this split.
+- **Drift detector**: held-out healthy engines with a false alarm 4/9 -> 0/9.
+- **Operating shifts**: false shift alarms 4/9 -> 0/9, within-fleet shifts named 9/9,
+  one alert per event.
+- **The compose stack** verified running: live dashboards, one trace per prediction
+  across services, the served model version on `/readyz`.
 
 ### Added
+
+- **`prognos final-ds02`**: the published DS02 split with and without the cycle input,
+  refusing a dirty tree and refusing to run twice. `results/final_ds02.json`.
+- **`prognos verify-stack`** and a `replay` service in compose; screenshots of Grafana
+  and Jaeger in `docs/media/`.
 
 - **`prognos drift-study`**: the drift detector tuned on 10 development engines and
   judged on 9 held-out ones, by a selection rule fixed in code before the run. Held-out
@@ -138,4 +160,5 @@ Merged as pull requests before the first release:
   leakage test.
 - **Phase 0**: design document and architecture decision records.
 
+[1.1.0]: https://github.com/pavan-dangeti/Prognos/releases/tag/v1.1.0
 [1.0.0]: https://github.com/pavan-dangeti/Prognos/releases/tag/v1.0.0

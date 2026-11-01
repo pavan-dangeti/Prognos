@@ -21,21 +21,23 @@ on an Apple M5 with 16 GB (macOS, Python 3.12.13). `tests/test_results.py` and
 
 | Question | Result | Baseline | How it was measured | Reproduce |
 | --- | --- | --- | --- | --- |
-| How accurate is the RUL point estimate? | CNN 7.40 cycles RMSE (95% CI 4.61–10.20) | 8.90 from cycle number alone, no sensors; 23.76 predicting the mean | 5-fold CV grouped by engine, 29 engines, 10-engine test group never opened | `prognos evaluate --sequence` → [`phase3_sequence.json`](results/phase3_sequence.json) |
+| How accurate is the RUL point estimate? | CNN 7.40 cycles RMSE (95% CI 4.61–10.20) | 8.90 from cycle number alone, no sensors; 23.76 predicting the mean | 5-fold CV grouped by engine, 29 engines, 10-engine test group not used | `prognos evaluate --sequence` → [`phase3_sequence.json`](results/phase3_sequence.json) |
 | Do sensors help where it matters, late in life? | Transformer 3.76 RMSE in late life | 8.84 from cycle number alone | Same folds, error split by life stage | same |
 | Do the intervals hold? | 0.926 offline, 0.991 live, target 0.90 | — | Split conformal, calibrated on engines held out of the fit | `prognos policy`, `prognos stream` |
 | What does it save? | 30.8 total cost for the best policy | 577.3 run-to-failure, 44.0 best fixed interval | 19 engines, 2,000 cycles, failure 25× a planned visit, ratio swept 1–100 | `prognos policy` → [`phase4_policy.json`](results/phase4_policy.json) |
 | How fast is the live path? | p99 0.65–0.70 ms per updated prediction; at least 128,435 readings/s in this run, 43,141 in v1.0.0's | — | Real engines interleaved at fleets of 10, 100 and 1,000, 5 rounds | `prognos bench` → [`phase6_streaming_bench.json`](results/phase6_streaming_bench.json) |
 | Are sensor faults named? | 4 of 4 injected faults named, clean control | — | Each fault injected alone into a clean engine | `prognos stream --faults` → [`phase5_faults.json`](results/phase5_faults.json) |
 | Does drift detection stay quiet on healthy engines? | 0 of 9 held-out engines alarmed | 4 of 9 before tuning | Tuned on 10 development engines only, judged on 9 held-out | `prognos drift-study` → [`phase6_drift.json`](results/phase6_drift.json) |
+| How does it compare with published DS02 results? | Sensor-only Transformer 6.47 RMSE on units 11, 14 and 15 | Published Transformer 6.54, best published (THGNN) 5.59 | The published split, run once with the code frozen; the cycle input removed | `prognos final-ds02` → [`final_ds02.json`](results/final_ds02.json) |
 | Does the system name its own failures? | 5 of 5 provoked failures named | Clean control names nothing | Inference outage, operating shift beyond and within the fleet, silence, late data, on real engines | `prognos failures` → [`phase6_failures.json`](results/phase6_failures.json) |
 
 Three results go against what was hoped for and are reported as they came out: acting
 on the interval's lower bound costs **more** than acting on the point estimate on this
 data; the drift detector, now quiet on healthy engines, cannot see drift on 6 of 14
 sensors; and an operating-condition shift inside the fleet's experience goes unnamed.
-All three are explained below, and the published-results comparison shows why our
-lower DS02 numbers are not a win.
+All three are explained below. Against published DS02 results, on the full split with
+sensors only, the best model here is comparable to a published Transformer and behind
+the best published model.
 
 ## Architecture
 
@@ -196,9 +198,11 @@ What the system does not yet do:
 - **An operating shift on strictly alternating flights is not named.** The tracker needs
   two flights outside in a row before it opens, which ordinary scatter needs to be kept
   out by. Every other shift tested, inside or beyond the fleet, is named with one alert.
-- **No like-for-like published comparison.** The published DS02 split needs engines in
-  the closed final test group. The run that avoids them is not comparable, for reasons
-  listed with it.
+- **The published comparison is close, not identical.** The full DS02 split and
+  sensor-only inputs now match, but it is one seed against a mean of five subsamples,
+  and the published table does not state its sampling or what one RMSE sample is.
+- **The final test group is partly open.** DS02 units 5, 11 and 20 were opened once for
+  the published comparison. The other seven closed engines have still not been scored.
 - **Not yet built:** a hosted demo.
 - **Latency is measured on a laptop against a replay,** at accelerated time, not on an
   aircraft datalink, and the HTTP figure is loopback only.
@@ -209,7 +213,8 @@ What the system does not yet do:
 
 5-fold grouped cross-validation, 29 engines from DS01, DS02 and DS06, 199,095
 windows. Intervals are 95% bootstrap resampling **by engine**, not by window. The
-final test group of 10 engines was held closed throughout, for every model.
+final test group of 10 engines was held closed for every one of these models; three of
+its DS02 engines were later opened once, for the published comparison only.
 
 | model | rmse | nasa_score | rmse 95% CI | params | how measured |
 | --- | --- | --- | --- | --- | --- |
@@ -302,8 +307,8 @@ horizon.
 Calibration gets its own engines: within each fold the training engines split again
 into a fitting set and a calibration set, so the coverage below is not inflated by
 residuals from engines the model memorised. `tests/test_results.py` checks that
-disjointness per fold from the committed artifact. The 10-engine final test group is
-still closed.
+disjointness per fold from the committed artifact. The 10-engine final test group was
+not used.
 
 ```bash
 uv run prognos policy --config configs/base.yaml --out results/phase4_policy.json
@@ -419,7 +424,7 @@ docker compose up -d        # ingestion, inference, alerting, dashboard, Prometh
 ```
 
 All 19 cross-validation engines: 100,000 scored predictions, 91 maintenance alerts. The
-10-engine final test group is still closed.
+10-engine final test group was not used.
 
 **The alert count was briefly wrong.** Alerting and fault state were keyed by unit
 number, which restarts in every sub-dataset. When DS02 unit 2 followed DS01 unit 2 in
@@ -856,9 +861,57 @@ from the protocol, not the modelling. The differences, all recorded in the resul
   does not state its sampling.
 - **RUL cap.** 125 cycles in training, which never binds on DS02 engines.
 
-A like-for-like run needs the full published split, which means opening the closed
-final test group. That is a decision for the project owner, not something this
-comparison does on its own.
+### The final run: the full published split, once
+
+```bash
+uv run prognos final-ds02    # -> results/final_ds02.json; refuses to run twice
+```
+
+With the code frozen at commit `7970e9c` (tag `freeze-final-ds02`), DS02 units 5, 11 and
+20 were opened from the closed final test group, once, and the published split run in
+full: train on units 2, 5, 10, 16, 18 and 20, test on 11, 14 and 15, Phase 3
+configurations as committed, nothing tuned before or after. The seven other closed
+engines (DS01 units 4 and 8, DS06 units 3, 4, 5, 6 and 8) are still closed.
+
+Every learned model ran twice: with the cycle-count input, and with it held at zero for
+training and testing, so it carries no information. The second is the like-for-like
+variant: sensors only, as the published models are described.
+
+| model | input | unit 11 | unit 14 | unit 15 | all three | NASA score |
+| --- | --- | --- | --- | --- | --- | --- |
+| `transformer` | sensors only | 7.59 | 6.78 | 3.99 | **6.47** | 8,891 |
+| `cnn` | sensors only | 7.52 | 7.85 | 4.59 | 6.69 | 9,398 |
+| `lightgbm` | sensors only | 10.56 | 12.87 | 9.38 | 10.44 | 20,008 |
+| `transformer` | sensors and cycle | 8.83 | 5.59 | 3.36 | 7.06 | 10,502 |
+| `cnn` | sensors and cycle | 9.93 | 4.41 | 5.08 | 8.06 | 13,514 |
+| `lightgbm` | sensors and cycle | 13.60 | 3.18 | 6.86 | 10.89 | 22,954 |
+| `linear_cycle` | cycle only | 15.68 | 1.98 | 8.13 | 12.57 | 29,555 |
+| THGNN, published | | 4.63 | 5.64 | 4.06 | 5.59 | |
+| Transformer, published | | 5.86 | 7.69 | 5.34 | 6.54 | |
+| 2D-CNN, published | | 6.38 | 7.20 | 5.20 | 6.99 | |
+| Hybrid, published | | 7.86 | 8.11 | 5.79 | 8.06 | |
+| BLSTM, published | | 8.76 | 8.51 | 5.41 | 8.26 | |
+
+RMSE in cycles over 11,649 test windows; published figures as printed in
+arXiv:2405.04336v3, Table 5.
+
+**On the published split, the sensor-only Transformer lands among the published
+results, not above them.** 6.47 against 6.54 for the published Transformer and 6.99
+for the 2D-CNN, behind the best published model, THGNN at 5.59. It is one seed against
+the table's mean of five subsamples, with a different sampling, so a difference of
+0.07 says the two are comparable and nothing more.
+
+**The cycle input that flattered the earlier comparison hurts here.** Every model is
+worse with it on the full split, driven by unit 11, where the cycle-only baseline
+scores 15.68. Engine age predicts remaining life only for engines whose lives resemble
+the training engines'; unit 11's does not. The restricted comparison's lower numbers
+were the age input working on two convenient engines, which is what that section
+warned.
+
+**The served model is the weakest learned model here.** LightGBM scores 10.44 without
+the cycle and 10.89 with it, against 6.47 for the Transformer. The trade-off for
+serving it, documented above, is memory on a free host; on this split it costs about
+four cycles of RMSE.
 
 ### Named states, not counts
 

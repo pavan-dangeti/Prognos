@@ -1,0 +1,192 @@
+{
+  "command": "prognos final-ds02",
+  "epochs": 30,
+  "final_test_group": {
+    "engines": [
+      "DS01-005/unit004",
+      "DS01-005/unit008",
+      "DS02-006/unit005",
+      "DS02-006/unit011",
+      "DS02-006/unit020",
+      "DS06/unit003",
+      "DS06/unit004",
+      "DS06/unit005",
+      "DS06/unit006",
+      "DS06/unit008"
+    ],
+    "opened_by_this_run": [
+      "DS02-006/unit005",
+      "DS02-006/unit011",
+      "DS02-006/unit020"
+    ],
+    "still_closed": [
+      "DS01-005/unit004",
+      "DS01-005/unit008",
+      "DS06/unit003",
+      "DS06/unit004",
+      "DS06/unit005",
+      "DS06/unit006",
+      "DS06/unit008"
+    ]
+  },
+  "frozen_commit": "7970e9c20cce462323b7f48de1bd61272c691626",
+  "generated_at": "2026-11-01",
+  "hardware": "Darwin arm64 / arm / Python 3.12.13",
+  "n_train_windows": 50666,
+  "ours": {
+    "with_cycle": {
+      "cnn": {
+        "n_test_windows": 11649,
+        "nasa_score": 13514.096721353244,
+        "rmse": {
+          "11": 9.930357362365422,
+          "14": 4.4098451040258935,
+          "15": 5.0827744232559215,
+          "all": 8.06127999966161
+        }
+      },
+      "lightgbm": {
+        "n_test_windows": 11649,
+        "nasa_score": 22953.727364128437,
+        "rmse": {
+          "11": 13.596513801218862,
+          "14": 3.1785042886628037,
+          "15": 6.857318748212886,
+          "all": 10.887495321616047
+        }
+      },
+      "linear_cycle": {
+        "n_test_windows": 11649,
+        "nasa_score": 29555.373147594328,
+        "rmse": {
+          "11": 15.680355362839666,
+          "14": 1.983329672851711,
+          "15": 8.13270851790193,
+          "all": 12.565634057652193
+        }
+      },
+      "transformer": {
+        "n_test_windows": 11649,
+        "nasa_score": 10502.343917369733,
+        "rmse": {
+          "11": 8.829242429734386,
+          "14": 5.587457331535784,
+          "15": 3.3641028445664234,
+          "all": 7.063917757850945
+        }
+      }
+    },
+    "without_cycle": {
+      "cnn": {
+        "n_test_windows": 11649,
+        "nasa_score": 9398.08814108848,
+        "rmse": {
+          "11": 7.522012986021058,
+          "14": 7.846391922417816,
+          "15": 4.58560559350781,
+          "all": 6.6924641429221525
+        }
+      },
+      "lightgbm": {
+        "n_test_windows": 11649,
+        "nasa_score": 20007.92984178265,
+        "rmse": {
+          "11": 10.560991234456226,
+          "14": 12.865450244952152,
+          "15": 9.378345307731621,
+          "all": 10.444858206040433
+        }
+      },
+      "transformer": {
+        "n_test_windows": 11649,
+        "nasa_score": 8890.928665433417,
+        "rmse": {
+          "11": 7.5855931192981645,
+          "14": 6.775720032139033,
+          "15": 3.98913892925957,
+          "all": 6.471462782327742
+        }
+      }
+    }
+  },
+  "published": [
+    {
+      "cited_as": "Wang et al.",
+      "method": "THGNN",
+      "rmse": {
+        "11": 4.63,
+        "14": 5.64,
+        "15": 4.06,
+        "all": 5.59
+      }
+    },
+    {
+      "cited_as": "Mo et al.",
+      "method": "Transformer",
+      "rmse": {
+        "11": 5.86,
+        "14": 7.69,
+        "15": 5.34,
+        "all": 6.54
+      }
+    },
+    {
+      "cited_as": "Zhao et al.",
+      "method": "2D-CNN",
+      "rmse": {
+        "11": 6.38,
+        "14": 7.2,
+        "15": 5.2,
+        "all": 6.99
+      }
+    },
+    {
+      "cited_as": "Chen et al.",
+      "method": "Hybrid",
+      "rmse": {
+        "11": 7.86,
+        "14": 8.11,
+        "15": 5.79,
+        "all": 8.06
+      }
+    },
+    {
+      "cited_as": "Huang et al.",
+      "method": "BLSTM",
+      "rmse": {
+        "11": 8.76,
+        "14": 8.51,
+        "15": 5.41,
+        "all": 8.26
+      }
+    }
+  ],
+  "published_source": "Wang et al., Temporal and Heterogeneous Graph Neural Network for Remaining Useful Life Prediction, arXiv:2405.04336v3, Table 5",
+  "seed": 20241009,
+  "split": {
+    "subdataset": "DS02-006",
+    "test": [
+      11,
+      14,
+      15
+    ],
+    "train": [
+      2,
+      5,
+      10,
+      16,
+      18,
+      20
+    ]
+  },
+  "versions": {
+    "h5py": "3.16.0",
+    "lightgbm": "4.6.0",
+    "numpy": "2.4.1",
+    "pandas": "3.0.1",
+    "pyarrow": "26.0.0",
+    "python": "3.12.13",
+    "scikit-learn": "1.8.0",
+    "torch": "2.10.0"
+  }
+}
