@@ -143,42 +143,55 @@ def record_run(
     return recorded
 
 
+def _version(reference: str) -> Any:  # noqa: ANN401 - mlflow ModelVersion
+    """The registered version a `models:/name@alias` or `models:/name/N` names."""
+    from mlflow import MlflowClient
+
+    client = MlflowClient()
+    name, _, alias = reference.removeprefix("models:/").partition("@")
+    if alias:
+        return client.get_model_version_by_alias(name, alias)
+    name, _, number = name.partition("/")
+    return client.get_model_version(name, number)
+
+
+def _registry_record(reference: str, version: Any) -> dict[str, str]:  # noqa: ANN401
+    return {
+        "name": str(version.name),
+        "version": str(version.version),
+        "run_id": str(version.run_id),
+        "reference": reference,
+    }
+
+
 def resolve_model(reference: str) -> Path:
-    """A local model directory for `reference`: a path, or a `models:/` registry URI."""
+    """A local model directory for `reference`: a path, or a `models:/` registry URI.
+
+    A registry reference is resolved to the version it names at this moment, and that
+    version is written beside the files, so the service reports what it actually loaded
+    even when an alias moves afterwards.
+    """
     if not reference.startswith("models:/"):
         return Path(reference)
     import mlflow
 
     mlflow.set_tracking_uri(tracking_uri())
-    return Path(mlflow.artifacts.download_artifacts(reference))
+    version = _version(reference)
+    local = Path(mlflow.artifacts.download_artifacts(f"models:/{version.name}/{version.version}"))
+    record = _registry_record(reference, version)
+    (local / REGISTRY_FILE).write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
+    return local
 
 
 def export_model(reference: str, out_dir: Path) -> dict[str, str]:
     """Copy a registered version into `out_dir`, recording which version it is."""
-    import mlflow
-    from mlflow import MlflowClient
-
     if not reference.startswith("models:/"):
         raise ValueError(f"{reference!r} is not a registry reference (models:/name/version)")
-    mlflow.set_tracking_uri(tracking_uri())
-    client = MlflowClient()
-    name, _, alias = reference.removeprefix("models:/").partition("@")
-    if alias:
-        version = client.get_model_version_by_alias(name, alias)
-    else:
-        name, _, number = name.partition("/")
-        version = client.get_model_version(name, number)
-    source = resolve_model(f"models:/{name}/{version.version}")
+    source = resolve_model(reference)
     out_dir.mkdir(parents=True, exist_ok=True)
     for item in source.iterdir():
         shutil.copy2(item, out_dir / item.name)
-    record = {
-        "name": name,
-        "version": str(version.version),
-        "run_id": str(version.run_id),
-        "reference": reference,
-    }
-    (out_dir / REGISTRY_FILE).write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
+    record: dict[str, str] = json.loads((out_dir / REGISTRY_FILE).read_text())
     return record
 
 

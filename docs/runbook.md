@@ -162,6 +162,42 @@ Put TLS in front of it, or keep it on loopback.
 | Every prognos target DOWN, 401 | Prometheus has no `ops/prometheus-token.txt` | Write the token to it and `docker compose restart prometheus` |
 | Prometheus will not start after setting the token | The token file is missing and the mount fails | Create the file as above; a missing mount is loud on purpose |
 
+## Deploying and rolling back a model
+
+Every `prognos stream` run registers the model it trained as a new version of
+`prognos-rul` in the MLflow registry (`mlruns/`) and points the `serving` alias at it.
+What serves is whatever the alias names.
+
+Deploy:
+
+```bash
+uv run prognos stream --config configs/base.yaml          # trains, registers, sets @serving
+uv run prognos export-model --ref models:/prognos-rul@serving --out artifacts/model
+docker compose restart inference
+curl -s http://127.0.0.1:8082/readyz | jq .registry          # the version now serving
+```
+
+On the host the service can load by reference directly:
+`prognos serve --component inference --model-dir models:/prognos-rul@serving`. A
+container cannot, because the registry records absolute host paths, which is why
+`export-model` exists.
+
+Roll back to an earlier version: move the alias, export, restart, and confirm.
+
+```bash
+uv run python -c "from mlflow import MlflowClient as C; import mlflow; \
+mlflow.set_tracking_uri('sqlite:///mlruns/mlflow.db'); \
+C().set_registered_model_alias('prognos-rul', 'serving', '3')"
+uv run prognos export-model --ref models:/prognos-rul@serving --out artifacts/model
+docker compose restart inference
+curl -s http://127.0.0.1:8082/readyz | jq .registry.version  # must now say "3"
+```
+
+Or pin a version without touching the alias:
+`prognos export-model --ref models:/prognos-rul/3`. Browse runs and versions with
+`uvx mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db`; the project installs
+only the MLflow client, so the UI runs from a throwaway environment.
+
 ## Reproducing a number
 
 Every figure in the README comes from a committed script. If one does not match:

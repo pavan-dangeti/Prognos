@@ -85,6 +85,10 @@ uv run prognos policy --config configs/base.yaml           # intervals and costs
 uv run prognos stream --config configs/base.yaml --serve --pace 10000 --out /tmp/replay.json
 open http://127.0.0.1:8090/ui
 
+# Every command records an MLflow run under mlruns/; stream also registers the model.
+uv run prognos export-model --ref models:/prognos-rul@serving --out artifacts/model
+uvx mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db   # browse runs and versions
+
 # Latency and throughput, after `prognos stream` has written artifacts/model.
 uv run prognos bench
 
@@ -182,8 +186,7 @@ What the system does not yet do:
 - **No like-for-like published comparison.** The published DS02 split needs engines in
   the closed final test group. The run that avoids them is not comparable, for reasons
   listed with it.
-- **Not yet built:** MLflow tracking and a model registry, a model card,
-  OpenTelemetry tracing, and a hosted demo.
+- **Not yet built:** OpenTelemetry tracing and a hosted demo.
 - **Latency is measured on a laptop against a replay,** at accelerated time, not on an
   aircraft datalink, and the HTTP figure is loopback only.
 - **Maintenance is assumed schedulable at any threshold.** Real maintenance has
@@ -797,7 +800,8 @@ the only way to check a degraded state is observable end to end is to provoke on
 
 ## Documentation
 
-- [Runbook](docs/runbook.md) — triage by verdict, ingestion failures, calibration
+- [Model card](docs/model-card.md) — intended use, metrics with intervals, failure modes
+- [Runbook](docs/runbook.md) — triage by verdict and degraded state, deploy and rollback
 - [Deploying to Oracle Always Free A1](docs/deploy-oci.md) — the demo host
 - [Design document](docs/design.md)
 - [Architecture decision records](docs/adr/)

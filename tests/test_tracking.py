@@ -108,3 +108,11 @@ def test_the_inference_service_reports_the_registry_version(store: Path) -> None
     (served / REGISTRY_FILE).write_text(json.dumps({"name": "prognos-rul", "version": "4"}))
     ready, detail = build_inference_state(model_dir=served).readiness()
     assert ready and detail["registry"]["version"] == "4"
+
+
+def test_loading_by_reference_records_the_version_it_resolved(store: Path) -> None:
+    """An alias can move after loading; the service must report what it loaded."""
+    record_run("stream", {}, result(store), model_dir=model_dir(store, "one"))
+    loaded = resolve_model("models:/prognos-rul@serving")
+    record_run("stream", {}, result(store), model_dir=model_dir(store, "two"))
+    assert json.loads((loaded / REGISTRY_FILE).read_text())["version"] == "1"
