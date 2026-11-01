@@ -94,8 +94,11 @@ uvx mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db   # browse runs and
 # Latency and throughput, after `prognos stream` has written artifacts/model.
 uv run prognos bench
 
-# The stack: four services, Prometheus, Grafana and Jaeger; see docs/runbook.md.
-docker compose up -d --build
+# The stack: the replay, four services, Prometheus, Grafana and Jaeger.
+# Needs a token in ops/prometheus-token.txt and a model in artifacts/model; see docs/runbook.md.
+uv run prognos export-model --ref models:/prognos-rul@serving --out artifacts/model
+PROGNOS_API_TOKEN=$(cat ops/prometheus-token.txt) docker compose up -d --build
+PROGNOS_API_TOKEN=$(cat ops/prometheus-token.txt) uv run prognos verify-stack
 ```
 
 The test suite needs no NASA data: `uv run pytest -m smoke` runs the whole pipeline on
@@ -197,9 +200,6 @@ What the system does not yet do:
   the closed final test group. The run that avoids them is not comparable, for reasons
   listed with it.
 - **Not yet built:** a hosted demo.
-- **The seven-service stack has not been run.** Jaeger was added to compose in Phase
-  6C, and Docker Desktop on the build machine was failing throughout. The stack is
-  checked by `tests/test_ops_config.py` and CI's image build, not by bringing it up.
 - **Latency is measured on a laptop against a replay,** at accelerated time, not on an
   aircraft datalink, and the HTTP figure is loopback only.
 - **Maintenance is assumed schedulable at any threshold.** Real maintenance has
@@ -541,6 +541,50 @@ running the thing, which is the argument for running it.
 inference mounts it. Without it the service stays unready, which is the right
 behaviour: no calibrator means no interval, and an interval-free prediction service is
 worse than one that refuses traffic.
+
+### The whole stack, run and verified
+
+```bash
+PROGNOS_API_TOKEN=$(cat ops/prometheus-token.txt) uv run prognos verify-stack
+```
+
+Run on 1 November 2026 with authentication on: the replay, ingestion, inference,
+alerting, dashboard, Prometheus, Grafana and Jaeger, replaying engines through the
+inference service over HTTP. `prognos verify-stack` reads each claim from the running
+services and writes [`results/stack_verification.json`](results/stack_verification.json):
+
+| check | result |
+| --- | --- |
+| Grafana has live data | all 6 Prometheus targets up; every panel series has samples from the replay |
+| A prediction is one trace across both services | in a settled 5 s window, 489 of 489 inference request spans are children of a replay span in the same trace; 490 of 496 replay traces span both services |
+| `/readyz` reports the served model | `prognos-rul` version 1, `models:/prognos-rul@serving` |
+
+![Grafana: live coverage, ingestion, span durations and recent traces](docs/media/grafana.png)
+
+![Jaeger: one prediction as a single trace across the replay and inference services](docs/media/jaeger-trace.png)
+
+Coverage reads below target in the Grafana capture because the replay was a few
+engines in, and the first engines are the hardest; the full replay settles at 0.991.
+
+**Running it found six problems that no test had.**
+
+1. **Nothing fed the stack.** Every service waited to be called, so Grafana could
+   never show live data. A `replay` service now runs the paced replay inside compose
+   and predicts through the inference service.
+2. **The replay's metrics reached the scrape only when it finished.** They are now
+   republished every second, and the shared registry is locked, because the scrape
+   renders it while the replay writes to it.
+3. **The inference service refused its own replay.** Its per-client limit of 600
+   requests a minute answered the replay's hundred a second with 429, and every engine
+   went `inference_unavailable`, correctly. The limit is now sized for that internal
+   client.
+4. **Jaeger 2.21.0 dropped the v1 query API** that Grafana's Jaeger datasource calls.
+   Pinned to 2.20.0.
+5. **The traces panel could not show a search.** Grafana's traces panel draws one
+   trace; a search returns a list, so it is now a table.
+6. **The alerting service reported itself unhealthy** with auth on: its healthcheck
+   called `/readyz`, which needs the token. It now calls `/healthz`, and a test checks
+   every healthcheck does.
 
 ### Tracing across services
 

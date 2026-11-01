@@ -46,6 +46,14 @@ All notable changes to this project. The format follows
 
 ### Fixed
 
+- The compose stack, run for the first time with authentication on: it had no replay
+  feeding it, so Grafana could show no live data; a `replay` service now runs in
+  compose. The replay's metrics now reach the scrape while it runs, the metrics
+  registry is locked against concurrent scrapes, the inference rate limit no longer
+  refuses the stack's own replay, Jaeger is pinned to 2.20.0 because 2.21.0 dropped the
+  query API Grafana uses, the traces panel is a table, and the alerting healthcheck no
+  longer needs the token. `prognos verify-stack` checks all of it against the running
+  stack.
 - Trace context never crossed the HTTP hop: `Traceparent` was looked up case-sensitively.
 - The Grafana datasource file used a shape Grafana ignores, leaving panels without data.
 - The benchmark omitted operating-shift tracking after it was added to the live path.

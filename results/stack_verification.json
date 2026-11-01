@@ -1,0 +1,58 @@
+{
+  "all_passed": true,
+  "checks": {
+    "grafana_live_data": {
+      "passed": true,
+      "series_samples": {
+        "prognos_interval_coverage": 1,
+        "prognos_interval_coverage_ok": 1,
+        "prognos_interval_coverage_samples": 1,
+        "prognos_span_duration_seconds": 1,
+        "prognos_stream_accepted_total": 1,
+        "prognos_stream_rejected_by_reason_total": 0,
+        "prognos_stream_rejected_total": 1,
+        "rate(prognos_span_errors_total[5m])": 0,
+        "vector(0.9)": 1
+      },
+      "targets": {
+        "alerting:8083": "up",
+        "dashboard:8084": "up",
+        "inference:8082": "up",
+        "ingestion:8081": "up",
+        "localhost:9090": "up",
+        "replay:8090": "up"
+      }
+    },
+    "one_trace_across_services": {
+      "inference_request_spans": 489,
+      "inference_spans_joined_to_a_replay_span": 489,
+      "passed": true,
+      "replay_traces": 496,
+      "replay_traces_spanning_both_services": 490,
+      "window_seconds": 5
+    },
+    "registered_version_served": {
+      "passed": true,
+      "registry": {
+        "name": "prognos-rul",
+        "reference": "models:/prognos-rul@serving",
+        "run_id": "7af58105e0774162b79e8e97ec60d961",
+        "version": "1"
+      },
+      "status": "ready"
+    }
+  },
+  "command": "prognos verify-stack",
+  "generated_at": "2026-11-01",
+  "hardware": "Darwin arm64 / arm / Python 3.12.13",
+  "versions": {
+    "h5py": "3.16.0",
+    "lightgbm": "4.6.0",
+    "numpy": "2.4.1",
+    "pandas": "3.0.1",
+    "pyarrow": "26.0.0",
+    "python": "3.12.13",
+    "scikit-learn": "1.8.0",
+    "torch": "2.10.0"
+  }
+}
