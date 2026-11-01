@@ -144,7 +144,15 @@ def compare(data: WindowSource, seed: int, epochs: int = 30) -> dict[str, Any]:
     }
 
 
-__all__ = ["CONCLUSION", "DIFFERENCES", "PUBLISHED", "SOURCE", "compare", "final_comparison"]
+__all__ = [
+    "CONCLUSION",
+    "DIFFERENCES",
+    "PUBLISHED",
+    "SOURCE",
+    "compare",
+    "final_comparison",
+    "summarise_seeds",
+]
 
 
 def final_comparison(data: WindowSource, seed: int, epochs: int = 30) -> dict[str, Any]:
@@ -208,3 +216,36 @@ def final_comparison(data: WindowSource, seed: int, epochs: int = 30) -> dict[st
         "seed": seed,
         "n_train_windows": int(train.windows.shape[0]),
     }
+
+
+def summarise_seeds(runs: list[dict[str, Any]]) -> dict[str, Any]:
+    """Mean and t-based 95% interval of each RMSE across seeded runs.
+
+    The interval describes run-to-run variation from the seed alone: the split, the
+    data and the configuration are the same in every run, so it says how much of a
+    difference between two models a single seed could have produced, nothing about
+    other engines.
+    """
+    from scipy import stats
+
+    first = runs[0]["ours"]
+    summary: dict[str, Any] = {}
+    for variant, models in first.items():
+        for name, result in models.items():
+            for column in result["rmse"]:
+                values = np.asarray(
+                    [run["ours"][variant][name]["rmse"][column] for run in runs], dtype=float
+                )
+                n = values.size
+                half = (
+                    float(stats.t.ppf(0.975, n - 1) * values.std(ddof=1) / np.sqrt(n))
+                    if n > 1
+                    else 0.0
+                )
+                summary.setdefault(variant, {}).setdefault(name, {})[column] = {
+                    "mean": float(values.mean()),
+                    "ci_low": float(values.mean() - half),
+                    "ci_high": float(values.mean() + half),
+                    "values": [float(v) for v in values],
+                }
+    return summary

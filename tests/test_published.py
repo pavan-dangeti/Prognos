@@ -143,3 +143,17 @@ def test_the_readme_quotes_the_final_run() -> None:
     opened = report["final_test_group"]["opened_by_this_run"]
     assert opened == ["DS02-006/unit005", "DS02-006/unit011", "DS02-006/unit020"]
     assert len(report["final_test_group"]["still_closed"]) == 7
+
+
+def test_seed_summaries_are_mean_and_t_interval() -> None:
+    from prognos.published import summarise_seeds
+
+    def run(value: float) -> dict[str, object]:
+        return {"ours": {"without_cycle": {"cnn": {"rmse": {"all": value}}}}}
+
+    summary = summarise_seeds([run(v) for v in (6.0, 7.0, 8.0, 7.0, 7.0)])
+    row = summary["without_cycle"]["cnn"]["all"]
+    assert row["mean"] == pytest.approx(7.0)
+    # std 0.7071, t(0.975, 4) = 2.776: half-width 2.776 * 0.7071 / sqrt(5) = 0.878
+    assert row["ci_high"] - row["mean"] == pytest.approx(0.878, abs=1e-3)
+    assert row["values"] == [6.0, 7.0, 8.0, 7.0, 7.0]

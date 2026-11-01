@@ -934,6 +934,76 @@ def cmd_final_ds02(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_final_ds02_seeds(args: argparse.Namespace) -> int:
+    """The final DS02 comparison repeated over seeds, configuration unchanged.
+
+    Calls the same frozen `final_comparison` once per seed; only the seed differs. The
+    first seed is the configured one, so the first run must reproduce the committed
+    single-seed result.
+    """
+    import subprocess
+
+    from prognos.evaluate import build_folds, library_versions
+    from prognos.published import final_comparison, summarise_seeds
+
+    out_path = Path(args.out)
+    if out_path.exists():
+        print(f"{out_path} exists: the seeded run has happened", file=sys.stderr)
+        return 1
+    if subprocess.run(
+        ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
+    ).stdout.strip():
+        print("the working tree is not clean; commit before the run", file=sys.stderr)
+        return 1
+    commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    config = load_config(Path(args.config))
+    data = load_windows(
+        config.data.parquet_dir,
+        config.window,
+        config.data.subdatasets,
+        cache_dir=config.data.parquet_dir.parent / "cache",
+    )
+    folds = build_folds(
+        data,
+        n_splits=config.split.n_splits,
+        test_fraction=config.split.test_fraction,
+        seed=config.split.seed,
+    )
+    seeds = [config.split.seed + offset for offset in range(args.seeds)]
+    runs = []
+    for seed in seeds:
+        print(f"seed {seed}", flush=True)
+        runs.append(final_comparison(data, seed=seed, epochs=args.epochs))
+    report: dict[str, Any] = {
+        "seeds": seeds,
+        "summary": summarise_seeds(runs),
+        "runs": runs,
+        "command": " ".join(["prognos", *sys.argv[1:]]),
+        "commit": commit,
+        "hardware": hardware_description(),
+        "versions": library_versions(),
+        "generated_at": date.today().isoformat(),
+        "final_test_group": {
+            "engines": sorted(data.group_labels[u].label() for u in folds[0].split.test_units),
+            "opened": ["DS02-006/unit005", "DS02-006/unit011", "DS02-006/unit020"],
+        },
+    }
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    _record("final-ds02-seeds", report, out_path)
+    for variant, models in report["summary"].items():
+        for name, columns in models.items():
+            a = columns["all"]
+            print(
+                f"  {variant:>14} {name:>12}: all {a['mean']:.2f} "
+                f"[{a['ci_low']:.2f}, {a['ci_high']:.2f}]",
+                flush=True,
+            )
+    return 0
+
+
 def cmd_serve(args: argparse.Namespace) -> int:
     """Serve one streaming component over HTTP until interrupted."""
     import logging
@@ -1139,6 +1209,13 @@ def main(argv: list[str] | None = None) -> int:
     final.add_argument("--out", default="results/final_ds02.json")
     final.add_argument("--epochs", type=int, default=30)
     final.set_defaults(func=cmd_final_ds02)
+
+    seeded = sub.add_parser("final-ds02-seeds", help="the final DS02 comparison over seeds")
+    seeded.add_argument("--config", default="configs/base.yaml")
+    seeded.add_argument("--out", default="results/final_ds02_seeds.json")
+    seeded.add_argument("--seeds", type=int, default=5)
+    seeded.add_argument("--epochs", type=int, default=30)
+    seeded.set_defaults(func=cmd_final_ds02_seeds)
 
     serve_cmd = sub.add_parser("serve", help="serve one streaming component over HTTP")
     serve_cmd.add_argument("--component", required=True, choices=list(COMPONENTS))
