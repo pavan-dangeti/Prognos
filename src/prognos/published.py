@@ -61,11 +61,12 @@ DIFFERENCES = (
     "20 channels without listing them.",
     "Windows: 50 readings, every 10th reading within one cycle, RMSE averaged over "
     "windows. The cited table does not state its sampling or what one RMSE sample is.",
-    "RUL cap: 125 cycles in training. DS02 engines live at most 89 cycles, so the cap "
-    "never binds on them. The cited table does not state one.",
+    "RUL cap: 125 cycles in training. The DS02 engines used here live 63 to 82 cycles, "
+    "so the cap never binds on them. The cited table does not state one.",
     "Engine age: every model here, LightGBM and the sequence models included, is given "
-    "the cycle number, and DS02 engines all live 63 to 89 cycles, so age alone predicts "
-    "much of the remaining life. The cited table does not say its models receive it.",
+    "the cycle number, and the DS02 engines used here all live 63 to 82 cycles, so age "
+    "alone predicts much of the remaining life. The cited table does not say its models "
+    "receive it.",
     "Seeds: one seed here. The cited table reports a mean over five subsamples.",
     "Models: the Phase 3 configurations as committed, trained on these four DS02 engines "
     "for this run. They are not the cross-validated models in the README's results "
