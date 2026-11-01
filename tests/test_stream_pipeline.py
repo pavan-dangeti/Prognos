@@ -388,3 +388,53 @@ def test_the_alerting_service_keeps_engines_sharing_a_unit_apart() -> None:
     assert service.evaluate(unit=2, cycle=1, lower=80.0, point=95.0, source="DS02-006") == []
     assert service.open_alerts(2, source="DS01-005") == 1
     assert service.open_alerts(2, source="DS02-006") == 0
+
+
+class TestLiveMetrics:
+    """What a running stack's scrape shows, refreshed while the replay runs."""
+
+    def test_publishing_fills_the_series_the_dashboards_read(self) -> None:
+        cycles, rows = an_engine(seed=30)
+        truth = truth_for(cycles, [40.0, 39.0, 38.0, 37.0])
+        stream = pipeline(detect_faults=True)
+        stream.run_engine(1, cycles, rows, truth_by_cycle=truth, source="DS01")
+        stream.publish_metrics()
+        text = stream.metrics.render()
+        assert f"prognos_stream_accepted_total {float(cycles.size)}" in text
+        for series in ("prognos_interval_coverage_samples", "prognos_fleet_rul_cycles"):
+            assert series in text, series
+
+    def test_late_readings_are_counted_as_rejected(self) -> None:
+        _cycles, rows = an_engine(seed=31)
+        stream = pipeline()
+        stream.push(1, 3, rows[0])
+        stream.push(1, 2, rows[1])
+        stream.publish_metrics()
+        assert stream.metrics.value("stream_rejected_total") == 1.0
+        assert (
+            stream.metrics.value("stream_rejected_by_reason_total", {"reason": "late_reading"})
+            == 1.0
+        )
+
+    def test_rendering_while_another_thread_writes_does_not_raise(self) -> None:
+        import threading
+
+        from prognos.stream.observability import MetricsRegistry
+
+        registry = MetricsRegistry()
+        stop = threading.Event()
+
+        def write() -> None:
+            n = 0
+            while not stop.is_set():
+                n += 1
+                registry.gauge("g", "gauge", value=n, labels={"k": str(n % 500)})
+
+        writer = threading.Thread(target=write, daemon=True)
+        writer.start()
+        try:
+            for _ in range(300):
+                registry.render()
+        finally:
+            stop.set()
+            writer.join()

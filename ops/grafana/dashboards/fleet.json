@@ -275,9 +275,9 @@
     },
     {
       "id": 8,
-      "type": "traces",
+      "type": "table",
       "title": "Recent traces: replay to inference",
-      "description": "OpenTelemetry traces from the pipeline and the inference service, via Jaeger. A remote prediction is one trace from pipeline.window through inference.remote_predict to the service's POST /predict.",
+      "description": "Recent traces from Jaeger that reached the inference service. Each row is one trace; a remote prediction runs pipeline.window -> inference.remote_predict -> POST /predict -> inference.predict across the replay and inference services. A search returns a list, so this is a table: Grafana's traces panel draws one trace.",
       "datasource": {
         "type": "jaeger",
         "uid": "prognos-jaeger"
@@ -292,7 +292,7 @@
         {
           "refId": "A",
           "queryType": "search",
-          "service": "prognos-inference",
+          "service": "prognos-replay",
           "datasource": {
             "type": "jaeger",
             "uid": "prognos-jaeger"

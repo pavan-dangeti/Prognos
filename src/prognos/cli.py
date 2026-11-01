@@ -440,7 +440,6 @@ def _serve_until_done(
     """
     from prognos.stream.api import build_component
     from prognos.stream.auth import Authorizer, RateLimiter, token_from_env
-    from prognos.stream.observability import MetricsRegistry
     from prognos.stream.service import build_server
 
     logger = logging.getLogger("prognos.dashboard")
@@ -452,9 +451,11 @@ def _serve_until_done(
     def state() -> Any:  # noqa: ANN401
         """The live pipeline's fleet, with the same auth the other services use."""
         pipeline = holder["pipeline"]
+        # The pipeline's own registry, so the scrape shows the stream, coverage, fleet
+        # and faults the replay is producing rather than an empty dashboard's.
         built = build_component(
             "dashboard",
-            metrics=MetricsRegistry(),
+            metrics=pipeline.metrics,
             logger=logger,
             fleet=pipeline.fleet,
             monitor=pipeline.coverage_monitor,
@@ -471,6 +472,7 @@ def _serve_until_done(
     # look at the clock; once a second is far finer than any timeout worth setting.
     while worker.is_alive():
         holder["pipeline"].check_silence(args.silence_timeout)
+        holder["pipeline"].publish_metrics()
         worker.join(timeout=1.0)
     httpd.shutdown()
     httpd.server_close()
@@ -832,6 +834,35 @@ def cmd_export_model(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_verify_stack(args: argparse.Namespace) -> int:
+    """Check a running compose stack: live dashboards, joined traces, served version."""
+    from .evaluate import library_versions
+    from .stream.auth import token_from_env
+    from .verify_stack import verify
+
+    report = verify(
+        args.prometheus,
+        args.jaeger,
+        args.inference,
+        Path("ops/grafana/dashboards/fleet.json"),
+        token_from_env(),
+    )
+    report.update(
+        {
+            "command": " ".join(["prognos", *sys.argv[1:]]),
+            "hardware": hardware_description(),
+            "versions": library_versions(),
+            "generated_at": date.today().isoformat(),
+        }
+    )
+    out_path = Path(args.out)
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    for name, check in report["checks"].items():
+        print(f"  {name}: {'ok' if check['passed'] else 'FAILED'}", flush=True)
+    print(f"wrote {out_path}; all passed: {report['all_passed']}", flush=True)
+    return 0 if report["all_passed"] else 1
+
+
 def cmd_serve(args: argparse.Namespace) -> int:
     """Serve one streaming component over HTTP until interrupted."""
     import logging
@@ -1022,6 +1053,13 @@ def main(argv: list[str] | None = None) -> int:
     export.add_argument("--ref", default="models:/prognos-rul@serving")
     export.add_argument("--out", default="artifacts/model")
     export.set_defaults(func=cmd_export_model)
+
+    check = sub.add_parser("verify-stack", help="check a running compose stack end to end")
+    check.add_argument("--prometheus", default="http://127.0.0.1:9090")
+    check.add_argument("--jaeger", default="http://127.0.0.1:16686")
+    check.add_argument("--inference", default="http://127.0.0.1:8082")
+    check.add_argument("--out", default="results/stack_verification.json")
+    check.set_defaults(func=cmd_verify_stack)
 
     serve_cmd = sub.add_parser("serve", help="serve one streaming component over HTTP")
     serve_cmd.add_argument("--component", required=True, choices=list(COMPONENTS))

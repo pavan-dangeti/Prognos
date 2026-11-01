@@ -21,7 +21,7 @@ scrape_configs:
       # Scraping a port nothing listens on reads as a permanent DOWN target, which
       # looks like an outage rather than a configuration mistake, so the two files
       # have to agree and the port only appears in each of them once.
-      - targets: ["ingestion:8081", "inference:8082", "alerting:8083", "dashboard:8084"]
+      - targets: ["ingestion:8081", "inference:8082", "alerting:8083", "dashboard:8084", "replay:8090"]
         labels:
           component: streaming
 

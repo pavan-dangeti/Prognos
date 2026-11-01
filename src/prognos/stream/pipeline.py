@@ -44,6 +44,8 @@ from prognos.stream.inference import InferenceUnavailableError, Prediction, Pred
 from prognos.stream.observability import (
     MetricsRegistry,
     record_coverage_metrics,
+    record_fault_metrics,
+    record_fleet_metrics,
     record_stream_metrics,
     span,
     tracer,
@@ -213,6 +215,20 @@ class StreamPipeline:
         self._detectors[key] = FaultDetector(unit=key[1])
         return self._detectors[key]
 
+    def _open_states(self) -> list[DegradedState]:
+        """Every degraded state open on any engine.
+
+        Iterates a copy of the engine table: the replay thread adds engines while the
+        watchdog thread publishes, and a dict that grows mid-iteration raises.
+        """
+        states: list[DegradedState] = []
+        for state in list(self._engines.values()):
+            if state.detector is not None:
+                states.extend(state.detector.active())
+            shift = state.shift.open if state.shift is not None else None
+            states.extend(s for s in (state.outage, state.silent, shift) if s is not None)
+        return states
+
     @property
     def degraded_states(self) -> list[dict[str, object]]:
         """Every fault currently open, for the dashboard and the metrics endpoint.
@@ -220,14 +236,7 @@ class StreamPipeline:
         S6: any degraded state must be observable. A fault that is detected and then
         dropped on the floor is the same as one never detected.
         """
-        states: list[dict[str, object]] = []
-        for state in self._engines.values():
-            if state.detector is not None:
-                states.extend(s.to_dict() for s in state.detector.active())
-            shift = state.shift.open if state.shift is not None else None
-            pipeline_states = (state.outage, state.silent, shift)
-            states.extend(s.to_dict() for s in pipeline_states if s is not None)
-        return states
+        return [state.to_dict() for state in self._open_states()]
 
     @property
     def open_alerts(self) -> dict[tuple[str | None, int], MaintenanceAlert]:
@@ -300,6 +309,8 @@ class StreamPipeline:
         # would change windows whose predictions have already been reported.
         if state.detected_cycle is not None and cycle < state.detected_cycle:
             state.late_dropped += 1
+            self._stats.rejected += 1
+            self._stats.reject_reasons["late_reading"] += 1
             if state.detector is not None:
                 state.detector.observe(cycle, row)
                 self._publish(key, state)
@@ -325,6 +336,7 @@ class StreamPipeline:
             return []
         else:
             row = np.where(finite, row, state.last_good).astype(np.float32)
+        self._stats.accepted += 1
         window = state.window
         window.push(cycle, row)
 
@@ -528,6 +540,17 @@ class StreamPipeline:
         with span(self._metrics, "pipeline.record_metrics"):
             record_stream_metrics(self._metrics, self._stats)
             record_coverage_metrics(self._metrics, self.coverage_verdict)
+
+    def publish_metrics(self) -> None:
+        """Refresh everything the scrape shows from the live state.
+
+        Called once a second by the serving loop. Folding counters in only at the end
+        of a replay, as before, left a running stack's dashboards empty until it had
+        finished.
+        """
+        self.record_metrics()
+        record_fleet_metrics(self._metrics, self._fleet.rows())
+        record_fault_metrics(self._metrics, self._open_states())
 
     def summary(self) -> dict[str, object]:
         """A status document, for the dashboard and the status endpoint."""

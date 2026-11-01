@@ -45,7 +45,11 @@ services:
       context: .
       dockerfile: docker/Dockerfile
       target: runtime
-    command: ["prognos", "serve", "--component", "inference", "--port", "8082", "--host", "0.0.0.0", "--model-dir", "/app/artifacts/model"]
+    # The rate limit is sized for the replay, the internal client this service exists
+    # for, which asks for about a hundred predictions a second. At the default of 600 a
+    # minute the stack's own replay was refused with 429 and every engine went
+    # inference_unavailable. Abuse control for outside callers lives at the dashboard.
+    command: ["prognos", "serve", "--component", "inference", "--port", "8082", "--host", "0.0.0.0", "--model-dir", "/app/artifacts/model", "--rate-limit", "60000"]
     environment:
       PROGNOS_SERVICE: inference
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
@@ -88,7 +92,10 @@ services:
     ports:
       - "127.0.0.1:8083:8083"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8083/readyz', timeout=3).status==200 else 1)"]
+      # /healthz, not /readyz: readiness is authenticated once PROGNOS_API_TOKEN is
+      # set, and the probe has no token, so it read 401 and marked a working service
+      # unhealthy. Found by running the stack with auth on.
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8083/healthz', timeout=3).status==200 else 1)"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -118,6 +125,58 @@ services:
       retries: 3
     restart: unless-stopped
 
+  # The live system. Replays held-out engines at a watchable pace, predicts through
+  # the inference service over HTTP (so a prediction is one trace across both), and
+  # serves the fleet dashboard at /ui with live metrics for Prometheus. Without it the
+  # stack had no data source: every other service waits to be called.
+  replay:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: runtime
+    command:
+      - prognos
+      - stream
+      - --config
+      - configs/base.yaml
+      - --serve
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8090"
+      - --pace
+      - "10000"
+      - --inference-url
+      - http://inference:8082
+      - --out
+      - /tmp/replay.json
+      - --model-dir
+      - /tmp/model
+    environment:
+      PROGNOS_SERVICE: replay
+      PROGNOS_API_TOKEN: "${PROGNOS_API_TOKEN:-}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      # The replay trains its own copy to report calibration; that run is not one to
+      # register, so it goes to a store that dies with the container.
+      MLFLOW_TRACKING_URI: sqlite:////tmp/mlflow.db
+    ports:
+      - "127.0.0.1:8090:8090"
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./data:/app/data
+      - ./results:/app/results:ro
+    depends_on:
+      inference:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8090/healthz', timeout=3).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      # Training the calibration copy comes first, and the server starts after it.
+      start_period: 600s
+    restart: "no"
+
   prometheus:
     image: prom/prometheus:v3.5.0@sha256:8672a850efe2f9874702406c8318704edb363587f8c2ca88586b4c8fdb5cea24
     command:
@@ -138,7 +197,10 @@ services:
   # Grafana reads it as a datasource. In-memory storage: traces are for diagnosing
   # what is happening now, and the committed result files are the record.
   jaeger:
-    image: jaegertracing/jaeger:2.21.0@sha256:3d0ac795ff98aa04d1be04311d2dac6c25b4bfc8322dc02e53bc5b170c5018c3
+    # 2.20.0, not the newer 2.21.0: 2.21.0 serves only the v3 query API, and Grafana's
+    # Jaeger datasource calls the v1 /api/services, so with it the traces panel failed
+    # its health check. Found by running the stack.
+    image: jaegertracing/jaeger:2.20.0@sha256:46a886260e04002d8f45e213fc39063fa11a50446048fdaa64786fc0840cb9f8
     ports:
       - "127.0.0.1:16686:16686"
     restart: unless-stopped

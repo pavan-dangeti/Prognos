@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 import time
 import uuid
 from collections import Counter
@@ -164,10 +165,15 @@ def log_event(
 class MetricsRegistry:
     """Counters and gauges in the Prometheus text exposition format."""
 
-    __slots__ = ("_gauges", "_help", "_namespace", "_type", "_values")
+    __slots__ = ("_gauges", "_help", "_lock", "_namespace", "_type", "_values")
 
     def __init__(self, namespace: str = "prognos") -> None:
-        """Build an empty registry under a metric namespace."""
+        """Build an empty registry under a metric namespace.
+
+        Locked because the replay's watchdog publishes into it while scrape handlers
+        render it, and iterating a dict another thread is inserting into raises.
+        """
+        self._lock = threading.Lock()
         self._namespace = namespace
         self._values: dict[str, float] = {}
         self._type: dict[str, str] = {}
@@ -184,24 +190,26 @@ class MetricsRegistry:
         if increment < 0:
             raise ValueError(f"a counter increment must be non-negative, got {increment}")
         key = self._key(name, labels)
-        existing = self._type.get(name)
-        if existing is not None and existing != "counter":
-            raise ValueError(f"{name} is already a {existing}, cannot be a counter")
-        self._type[name] = "counter"
-        self._help.setdefault(name, documentation)
-        self._values[key] = self._values.get(key, 0.0) + increment
+        with self._lock:
+            existing = self._type.get(name)
+            if existing is not None and existing != "counter":
+                raise ValueError(f"{name} is already a {existing}, cannot be a counter")
+            self._type[name] = "counter"
+            self._help.setdefault(name, documentation)
+            self._values[key] = self._values.get(key, 0.0) + increment
 
     def gauge(
         self, name: str, documentation: str, value: float, labels: dict[str, str] | None = None
     ) -> None:
         """Set a gauge to an absolute value."""
         key = self._key(name, labels)
-        existing = self._type.get(name)
-        if existing is not None and existing != "gauge":
-            raise ValueError(f"{name} is already a {existing}, cannot be a gauge")
-        self._type[name] = "gauge"
-        self._help.setdefault(name, documentation)
-        self._values[key] = float(value)
+        with self._lock:
+            existing = self._type.get(name)
+            if existing is not None and existing != "gauge":
+                raise ValueError(f"{name} is already a {existing}, cannot be a gauge")
+            self._type[name] = "gauge"
+            self._help.setdefault(name, documentation)
+            self._values[key] = float(value)
 
     def value(self, name: str, labels: dict[str, str] | None = None) -> float:
         """Current value of a series, for tests and the health endpoint."""
@@ -216,11 +224,13 @@ class MetricsRegistry:
     def render(self) -> str:
         """The full exposition text, which is what the scrape endpoint returns."""
         lines: list[str] = []
-        for name in sorted(self._type):
-            lines.append(f"# HELP {self._namespace}_{name} {self._help.get(name, '')}")
-            lines.append(f"# TYPE {self._namespace}_{name} {self._type[name]}")
+        with self._lock:
+            types, helps, values = dict(self._type), dict(self._help), dict(self._values)
+        for name in sorted(types):
+            lines.append(f"# HELP {self._namespace}_{name} {helps.get(name, '')}")
+            lines.append(f"# TYPE {self._namespace}_{name} {types[name]}")
             prefix = f"{self._namespace}_{name}"
-            for key, value in sorted(self._values.items()):
+            for key, value in sorted(values.items()):
                 if key == name:
                     lines.append(f"{prefix} {value}")
                 elif key.startswith(f"{name}{{"):

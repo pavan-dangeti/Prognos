@@ -41,3 +41,28 @@ def test_every_image_is_pinned_by_digest() -> None:
     for name, service in services.items():
         if "image" in service:
             assert "@sha256:" in service["image"], f"{name} is not pinned by digest"
+
+
+def test_every_healthcheck_uses_the_unauthenticated_probe() -> None:
+    """Only /healthz is exempt from the bearer token.
+
+    A probe on anything else reads 401 once a token is set and marks a working service
+    unhealthy.
+    """
+    services = yaml.safe_load(COMPOSE.read_text())["services"]
+    for name, service in services.items():
+        check = service.get("healthcheck")
+        if check is None:
+            continue
+        probe = " ".join(check["test"])
+        assert "/healthz" in probe and "/readyz" not in probe, name
+
+
+def test_the_replay_is_scraped_and_traced() -> None:
+    services = yaml.safe_load(COMPOSE.read_text())["services"]
+    replay = services["replay"]
+    assert replay["environment"]["OTEL_EXPORTER_OTLP_ENDPOINT"] == "http://jaeger:4318"
+    assert "--inference-url" in replay["command"]
+    scrape = yaml.safe_load(Path("ops/prometheus.yml").read_text())
+    targets = scrape["scrape_configs"][0]["static_configs"][0]["targets"]
+    assert "replay:8090" in targets
