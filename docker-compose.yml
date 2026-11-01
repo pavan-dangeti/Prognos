@@ -49,6 +49,10 @@ services:
     # for, which asks for about a hundred predictions a second. At the default of 600 a
     # minute the stack's own replay was refused with 429 and every engine went
     # inference_unavailable. Abuse control for outside callers lives at the dashboard.
+    # The raised limit applies to every caller, so it is safe only because this port is
+    # published on loopback and needs PROGNOS_API_TOKEN when one is set. A deployment
+    # that faces the internet must not publish it at all: inference stays on the
+    # compose network, reachable by the replay alone.
     command: ["prognos", "serve", "--component", "inference", "--port", "8082", "--host", "0.0.0.0", "--model-dir", "/app/artifacts/model", "--rate-limit", "60000"]
     environment:
       PROGNOS_SERVICE: inference
