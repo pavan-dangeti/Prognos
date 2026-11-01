@@ -343,7 +343,9 @@ def cmd_stream(args: argparse.Namespace) -> int:
     """
     from prognos.evaluate import build_folds
     from prognos.pipeline import replay_pipeline
+    from prognos.stream.observability import configure_tracing
 
+    configure_tracing("replay")
     config = load_config(Path(args.config))
     cache_dir = None if args.no_cache else config.data.parquet_dir.parent / "cache"
 
@@ -558,8 +560,12 @@ def cmd_bench(args: argparse.Namespace) -> int:
     """Measure streaming latency and throughput at several fleet sizes."""
     from prognos.bench import benchmark
     from prognos.evaluate import build_folds, library_versions
+    from prognos.stream.observability import configure_tracing
     from prognos.stream.pipeline import PipelineConfig
 
+    # The same tracer provider the replay installs, so the figures include the cost
+    # of the spans production makes. Nothing is exported without an endpoint.
+    configure_tracing("bench")
     config = load_config(Path(args.config))
     cache_dir = None if args.no_cache else config.data.parquet_dir.parent / "cache"
     data = load_windows(
@@ -831,7 +837,7 @@ def cmd_serve(args: argparse.Namespace) -> int:
 
     from prognos.stream.api import build_component, default_port
     from prognos.stream.auth import Authorizer, RateLimiter, token_from_env
-    from prognos.stream.observability import JsonLogFormatter, log_event
+    from prognos.stream.observability import JsonLogFormatter, configure_tracing, log_event
     from prognos.stream.service import serve
 
     handlers = [
@@ -857,6 +863,7 @@ def cmd_serve(args: argparse.Namespace) -> int:
         options["threshold"] = args.alert_threshold
         options["hysteresis"] = args.alert_hysteresis
 
+    configure_tracing(args.component)
     state = build_component(args.component, **options)
 
     # Read the token here rather than inside the service, so the decision is visible in

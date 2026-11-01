@@ -10,6 +10,9 @@ dependencies = [
     "lightgbm==4.6.0",
     "mlflow-skinny==3.17.2",
     "numpy==2.4.1",
+    "opentelemetry-api==1.45.2",
+    "opentelemetry-exporter-otlp-proto-http==1.45.2",
+    "opentelemetry-sdk==1.45.2",
     "pandas==3.0.1",
     "pyarrow==26.0.0",
     "pydantic==2.13.1",
@@ -77,6 +80,13 @@ disable_error_code = ["import-untyped"]
 
 # Untyped third-party packages. Overridden individually rather than relaxing
 # mypy globally, so the rest of the codebase stays strictly checked.
+[[tool.mypy.overrides]]
+# protobuf's `google` namespace package, pulled in by the OTLP exporter and never
+# imported here. Followed, it corrupts mypy's incremental cache: the second run crashes
+# with "Cannot find module for google". Skipping it costs no checking of this code.
+module = ["google", "google.*"]
+follow_imports = "skip"
+
 [[tool.mypy.overrides]]
 # Both the bare name and its submodules: a `pkg.*` pattern does not cover `pkg`
 # itself, so listing only one of the two leaves errors behind.

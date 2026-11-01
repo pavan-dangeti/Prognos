@@ -2,20 +2,38 @@
   "uid": "prognos-fleet",
   "title": "Prognos fleet",
   "description": "Live RUL coverage against the S5 SLO, ingestion health, and the alerts a maintenance decision depends on.",
-  "tags": ["prognos", "rul"],
+  "tags": [
+    "prognos",
+    "rul"
+  ],
   "timezone": "utc",
   "editable": false,
-  "time": {"from": "now-6h", "to": "now"},
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
   "panels": [
     {
       "id": 1,
       "type": "stat",
       "title": "S5 interval coverage vs 90% target",
-      "description": "The SLO in docs/design.md §4.4. A breach is coverage more than 5 points below target. Over-coverage is wasteful rather than dangerous, so it reads as a warning here, not as a breach.",
-      "gridPos": {"h": 6, "w": 8, "x": 0, "y": 0},
-      "datasource": {"type": "prometheus", "uid": "prognos-prometheus"},
+      "description": "The SLO in docs/design.md \u00a74.4. A breach is coverage more than 5 points below target. Over-coverage is wasteful rather than dangerous, so it reads as a warning here, not as a breach.",
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prognos-prometheus"
+      },
       "targets": [
-        {"expr": "prognos_interval_coverage", "refId": "A", "legendFormat": "live coverage"}
+        {
+          "expr": "prognos_interval_coverage",
+          "refId": "A",
+          "legendFormat": "live coverage"
+        }
       ],
       "fieldConfig": {
         "defaults": {
@@ -25,9 +43,18 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "red", "value": null},
-              {"color": "orange", "value": 0.85},
-              {"color": "green", "value": 0.9}
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.85
+              },
+              {
+                "color": "green",
+                "value": 0.9
+              }
             ]
           }
         },
@@ -39,18 +66,46 @@
       "type": "stat",
       "title": "S5 verdict",
       "description": "1 when coverage is inside the tolerance band, 0 on a breach. Panel 1 alone cannot distinguish not-enough-data from healthy, and this one cannot.",
-      "gridPos": {"h": 6, "w": 6, "x": 8, "y": 0},
-      "datasource": {"type": "prometheus", "uid": "prognos-prometheus"},
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 8,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prognos-prometheus"
+      },
       "targets": [
-        {"expr": "prognos_interval_coverage_ok", "refId": "A", "legendFormat": "ok"}
+        {
+          "expr": "prognos_interval_coverage_ok",
+          "refId": "A",
+          "legendFormat": "ok"
+        }
       ],
       "fieldConfig": {
         "defaults": {
           "min": 0,
           "max": 1,
           "mappings": [
-            {"type": "value", "options": {"0": {"text": "BREACH", "color": "red"}}},
-            {"type": "value", "options": {"1": {"text": "OK", "color": "green"}}}
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "BREACH",
+                  "color": "red"
+                }
+              }
+            },
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "OK",
+                  "color": "green"
+                }
+              }
+            }
           ]
         },
         "overrides": []
@@ -61,22 +116,51 @@
       "type": "stat",
       "title": "Scored predictions in window",
       "description": "How much evidence the coverage figure rests on. Below 50 the monitor deliberately refuses to judge.",
-      "gridPos": {"h": 6, "w": 5, "x": 14, "y": 0},
-      "datasource": {"type": "prometheus", "uid": "prognos-prometheus"},
+      "gridPos": {
+        "h": 6,
+        "w": 5,
+        "x": 14,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prognos-prometheus"
+      },
       "targets": [
-        {"expr": "prognos_interval_coverage_samples", "refId": "A", "legendFormat": "samples"}
+        {
+          "expr": "prognos_interval_coverage_samples",
+          "refId": "A",
+          "legendFormat": "samples"
+        }
       ],
-      "fieldConfig": {"defaults": {"decimals": 0}, "overrides": []}
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0
+        },
+        "overrides": []
+      }
     },
     {
       "id": 4,
       "type": "timeseries",
       "title": "Coverage over time",
       "description": "A model whose offline coverage is 90% and whose live coverage is 71% is a degraded system. This is the panel that shows it.",
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
-      "datasource": {"type": "prometheus", "uid": "prognos-prometheus"},
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prognos-prometheus"
+      },
       "targets": [
-        {"expr": "prognos_interval_coverage", "refId": "A", "legendFormat": "coverage"},
+        {
+          "expr": "prognos_interval_coverage",
+          "refId": "A",
+          "legendFormat": "coverage"
+        },
         {
           "expr": "vector(0.9)",
           "refId": "B",
@@ -84,7 +168,11 @@
         }
       ],
       "fieldConfig": {
-        "defaults": {"min": 0, "max": 1, "unit": "percentunit"},
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percentunit"
+        },
         "overrides": []
       }
     },
@@ -93,26 +181,55 @@
       "type": "timeseries",
       "title": "Ingestion: accepted vs rejected rows",
       "description": "A pipeline that silently drops bad input is indistinguishable from one that has stopped receiving data. Rejects are split by reason class, because a total is not a diagnosis.",
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
-      "datasource": {"type": "prometheus", "uid": "prognos-prometheus"},
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prognos-prometheus"
+      },
       "targets": [
-        {"expr": "prognos_stream_accepted_total", "refId": "A", "legendFormat": "accepted"},
-        {"expr": "prognos_stream_rejected_total", "refId": "B", "legendFormat": "rejected"},
+        {
+          "expr": "prognos_stream_accepted_total",
+          "refId": "A",
+          "legendFormat": "accepted"
+        },
+        {
+          "expr": "prognos_stream_rejected_total",
+          "refId": "B",
+          "legendFormat": "rejected"
+        },
         {
           "expr": "prognos_stream_rejected_by_reason_total",
           "refId": "C",
           "legendFormat": "rejected: {{reason}}"
         }
       ],
-      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []}
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      }
     },
     {
       "id": 6,
       "type": "timeseries",
       "title": "Span duration (p95 proxy: max over window)",
       "description": "Operational latency of the pipeline stages. S1 sets a p95 end-to-end target of 2 s per engine cycle.",
-      "gridPos": {"h": 7, "w": 12, "x": 0, "y": 14},
-      "datasource": {"type": "prometheus", "uid": "prognos-prometheus"},
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prognos-prometheus"
+      },
       "targets": [
         {
           "expr": "prognos_span_duration_seconds",
@@ -120,15 +237,28 @@
           "legendFormat": "{{span}}"
         }
       ],
-      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []}
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      }
     },
     {
       "id": 7,
       "type": "timeseries",
       "title": "Span errors",
       "description": "A trace that swallows a failure reports the broken path as healthy, so failures are counted as first-class.",
-      "gridPos": {"h": 7, "w": 12, "x": 12, "y": 14},
-      "datasource": {"type": "prometheus", "uid": "prognos-prometheus"},
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prognos-prometheus"
+      },
       "targets": [
         {
           "expr": "rate(prognos_span_errors_total[5m])",
@@ -136,7 +266,39 @@
           "legendFormat": "{{span}}"
         }
       ],
-      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []}
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 8,
+      "type": "traces",
+      "title": "Recent traces: replay to inference",
+      "description": "OpenTelemetry traces from the pipeline and the inference service, via Jaeger. A remote prediction is one trace from pipeline.window through inference.remote_predict to the service's POST /predict.",
+      "datasource": {
+        "type": "jaeger",
+        "uid": "prognos-jaeger"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 21
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "search",
+          "service": "prognos-inference",
+          "datasource": {
+            "type": "jaeger",
+            "uid": "prognos-jaeger"
+          }
+        }
+      ]
     }
   ]
 }

@@ -23,12 +23,18 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Protocol
 
+from opentelemetry import trace
+from opentelemetry.propagate import extract
+from opentelemetry.trace import SpanKind, Status, StatusCode
+
 from prognos.stream.auth import Authorizer, RateLimiter, check_request
-from prognos.stream.observability import MetricsRegistry, RequestContext, log_event
+from prognos.stream.observability import MetricsRegistry, RequestContext, log_event, tracer
 
 
 class ReadinessCheck(Protocol):
@@ -103,6 +109,29 @@ class _Handler(BaseHTTPRequestHandler):
         encoded = json.dumps(body, default=str).encode()
         self._send(status, encoded, "application/json")
 
+    @contextmanager
+    def _server_span(self, method: str) -> Iterator[None]:
+        """One server span per request, continuing the caller's trace if it sent one.
+
+        The route, not the full path, names the span: a query string in a span name
+        makes every request its own operation in the trace backend.
+        """
+        route = self.path.split("?", 1)[0].rstrip("/") or "/"
+        with tracer.start_as_current_span(
+            f"{method} {route}",
+            # Lower-cased: header names are case-insensitive, the propagator's dict
+            # lookup is not, and urllib sends `Traceparent`. Read as-is, every trace
+            # silently broke at the socket.
+            context=extract({key.lower(): value for key, value in self.headers.items()}),
+            kind=SpanKind.SERVER,
+            attributes={
+                "http.request.method": method,
+                "http.route": route,
+                "service": self.state.name,
+            },
+        ):
+            yield
+
     def _authorise(self, route: str) -> bool:
         """Check the token and the rate limit. Returns False once a reply is sent.
 
@@ -155,6 +184,9 @@ class _Handler(BaseHTTPRequestHandler):
         response whose advertised length excludes its real body gets truncated by the
         client, and a truncated scrape looks like a quiet period.
         """
+        trace.get_current_span().set_attribute("http.response.status_code", status)
+        if status >= 500:
+            trace.get_current_span().set_status(Status(StatusCode.ERROR))
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(encoded)))
@@ -168,7 +200,7 @@ class _Handler(BaseHTTPRequestHandler):
         from prognos.stream.api import HttpError
 
         request_id = self.headers.get("X-Request-Id") or None
-        with RequestContext(request_id or ""):
+        with RequestContext(request_id or ""), self._server_span("GET"):
             try:
                 self._get_route(request_id)
             except HttpError as error:
@@ -247,7 +279,7 @@ class _Handler(BaseHTTPRequestHandler):
         from prognos.stream.api import HttpError
 
         request_id = self.headers.get("X-Request-Id") or None
-        with RequestContext(request_id or ""):
+        with RequestContext(request_id or ""), self._server_span("POST"):
             route = self.path.split("?", 1)[0].rstrip("/") or "/"
             if not self._authorise(route):
                 return

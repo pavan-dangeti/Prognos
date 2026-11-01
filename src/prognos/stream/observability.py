@@ -9,8 +9,12 @@ optional once there are six components talking to each other:
 - **Metrics in the Prometheus exposition format.** The format is a contract with the
   scraper, not a formatting preference, so `render` is tested against real output
   rather than eyeballed.
-- **Spans that record failures.** A trace that swallows an exception is worse than no
-  trace, because it reports the slow path as healthy.
+- **Traces across services, on OpenTelemetry.** A prediction made through the
+  inference service is one trace from the pipeline's window to the service's handler,
+  joined by the W3C `traceparent` header. Spans record failures: a trace that swallows
+  an exception is worse than no trace, because it reports the slow path as healthy.
+  Exported over OTLP when `OTEL_EXPORTER_OTLP_ENDPOINT` is set; otherwise spans are
+  still made, so log lines carry trace ids, and nothing is sent anywhere.
 
 Counters reject negative increments and reject inconsistent label sets, because a
 counter that silently resets or a metric whose labels change between scrapes makes
@@ -30,12 +34,39 @@ from contextvars import ContextVar
 from typing import Any
 
 import numpy as np
+from opentelemetry import trace
+from opentelemetry.trace import Status, StatusCode
 
 from prognos.stream.coverage import CoverageVerdict
 from prognos.stream.events import StreamStats
 from prognos.stream.faults import DegradedState
 
 _REQUEST_ID: ContextVar[str] = ContextVar("prognos_request_id", default="")
+
+#: Every span in the project comes from this tracer, so the instrumentation scope is one
+#: name in the trace backend rather than one per module.
+tracer = trace.get_tracer("prognos")
+
+
+def configure_tracing(service: str) -> None:
+    """Install the process's tracer provider, named for the service it runs.
+
+    Once per process; a provider cannot be replaced after spans exist. The exporter is
+    added only when an OTLP endpoint is configured, so a local run or a test makes real
+    spans and real trace ids without trying to reach a collector that is not there.
+    """
+    import os
+
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.sdk.trace import TracerProvider
+
+    provider = TracerProvider(resource=Resource.create({"service.name": f"prognos-{service}"}))
+    if os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT"):
+        from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+        provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+    trace.set_tracer_provider(provider)
 
 
 class JsonLogFormatter(logging.Formatter):
@@ -63,6 +94,11 @@ class JsonLogFormatter(logging.Formatter):
                 getattr(record, "request_id", None) or _REQUEST_ID.get() or uuid.uuid4().hex
             ),
         }
+        # The trace this line belongs to, so a log line leads to its trace and back.
+        context = trace.get_current_span().get_span_context()
+        if context.is_valid:
+            payload["trace_id"] = format(context.trace_id, "032x")
+            payload["span_id"] = format(context.span_id, "016x")
         for key, value in getattr(record, "extra_fields", {}).items():
             payload[key] = _jsonable(value)
         if record.exc_info:
@@ -244,26 +280,33 @@ def record_fault_metrics(registry: MetricsRegistry, states: list[DegradedState])
 
 @contextmanager
 def span(registry: MetricsRegistry, name: str, **labels: str) -> Iterator[None]:
-    """Time a block and record it, including when it fails.
+    """An OpenTelemetry span, with its count, errors and duration also on the scrape.
 
-    The failure is re-raised: a trace that swallowed the exception would report the
-    broken path as healthy, which is the opposite of the point of having one.
+    The failure is recorded on the span and re-raised: a trace that swallowed the
+    exception would report the broken path as healthy, which is the opposite of the
+    point of having one. The Prometheus series stay because the dashboards alert on
+    them, and a trace backend is not where anyone looks for a rate.
     """
     start = time.perf_counter()
-    try:
-        yield
-    except BaseException:
-        registry.counter("span_errors_total", "Span failures", labels={"span": name, **labels})
-        raise
-    finally:
-        duration = time.perf_counter() - start
-        registry.counter("span_calls_total", "Span invocations", labels={"span": name, **labels})
-        registry.gauge(
-            "span_duration_seconds",
-            "Duration of the most recent span",
-            value=duration,
-            labels={"span": name, **labels},
-        )
+    with tracer.start_as_current_span(name, attributes=labels) as current:
+        try:
+            yield
+        except BaseException as error:
+            current.record_exception(error)
+            current.set_status(Status(StatusCode.ERROR, type(error).__name__))
+            registry.counter("span_errors_total", "Span failures", labels={"span": name, **labels})
+            raise
+        finally:
+            duration = time.perf_counter() - start
+            registry.counter(
+                "span_calls_total", "Span invocations", labels={"span": name, **labels}
+            )
+            registry.gauge(
+                "span_duration_seconds",
+                "Duration of the most recent span",
+                value=duration,
+                labels={"span": name, **labels},
+            )
 
 
 def record_fleet_metrics(registry: MetricsRegistry, rows: list[dict[str, Any]]) -> None:

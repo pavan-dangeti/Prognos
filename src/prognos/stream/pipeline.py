@@ -46,6 +46,7 @@ from prognos.stream.observability import (
     record_coverage_metrics,
     record_stream_metrics,
     span,
+    tracer,
 )
 from prognos.stream.window import OnlineWindow
 
@@ -329,60 +330,67 @@ class StreamPipeline:
 
         predictions: list[Prediction] = []
         while window.has_window:
-            features = window.materialise()
-            try:
-                interval = self._predictor.predict(
-                    features[None, ...], np.asarray([cycle], dtype=np.int64)
-                )[0]
-            except InferenceUnavailableError as error:
-                # No prediction rather than the last one: a stale interval drawn as
-                # current is the silent wrong answer this state exists to prevent.
-                state.missed_predictions += 1
-                if state.outage is None:
-                    state.outage = DegradedState(
-                        state="inference_unavailable",
-                        engine=unit,
-                        detail=f"no prediction since cycle {cycle}: {error}",
-                        details={"engine": unit, "cycle": cycle},
-                    )
+            # One span per window, never per reading: a reading that completes no
+            # window does nothing worth tracing, and there are thousands per cycle.
+            with tracer.start_as_current_span(
+                "pipeline.window",
+                attributes={"engine": engine_label(source, unit), "cycle": cycle},
+            ):
+                features = window.materialise()
+                try:
+                    interval = self._predictor.predict(
+                        features[None, ...], np.asarray([cycle], dtype=np.int64)
+                    )[0]
+                except InferenceUnavailableError as error:
+                    # No prediction rather than the last one: a stale interval drawn as
+                    # current is the silent wrong answer this state exists to prevent.
+                    state.missed_predictions += 1
+                    if state.outage is None:
+                        state.outage = DegradedState(
+                            state="inference_unavailable",
+                            engine=unit,
+                            detail=f"no prediction since cycle {cycle}: {error}",
+                            details={"engine": unit, "cycle": cycle},
+                        )
+                        self._publish(key, state)
+                    continue
+                if state.outage is not None:
+                    state.outage = None
                     self._publish(key, state)
-                continue
-            if state.outage is not None:
-                state.outage = None
-                self._publish(key, state)
-            prediction = Prediction(
-                unit=unit,
-                cycle=cycle,
-                interval=interval,
-                model=self._predictor.model_name,
-                target_coverage=self._config.target_coverage,
-            )
-            predictions.append(prediction)
-            self._fleet.record(unit=unit, cycle=cycle, interval=interval, source=source)
-            if truth is not None:
-                self._coverage.record(
-                    Observation(
-                        unit=unit,
-                        truth=truth,
-                        lower=interval.lower,
-                        upper=interval.upper,
-                        point=interval.point,
-                        source=source,
-                    )
-                )
-            state.alerts.extend(
-                self._alerting.evaluate(
+                prediction = Prediction(
                     unit=unit,
                     cycle=cycle,
-                    lower=interval.lower,
-                    point=interval.point,
-                    source=source,
+                    interval=interval,
+                    model=self._predictor.model_name,
+                    target_coverage=self._config.target_coverage,
                 )
-            )
-            open_alert = self._alerting.alerts().get(key)
-            self._fleet.set_alert(
-                unit, open_alert.to_dict() if open_alert is not None else None, source=source
-            )
+                predictions.append(prediction)
+                self._fleet.record(unit=unit, cycle=cycle, interval=interval, source=source)
+                if truth is not None:
+                    self._coverage.record(
+                        Observation(
+                            unit=unit,
+                            truth=truth,
+                            lower=interval.lower,
+                            upper=interval.upper,
+                            point=interval.point,
+                            source=source,
+                        )
+                    )
+                with tracer.start_as_current_span("alerting.evaluate"):
+                    state.alerts.extend(
+                        self._alerting.evaluate(
+                            unit=unit,
+                            cycle=cycle,
+                            lower=interval.lower,
+                            point=interval.point,
+                            source=source,
+                        )
+                    )
+                open_alert = self._alerting.alerts().get(key)
+                self._fleet.set_alert(
+                    unit, open_alert.to_dict() if open_alert is not None else None, source=source
+                )
         return predictions
 
     def _track_flight(

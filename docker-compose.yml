@@ -21,6 +21,7 @@ services:
     command: ["prognos", "serve", "--component", "ingestion", "--port", "8081", "--host", "0.0.0.0"]
     environment:
       PROGNOS_SERVICE: ingestion
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       PROGNOS_PORT: "8081"
       PROGNOS_API_TOKEN: "${PROGNOS_API_TOKEN:-}"
       # Secrets come from the environment, never from a build argument. See
@@ -47,6 +48,7 @@ services:
     command: ["prognos", "serve", "--component", "inference", "--port", "8082", "--host", "0.0.0.0", "--model-dir", "/app/artifacts/model"]
     environment:
       PROGNOS_SERVICE: inference
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       PROGNOS_PORT: "8082"
       PROGNOS_API_TOKEN: "${PROGNOS_API_TOKEN:-}"
     ports:
@@ -80,6 +82,7 @@ services:
     command: ["prognos", "serve", "--component", "alerting", "--port", "8083", "--host", "0.0.0.0"]
     environment:
       PROGNOS_SERVICE: alerting
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       PROGNOS_PORT: "8083"
       PROGNOS_API_TOKEN: "${PROGNOS_API_TOKEN:-}"
     ports:
@@ -99,6 +102,7 @@ services:
     command: ["prognos", "serve", "--component", "dashboard", "--port", "8084", "--host", "0.0.0.0"]
     environment:
       PROGNOS_SERVICE: dashboard
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       PROGNOS_PORT: "8084"
       # Empty means authentication is off, which is only safe because every published
       # port below is bound to loopback. Set PROGNOS_API_TOKEN in .env before exposing
@@ -130,6 +134,15 @@ services:
       - "127.0.0.1:9090:9090"
     restart: unless-stopped
 
+  # Trace backend. The services export OpenTelemetry spans to it over OTLP/HTTP, and
+  # Grafana reads it as a datasource. In-memory storage: traces are for diagnosing
+  # what is happening now, and the committed result files are the record.
+  jaeger:
+    image: jaegertracing/jaeger:2.21.0@sha256:3d0ac795ff98aa04d1be04311d2dac6c25b4bfc8322dc02e53bc5b170c5018c3
+    ports:
+      - "127.0.0.1:16686:16686"
+    restart: unless-stopped
+
   grafana:
     image: grafana/grafana:12.1.0@sha256:11c2e6c7993917ea89292b942e3428f73907b2809d554154bfb8b4ceb2301cc8
     environment:
@@ -141,7 +154,7 @@ services:
       - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
       - "127.0.0.1:3000:3000"
-    depends_on: [prometheus]
+    depends_on: [prometheus, jaeger]
     restart: unless-stopped
 
 # Resource ceilings. The Always Free target is 2 OCPU / 12 GB, so the sum of these

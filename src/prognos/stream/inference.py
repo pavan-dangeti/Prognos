@@ -23,9 +23,12 @@ from typing import Protocol
 
 import numpy as np
 import numpy.typing as npt
+from opentelemetry.propagate import inject
+from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from prognos.gbm import LightGbmModel
 from prognos.models import RulModel
+from prognos.stream.observability import tracer
 from prognos.uncertainty import Interval, SplitConformalCalibrator
 
 MODEL_FILE = "model.pkl"
@@ -103,7 +106,11 @@ class RulPredictor:
             )
         if windows.shape[0] == 0:
             return []
-        point = np.asarray(self._model.predict(windows, cycles), dtype=np.float64)
+        with tracer.start_as_current_span(
+            "inference.predict",
+            attributes={"model": self._model_name, "windows": int(windows.shape[0])},
+        ):
+            point = np.asarray(self._model.predict(windows, cycles), dtype=np.float64)
         lower, upper = self._calibrator.bounds(point)
         return [
             Interval(lower=float(lo), point=float(p), upper=float(hi))
@@ -241,15 +248,31 @@ class RemotePredictor:
         self, windows: npt.NDArray[np.float32], cycles: npt.NDArray[np.int64]
     ) -> list[Interval]:
         """Ask the service for intervals, or raise `InferenceUnavailableError`."""
-        import urllib.error
-        import urllib.request
-
         body = json.dumps(
             {"windows": np.asarray(windows).tolist(), "cycles": np.asarray(cycles).tolist()}
         ).encode()
         headers = {"Content-Type": "application/json"}
         if self._token:
             headers["Authorization"] = f"Bearer {self._token}"
+        with tracer.start_as_current_span(
+            "inference.remote_predict",
+            kind=SpanKind.CLIENT,
+            attributes={"url.full": self._url, "windows": int(np.asarray(windows).shape[0])},
+        ) as current:
+            # The caller's trace travels in the traceparent header, so the service's
+            # handler span joins it: one trace from window to model across the socket.
+            inject(headers)
+            try:
+                return self._call(body, headers)
+            except InferenceUnavailableError as error:
+                current.record_exception(error)
+                current.set_status(Status(StatusCode.ERROR, "inference unavailable"))
+                raise
+
+    def _call(self, body: bytes, headers: dict[str, str]) -> list[Interval]:
+        """The HTTP exchange itself, every failure raised as one error."""
+        import urllib.request
+
         request = urllib.request.Request(self._url, data=body, headers=headers)
         try:
             with urllib.request.urlopen(request, timeout=self._timeout) as response:
